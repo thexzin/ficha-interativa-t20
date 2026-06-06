@@ -609,13 +609,33 @@ window.T20_CLASS_POWER_DETAILS = {
     "cost": "1 PM",
     "action": ""
   },
+  "clerigo|Jogo do Ano|Abençoar Arma": {
+    "desc": "Você se torna proficiente na arma preferida de sua divindade. Se estiver empunhando essa arma, pode gastar uma ação de movimento e 3 PM para infundi-la com poder divino. Até o final da cena, a arma é considerada mágica e emite luz dourada ou púrpura, como uma tocha. Além disso, o dano da arma aumenta em um passo e você pode usar sua Sabedoria em testes de ataque e rolagens de dano com ela, em vez do atributo padrão. Este efeito não é cumulativo com outros efeitos que somam este atributo.",
+    "cost": "3 PM",
+    "action": "Movimento"
+  },
+  "clerigo|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Autoridade Eclesiástica": {
+    "desc": "Você possui uma posição formal em uma igreja reconhecida pelos outros membros de sua fé. Os efeitos variam de acordo com a igreja e o deus e ficam a cargo do mestre. Como regra geral, você recebe +5 em testes de Diplomacia ou Intimidação ao lidar com devotos de sua divindade e paga metade do preço de itens alquímicos, poções e serviços em templos de sua divindade. Pré-requisitos: 5º nível de clérigo, devoto de um deus maior.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Canalizar Energia Positiva/Negativa": {
+    "desc": "Você pode gastar uma ação padrão e PM para liberar uma onda de luz, se sua divindade canaliza energia positiva, ou trevas, se canaliza energia negativa, que afeta criaturas a sua escolha em alcance curto. Para cada PM gasto, luz cura 1d6 PV em criaturas vivas e causa 1d6 pontos de dano de luz em mortos-vivos; mortos-vivos têm direito a Vontade (CD Sab) para reduzir o dano à metade. Trevas tem o efeito inverso: causa dano de trevas a criaturas vivas e cura mortos-vivos.",
+    "cost": "PM variável",
+    "action": "Padrão"
+  },
   "clerigo|Jogo do Ano|Canalizar Amplo": {
     "desc": "Quando você usa a habilidade Canalizar Energia, pode gastar +2 PM para aumentar o alcance dela para médio. Pré-requisito: Canalizar Energia Positiva ou Negativa.",
     "cost": "+2 PM",
     "action": ""
   },
   "clerigo|Jogo do Ano|Comunhão Vital": {
-    "desc": "Quando lança uma magia que cure uma criatura, você pode pagar +2 PM para que outra criatura em alcance curto (incluindo você mesmo) recupere uma quantidade de pontos de vida igual à metade dos PV da cura original. e",
+    "desc": "Quando lança uma magia que cure uma criatura, você pode pagar +2 PM para que outra criatura em alcance curto (incluindo você mesmo) recupere uma quantidade de pontos de vida igual à metade dos PV da cura original.",
     "cost": "+2 PM",
     "action": ""
   },
@@ -625,7 +645,7 @@ window.T20_CLASS_POWER_DETAILS = {
     "action": ""
   },
   "clerigo|Jogo do Ano|Expulsar/Comandar Mortos-Vivos": {
-    "desc": "Você pode gastar uma ação padrão e 3 PM para expulsar (se sua divindade canaliza energia positiva) ou comandar (se canaliza energia negativa) todos os mortos-vivos em alcance curto. Mortos-vivos expulsos ficam apavorados por 1d6 rodadas. Mortos-vivos comandados não inteligentes (Int –4 ou menor) ficam sob suas ordens por um dia (até um limite de ND somados igual a seu nível +3; dar uma ordem a todos eles é uma ação de movimento) e mortos-vivos comandados inteligentes ficam fascinados por uma rodada. Mortos-vivos têm direito a um teste de Vontade (CD Sab) para evitar qualquer destes efeitos. Pré-requisito: Canalizar Energia Positiva ou Negativa. e",
+    "desc": "Você pode gastar uma ação padrão e 3 PM para expulsar (se sua divindade canaliza energia positiva) ou comandar (se canaliza energia negativa) todos os mortos-vivos em alcance curto. Mortos-vivos expulsos ficam apavorados por 1d6 rodadas. Mortos-vivos comandados não inteligentes (Int –4 ou menor) ficam sob suas ordens por um dia (até um limite de ND somados igual a seu nível +3; dar uma ordem a todos eles é uma ação de movimento) e mortos-vivos comandados inteligentes ficam fascinados por uma rodada. Mortos-vivos têm direito a um teste de Vontade (CD Sab) para evitar qualquer destes efeitos. Pré-requisito: Canalizar Energia Positiva ou Negativa.",
     "cost": "3 PM",
     "action": "Ação padrão"
   },
@@ -675,9 +695,9 @@ window.T20_CLASS_POWER_DETAILS = {
     "action": "Ação padrão"
   },
   "clerigo|Jogo do Ano|Símbolo Sagrado Energizado": {
-    "desc": "Você pode gastar uma ação de movimento e 1 PM para fazer uma prece e energizar seu símbolo sagrado até o fim da cena. Um símbolo sagrado energizado emite uma luz dourada ou prateada (se sua divindade canaliza energia positiva) ou púrpura ou avermelhada (se canaliza energia negativa) que ilumina como uma tocha. Enquanto você estiver empunhando um símbolo sagrado energizado, o custo em PM para lançar suas magias divinas diminui em 1. e Mão da Divindade. No 20º nível, você pode gastar uma ação completa e 15 PM para canalizar energia divina. Ao fazer isso, você lança três magias divinas quaisquer (de qualquer círculo, incluindo magias que você não conhece), como uma ação livre e sem gastar PM (mas ainda precisa pagar outros custos). Você pode aplicar aprimoramentos, mas precisa pagar por eles. Após usar esta habilidade, você fica atordoado por 1d4 rodadas (mesmo se for imune a esta condição). Corpos mortais não foram feitos para lidar com tanto poder. e",
-    "cost": "1 PM, 15 PM",
-    "action": "Ação completa"
+    "desc": "Você pode gastar uma ação de movimento e 1 PM para fazer uma prece e energizar seu símbolo sagrado até o fim da cena. Um símbolo sagrado energizado emite uma luz dourada ou prateada (se sua divindade canaliza energia positiva) ou púrpura ou avermelhada (se canaliza energia negativa) que ilumina como uma tocha. Enquanto você estiver empunhando um símbolo sagrado energizado, o custo em PM para lançar suas magias divinas diminui em 1.",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
   },
   "druida|Jogo do Ano|Aspecto do Inverno": {
     "desc": "Você aprende e pode lançar uma magia de convocação ou evocação, arcana ou divina, de qualquer círculo que possa lançar. Além disso, recebe redução de frio 5 e suas magias que causam dano de frio causam +1 ponto de dano por dado.",
@@ -2115,7 +2135,7 @@ window.T20_CLASS_POWER_DETAILS = {
     "action": ""
   },
   "clerigo|Heróis de Arton|Punição Divina": {
-    "desc": "Uma vez por rodada, quando lança uma magia divina com tempo de execução de ação de movimento em si mesmo, você pode gastar +2 PM fazer um ataque como ação livre. Pré-requisito: Prece de Combate. Mestre Celebrante O poder Mestre Celebrante (Tormenta20, p. 58) dobra os benefícios de Missas celebradas pelo personagem. Abaixo detalhamos como isso se aplica. • Se a Missa fornece um bônus numérico que se aplica por toda sua duração, como o de Mente Abençoada, esse bônus é dobrado. • Se fornece uma quantidade de PV ou PM, como Elevação do Espírito, essa quantidade é dobrada. • Se permite usar uma habilidade ou receber um benefício uma vez, como Compartilhar Milagre, esse efeito pode ser usado uma vez adicional pela duração da Missa.",
+    "desc": "Uma vez por rodada, quando lança uma magia divina com tempo de execução de ação de movimento em si mesmo, você pode gastar +2 PM para fazer um ataque como ação livre. Pré-requisito: Prece de Combate.",
     "cost": "+2 PM",
     "action": "Ação de movimento"
   },

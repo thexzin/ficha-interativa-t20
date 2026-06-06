@@ -1,19 +1,27 @@
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const KEY="t20_sheet_v6_2";
+const CHARACTER_INDEX_KEY="t20_characters_index_v1";
+const CHARACTER_PREFIX="t20_character_v1_";
 const LEGACY_KEYS=["t20_sheet_v3","t20_sheet_v4","t20_sheet_v5","t20_sheet_v6"];
 
+function defaultState(){
+  return {powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}]};
+}
 function normalizeState(){
-  const defaults={powers:[],spells:[],items:[],attacks:[],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}]};
+  const defaults=defaultState();
   state={...defaults,...(state||{})};
   for(const k of Object.keys(defaults)){
     if(Array.isArray(defaults[k]) && !Array.isArray(state[k])) state[k]=[];
     if(!Array.isArray(defaults[k]) && typeof state[k]!=="object") state[k]={};
   }
+  if(!state.attacks.length) state.attacks=defaultState().attacks;
+  if(!state.offices.length) state.offices=defaultState().offices;
   state.spells=state.spells.map(spell=>normalizeSpellDetailFields({...spell}));
 }
 
-let state={powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}]};
+let state=defaultState();
+let currentCharacterId="";
 let expandedSpellCards=new Set();
 let expandedPowerCards=new Set();
 let expandedItemCards=new Set();
@@ -50,34 +58,40 @@ function rollDice(expr){
 };
 
 const CONDITION_LIBRARY={
-"Abalado":{desc:"–2 em testes de perícia.",effects:{allSkills:-2}},
-"Apavorado":{desc:"–5 em testes de perícia e não pode se aproximar voluntariamente da fonte.",effects:{allSkills:-5}},
-"Agarrado":{desc:"Condição restritiva. A ficha aplica –2 em ataques e –5 na Defesa.",effects:{attack:-2,defense:-5}},
-"Atordoado":{desc:"Fica desprevenido e não pode fazer ações.",effects:{defense:-5}},
-"Caído":{desc:"–5 na Defesa contra ataques corpo a corpo e +5 contra ataques à distância. A ficha usa –5 como alerta geral.",effects:{defense:-5}},
-"Cego":{desc:"Fica desprevenido, sofre –5 em testes de ataque e falha automaticamente em testes visuais.",effects:{defense:-5,attack:-5}},
-"Confuso":{desc:"Age de maneira aleatória; não possui penalidade numérica global automática.",effects:{}},
-"Debilitado":{desc:"–5 em testes de Força, Destreza e Constituição.",effects:{attrs:{FOR:-5,DES:-5,CON:-5}}},
-"Desprevenido":{desc:"–5 na Defesa.",effects:{defense:-5}},
-"Em Chamas":{desc:"Sofre dano de fogo por rodada; sem penalidade numérica em perícias.",effects:{}},
-"Enjoado":{desc:"Só pode realizar uma ação padrão ou de movimento por turno.",effects:{}},
+"Abalado":{desc:"–2 em testes de perícia. Se ficar abalado novamente, em vez disso fica apavorado.",effects:{allSkills:-2}},
+"Agarrado":{desc:"Fica desprevenido e imóvel, sofre –2 em testes de ataque e só pode atacar com armas leves.",effects:{attack:-2,defense:-5,skills:{Reflexos:-5}}},
+"Alquebrado":{desc:"O custo em PM das habilidades aumenta em +1.",effects:{}},
+"Apavorado":{desc:"–5 em testes de perícia e não pode se aproximar voluntariamente da fonte do medo.",effects:{allSkills:-5}},
+"Atordoado":{desc:"Fica desprevenido e não pode fazer ações.",effects:{defense:-5,skills:{Reflexos:-5}}},
+"Caído":{desc:"–5 na Defesa contra ataques corpo a corpo, +5 contra ataques à distância, –5 em ataques corpo a corpo e deslocamento reduzido a 1,5m. A ficha aplica a Defesa –5 como alerta geral.",effects:{defense:-5,stackDefense:true}},
+"Cego":{desc:"Fica desprevenido e lento, não pode observar com Percepção, sofre –5 em perícias baseadas em Força ou Destreza e seus alvos recebem camuflagem total.",effects:{defense:-5,attrs:{FOR:-5,DES:-5},skills:{Reflexos:-5}}},
+"Confuso":{desc:"Age aleatoriamente no início de seus turnos; sem penalidade numérica global automática.",effects:{}},
+"Debilitado":{desc:"–5 em testes de Força, Destreza e Constituição e em perícias baseadas nesses atributos. Se ficar debilitado novamente, fica inconsciente.",effects:{attrs:{FOR:-5,DES:-5,CON:-5}}},
+"Desprevenido":{desc:"–5 na Defesa e em Reflexos.",effects:{defense:-5,skills:{Reflexos:-5}}},
+"Doente":{desc:"Sob efeito de uma doença; efeitos variam conforme a doença.",effects:{}},
+"Em Chamas":{desc:"No início de seus turnos, sofre 1d6 de dano de fogo. Pode gastar uma ação padrão para apagar as chamas.",effects:{}},
+"Enfeitiçado":{desc:"Torna-se prestativo em relação à fonte; a fonte recebe +10 em Diplomacia com o personagem.",effects:{}},
+"Enjoado":{desc:"Só pode realizar uma ação padrão ou de movimento por rodada. Pode fazer investida como ação padrão, mas avança no máximo seu deslocamento.",effects:{}},
 "Enredado":{desc:"Fica lento, vulnerável e sofre –2 em testes de ataque.",effects:{defense:-2,attack:-2}},
-"Envenenado":{desc:"Os efeitos variam conforme o veneno.",effects:{}},
-"Esmorecido":{desc:"–5 em testes de Inteligência, Sabedoria e Carisma.",effects:{attrs:{INT:-5,SAB:-5,CAR:-5}}},
-"Exausto":{desc:"–5 na Defesa, ataques e testes físicos; deslocamento reduzido.",effects:{defense:-5,attack:-5,attrs:{FOR:-5,DES:-5,CON:-5}}},
-"Fascinado":{desc:"–5 em Percepção e não pode fazer ações hostis contra a fonte.",effects:{skills:{Percepção:-5}}},
-"Fatigado":{desc:"–2 na Defesa, ataques e testes físicos.",effects:{defense:-2,attack:-2,attrs:{FOR:-2,DES:-2,CON:-2}}},
-"Fraco":{desc:"–2 em testes de Força, Destreza e Constituição.",effects:{attrs:{FOR:-2,DES:-2,CON:-2}}},
-"Frustrado":{desc:"–2 em testes de Inteligência, Sabedoria e Carisma.",effects:{attrs:{INT:-2,SAB:-2,CAR:-2}}},
-"Imóvel":{desc:"Deslocamento zero.",effects:{}},
-"Inconsciente":{desc:"Fica indefeso e incapaz de agir.",effects:{defense:-10}},
-"Lento":{desc:"Só pode realizar uma ação padrão ou de movimento por turno.",effects:{}},
-"Ofuscado":{desc:"–2 em ataques e Percepção.",effects:{attack:-2,skills:{Percepção:-2}}},
-"Paralisado":{desc:"Fica imóvel e indefeso.",effects:{defense:-10}},
-"Pasmo":{desc:"Não pode fazer ações, apenas reações.",effects:{}},
-"Petrificado":{desc:"Transformado em pedra e incapaz de agir.",effects:{}},
-"Sangrando":{desc:"Pode perder PV a cada rodada; sem modificador fixo automático.",effects:{}},
-"Surdo":{desc:"–5 em Iniciativa e falha em testes auditivos.",effects:{skills:{Iniciativa:-5}}},
+"Envenenado":{desc:"Os efeitos variam conforme o veneno, podendo incluir perda de vida recorrente ou outras condições.",effects:{}},
+"Esmorecido":{desc:"–5 em testes de Inteligência, Sabedoria e Carisma e em perícias baseadas nesses atributos.",effects:{attrs:{INT:-5,SAB:-5,CAR:-5}}},
+"Exausto":{desc:"Fica debilitado, lento e vulnerável. Se ficar exausto novamente, fica inconsciente.",effects:{defense:-2,attrs:{FOR:-5,DES:-5,CON:-5}}},
+"Fascinado":{desc:"–5 em Percepção e não pode fazer ações, exceto observar o que o fascinou.",effects:{skills:{Percepção:-5}}},
+"Fatigado":{desc:"Fica fraco e vulnerável. Se ficar fatigado novamente, fica exausto.",effects:{defense:-2,attrs:{FOR:-2,DES:-2,CON:-2}}},
+"Fraco":{desc:"–2 em testes de Força, Destreza e Constituição e em perícias baseadas nesses atributos.",effects:{attrs:{FOR:-2,DES:-2,CON:-2}}},
+"Frustrado":{desc:"–2 em testes de Inteligência, Sabedoria e Carisma e em perícias baseadas nesses atributos.",effects:{attrs:{INT:-2,SAB:-2,CAR:-2}}},
+"Imóvel":{desc:"Todas as formas de deslocamento são reduzidas a 0m.",effects:{}},
+"Inconsciente":{desc:"Fica indefeso e não pode fazer ações, incluindo reações.",effects:{defense:-10}},
+"Indefeso":{desc:"Fica desprevenido, sofre –10 na Defesa, falha automaticamente em Reflexos e pode sofrer golpes de misericórdia.",effects:{defense:-10}},
+"Lento":{desc:"Todas as formas de deslocamento são reduzidas à metade, arredondando para baixo para o primeiro incremento de 1,5m. Não pode correr ou fazer investidas.",effects:{}},
+"Ofuscado":{desc:"–2 em testes de ataque e de Percepção.",effects:{attack:-2,skills:{Percepção:-2}}},
+"Paralisado":{desc:"Fica imóvel e indefeso e só pode realizar ações puramente mentais.",effects:{defense:-10}},
+"Pasmo":{desc:"Não pode fazer ações.",effects:{}},
+"Petrificado":{desc:"Fica inconsciente e recebe RD 8.",effects:{defense:-10}},
+"Sangrando":{desc:"No início de seu turno, faz Constituição CD 15; se falhar, perde 1d6 PV e continua sangrando; se passar, remove a condição.",effects:{}},
+"Sobrecarregado":{desc:"Sofre penalidade de armadura –5 e deslocamento –3m.",effects:{skills:{Acrobacia:-5,Furtividade:-5,Ladinagem:-5}}},
+"Surdo":{desc:"Não pode fazer Percepção para ouvir, sofre –5 em Iniciativa e fica em condição ruim para lançar magias.",effects:{skills:{Iniciativa:-5}}},
+"Surpreendido":{desc:"Fica desprevenido e não pode fazer ações.",effects:{defense:-5,skills:{Reflexos:-5}}},
 "Vulnerável":{desc:"–2 na Defesa.",effects:{defense:-2}}
 };
 
@@ -144,15 +158,27 @@ function spellAttrPmBonus(cls){return classUsesSpellAttrForPm(cls)?num(value("sp
 
 function activeConditionEffects(){
   const result={defense:0,attack:0,allSkills:0,attrs:{},skills:{}};
+  const stacked={defense:0,attack:0,allSkills:0,attrs:{},skills:{}};
+  const addPenalty=(target,key,value,{stack=false,stackTarget=null}={})=>{
+    const n=Number(value||0);
+    if(!n) return;
+    if(stack&&stackTarget) stackTarget[key]=Number(stackTarget[key]||0)+n;
+    else target[key]=Math.min(Number(target[key]||0),n);
+  };
   for(const [name,status] of Object.entries(state.conditions||{})){
     if(!status?.active) continue;
     const e=CONDITION_LIBRARY[name]?.effects||{};
-    result.defense+=Number(e.defense||0);
-    result.attack+=Number(e.attack||0);
-    result.allSkills+=Number(e.allSkills||0);
-    for(const [a,v] of Object.entries(e.attrs||{})) result.attrs[a]=(result.attrs[a]||0)+Number(v);
-    for(const [s,v] of Object.entries(e.skills||{})) result.skills[s]=(result.skills[s]||0)+Number(v);
+    addPenalty(result,"defense",e.defense,{stack:!!e.stackDefense,stackTarget:stacked});
+    addPenalty(result,"attack",e.attack,{stack:!!e.stackAttack,stackTarget:stacked});
+    addPenalty(result,"allSkills",e.allSkills,{stack:!!e.stackAllSkills,stackTarget:stacked});
+    for(const [a,v] of Object.entries(e.attrs||{})) addPenalty(result.attrs,a,v,{stack:!!e.stackAttrs,stackTarget:stacked.attrs});
+    for(const [s,v] of Object.entries(e.skills||{})) addPenalty(result.skills,s,v,{stack:!!e.stackSkills,stackTarget:stacked.skills});
   }
+  result.defense+=stacked.defense;
+  result.attack+=stacked.attack;
+  result.allSkills+=stacked.allSkills;
+  for(const [a,v] of Object.entries(stacked.attrs)) result.attrs[a]=Number(result.attrs[a]||0)+v;
+  for(const [s,v] of Object.entries(stacked.skills)) result.skills[s]=Number(result.skills[s]||0)+v;
   return result;
 }
 function recalc(){
@@ -167,6 +193,7 @@ function recalc(){
   $("#pvTempView").textContent=pvTemp?` +${pvTemp} temp`:"";$("#pmTempView").textContent=pmTemp?` +${pmTemp} temp`:"";
   const conditionFx=activeConditionEffects();
   const defenseDex=$("#defUseDex")?.checked!==false?num("DES"):0;
+  if($("#defUseDexState")) $("#defUseDexState").textContent=$("#defUseDex")?.checked!==false?"Sim":"Não";
   $("#defView").textContent=10+defenseDex+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+conditionFx.defense;
   const penalties=[];
   if(conditionFx.defense) penalties.push(`Defesa ${conditionFx.defense}`);
@@ -1269,37 +1296,264 @@ function restoreSavedField(id,value){
   }
   element.value=value;
 }
-function save(show=true){const fields=collectSavedFields();localStorage.setItem(KEY,JSON.stringify({fields,state}));if(show)notify("Ficha salva neste navegador.")}
-function load(){
-  let raw=localStorage.getItem(KEY);
-  if(!raw){
-    for(const legacyKey of LEGACY_KEYS){
-      raw=localStorage.getItem(legacyKey);
-      if(raw) break;
-    }
+function defaultSavedFieldValue(element){
+  if(element.type==="checkbox") return element.defaultChecked;
+  if(element.tagName==="SELECT"){
+    const selected=[...element.options].find(option=>option.defaultSelected)||element.options[0];
+    return selected?selected.value:"";
   }
-  if(!raw)return;
+  return element.defaultValue||"";
+}
+function resetSavedFieldsToDefaults(){
+  $$("[data-save]").forEach(element=>restoreSavedField(element.id,defaultSavedFieldValue(element)));
+}
+function clonePlain(value){
+  return JSON.parse(JSON.stringify(value||{}));
+}
+function normalizeLoadedState(saved){
+  const base=defaultState();
+  saved=saved&&typeof saved==="object"?saved:{};
+  return {
+    powers:Array.isArray(saved.powers)?saved.powers:base.powers,
+    spells:Array.isArray(saved.spells)?saved.spells:base.spells,
+    items:Array.isArray(saved.items)?saved.items:base.items,
+    attacks:Array.isArray(saved.attacks)&&saved.attacks.length?saved.attacks:base.attacks,
+    skillData:saved.skillData&&typeof saved.skillData==="object"?saved.skillData:base.skillData,
+    conditions:saved.conditions&&typeof saved.conditions==="object"?saved.conditions:base.conditions,
+    customConditions:Array.isArray(saved.customConditions)?saved.customConditions:base.customConditions,
+    originBenefits:Array.isArray(saved.originBenefits)?saved.originBenefits:base.originBenefits,
+    offices:Array.isArray(saved.offices)&&saved.offices.length?saved.offices:base.offices
+  };
+}
+function normalizeSheetData(data){
+  data=data&&typeof data==="object"?data:{};
+  return {
+    fields:data.fields&&typeof data.fields==="object"?data.fields:{},
+    state:normalizeLoadedState(data.state)
+  };
+}
+function sheetDataFromCurrent(){
+  return {fields:collectSavedFields(),state:clonePlain(state)};
+}
+function blankSheetData(name=""){
+  const fields={};
+  $$("[data-save]").forEach(element=>fields[element.id]=defaultSavedFieldValue(element));
+  fields.nome=name;
+  return {fields,state:defaultState()};
+}
+function applySheetData(data){
+  const normalized=normalizeSheetData(data);
+  resetSavedFieldsToDefaults();
+  state=normalized.state;
+  Object.entries(normalized.fields).forEach(([id,v])=>restoreSavedField(id,v));
+  normalizeState();
+  expandedSpellCards.clear();
+  expandedPowerCards.clear();
+  expandedItemCards.clear();
+}
+function characterKey(id){return `${CHARACTER_PREFIX}${id}`}
+function newCharacterId(){return `char_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`}
+function readCharacterIndex(){
   try{
-    const d=JSON.parse(raw);
-    const saved=d.state||{};
-    state={
-      powers:Array.isArray(saved.powers)?saved.powers:[],
-      spells:Array.isArray(saved.spells)?saved.spells:[],
-      items:Array.isArray(saved.items)?saved.items:[],
-      attacks:Array.isArray(saved.attacks)&&saved.attacks.length?saved.attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],
-      skillData:saved.skillData&&typeof saved.skillData==="object"?saved.skillData:{},
-      conditions:saved.conditions&&typeof saved.conditions==="object"?saved.conditions:{},
-      customConditions:Array.isArray(saved.customConditions)?saved.customConditions:[],
-      originBenefits:Array.isArray(saved.originBenefits)?saved.originBenefits:[],
-      offices:Array.isArray(saved.offices)&&saved.offices.length?saved.offices:[{name:"",trained:false,adjust:0}]
-    };
-    Object.entries(d.fields||{}).forEach(([id,v])=>restoreSavedField(id,v));
-    localStorage.setItem(KEY,JSON.stringify({fields:collectSavedFields(),state}));
+    const raw=localStorage.getItem(CHARACTER_INDEX_KEY);
+    if(!raw) return {activeId:"",characters:[]};
+    const parsed=JSON.parse(raw);
+    const characters=(Array.isArray(parsed.characters)?parsed.characters:[])
+      .filter(character=>character&&character.id)
+      .map(character=>({
+        id:String(character.id),
+        name:String(character.name||"Personagem sem nome"),
+        updatedAt:character.updatedAt||""
+      }));
+    const activeId=characters.some(character=>character.id===parsed.activeId)?parsed.activeId:(characters[0]?.id||"");
+    return {activeId,characters};
   }catch(err){
-    console.error("Falha ao carregar ficha salva:",err);
+    console.warn("Falha ao ler índice de personagens:",err);
+    return {activeId:"",characters:[]};
   }
 }
-function exportSheet(){const fields=collectSavedFields();const blob=new Blob([JSON.stringify({fields,state},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`ficha-${(value("nome")||"personagem").replace(/\W+/g,"-")}.json`;a.click()}
+function writeCharacterIndex(index){
+  const characters=(index.characters||[]).filter(character=>character&&character.id);
+  const activeId=characters.some(character=>character.id===index.activeId)?index.activeId:(characters[0]?.id||"");
+  localStorage.setItem(CHARACTER_INDEX_KEY,JSON.stringify({activeId,characters}));
+}
+function characterNameFromData(data,fallback="Personagem sem nome"){
+  return String(data?.fields?.nome||"").trim()||fallback;
+}
+function renderCharacterManager(){
+  const select=$("#characterSelect");
+  if(!select) return;
+  const index=readCharacterIndex();
+  select.innerHTML=index.characters.map(character=>`<option value="${escapeHtml(character.id)}">${escapeHtml(character.name||"Personagem sem nome")}</option>`).join("");
+  select.value=currentCharacterId||index.activeId||"";
+}
+function createCharacter(data,name){
+  const normalized=normalizeSheetData(data);
+  const id=newCharacterId();
+  const index=readCharacterIndex();
+  const now=new Date().toISOString();
+  index.characters.push({id,name:name||characterNameFromData(normalized),updatedAt:now});
+  index.activeId=id;
+  currentCharacterId=id;
+  localStorage.setItem(characterKey(id),JSON.stringify(normalized));
+  writeCharacterIndex(index);
+  renderCharacterManager();
+  return id;
+}
+function updateActiveCharacterMeta(data){
+  if(!currentCharacterId) return;
+  const index=readCharacterIndex();
+  let meta=index.characters.find(character=>character.id===currentCharacterId);
+  if(!meta){
+    meta={id:currentCharacterId,name:characterNameFromData(data),updatedAt:""};
+    index.characters.push(meta);
+  }
+  meta.name=characterNameFromData(data,meta.name);
+  meta.updatedAt=new Date().toISOString();
+  index.activeId=currentCharacterId;
+  writeCharacterIndex(index);
+  renderCharacterManager();
+}
+function findLegacySheetData(){
+  const keys=[KEY,...LEGACY_KEYS];
+  for(const key of keys){
+    const raw=localStorage.getItem(key);
+    if(!raw) continue;
+    try{return normalizeSheetData(JSON.parse(raw))}
+    catch(err){console.warn(`Falha ao migrar ${key}:`,err)}
+  }
+  return null;
+}
+function load(){
+  let index=readCharacterIndex();
+  if(!index.characters.length){
+    const legacy=findLegacySheetData();
+    const first=legacy||blankSheetData("");
+    createCharacter(first,characterNameFromData(first));
+    index=readCharacterIndex();
+  }
+  currentCharacterId=index.activeId||index.characters[0]?.id||"";
+  if(!currentCharacterId) return;
+  try{
+    const raw=localStorage.getItem(characterKey(currentCharacterId));
+    const data=raw?JSON.parse(raw):blankSheetData("");
+    applySheetData(data);
+    save(false);
+  }catch(err){
+    console.error("Falha ao carregar personagem:",err);
+    applySheetData(blankSheetData(""));
+  }
+  renderCharacterManager();
+}
+function save(show=true){
+  if(!currentCharacterId) createCharacter(sheetDataFromCurrent(),characterNameFromData(sheetDataFromCurrent()));
+  const data=sheetDataFromCurrent();
+  localStorage.setItem(characterKey(currentCharacterId),JSON.stringify(data));
+  localStorage.setItem(KEY,JSON.stringify(data));
+  updateActiveCharacterMeta(data);
+  if(show) notify("Personagem salvo neste navegador.");
+}
+function switchCharacter(id){
+  if(!id||id===currentCharacterId) return;
+  save(false);
+  const raw=localStorage.getItem(characterKey(id));
+  if(!raw){alert("Personagem não encontrado neste navegador.");renderCharacterManager();return}
+  try{
+    currentCharacterId=id;
+    const index=readCharacterIndex();
+    index.activeId=id;
+    writeCharacterIndex(index);
+    applySheetData(JSON.parse(raw));
+    renderAll();
+    save(false);
+    notify(`Personagem carregado: <b>${escapeHtml(value("nome")||"sem nome")}</b>`);
+  }catch(err){
+    console.error("Falha ao trocar personagem:",err);
+    alert("Não foi possível carregar este personagem.");
+  }
+}
+function newCharacter(){
+  save(false);
+  const data=blankSheetData("Novo personagem");
+  createCharacter(data,"Novo personagem");
+  applySheetData(data);
+  renderAll();
+  save(false);
+  notify("Novo personagem criado.");
+}
+function duplicateCharacter(){
+  save(false);
+  const data=sheetDataFromCurrent();
+  const name=`${characterNameFromData(data)} (cópia)`;
+  data.fields.nome=name;
+  createCharacter(data,name);
+  applySheetData(data);
+  renderAll();
+  save(false);
+  notify("Personagem duplicado.");
+}
+function renameCharacter(){
+  const current=String(value("nome")||"").trim()||"Personagem sem nome";
+  const name=prompt("Novo nome do personagem:",current);
+  if(name===null) return;
+  restoreSavedField("nome",name.trim()||"Personagem sem nome");
+  recalc();
+  save(false);
+  notify("Personagem renomeado.");
+}
+function deleteCharacter(){
+  const index=readCharacterIndex();
+  if(!currentCharacterId) return;
+  const current=index.characters.find(character=>character.id===currentCharacterId);
+  const label=current?.name||"este personagem";
+  if(!confirm(`Excluir ${label}? Esta ação remove o personagem salvo neste navegador.`)) return;
+  if(index.characters.length<=1){
+    const data=blankSheetData("Novo personagem");
+    localStorage.setItem(characterKey(currentCharacterId),JSON.stringify(data));
+    applySheetData(data);
+    renderAll();
+    save(false);
+    notify("Personagem limpo.");
+    return;
+  }
+  localStorage.removeItem(characterKey(currentCharacterId));
+  const remaining=index.characters.filter(character=>character.id!==currentCharacterId);
+  const nextId=remaining[0].id;
+  writeCharacterIndex({activeId:nextId,characters:remaining});
+  currentCharacterId=nextId;
+  const raw=localStorage.getItem(characterKey(nextId));
+  applySheetData(raw?JSON.parse(raw):blankSheetData(""));
+  renderAll();
+  save(false);
+  notify("Personagem excluído.");
+}
+function resetCurrentCharacter(){
+  if(!confirm("Limpar os dados do personagem atual?")) return;
+  const data=blankSheetData("Novo personagem");
+  applySheetData(data);
+  renderAll();
+  save(false);
+  notify("Ficha atual limpa.");
+}
+function importSheetData(data){
+  const normalized=normalizeSheetData(data);
+  const asNew=confirm("Importar como novo personagem? Clique em Cancelar para substituir o personagem atual.");
+  if(asNew||!currentCharacterId){
+    save(false);
+    createCharacter(normalized,characterNameFromData(normalized,"Personagem importado"));
+  }
+  applySheetData(normalized);
+  renderAll();
+  save(false);
+  notify(asNew?"Personagem importado.":"Personagem atual substituído pelo JSON importado.");
+}
+function exportSheet(){
+  const data=sheetDataFromCurrent();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`ficha-${(value("nome")||"personagem").replace(/\W+/g,"-")}.json`;
+  a.click();
+}
 function renderConditions(){
   $("#conditionsList").innerHTML=Object.entries(CONDITION_LIBRARY).map(([name,desc])=>{
     const c=state.conditions[name]||{active:false};state.conditions[name]={active:!!c.active};
@@ -1370,7 +1624,7 @@ function renderOriginBenefits(){
   $$("[data-ob]").forEach(e=>e.oninput=()=>{state.originBenefits[+e.dataset.ob]=e.value;save(false)});
   $$("[data-obdel]").forEach(e=>e.onclick=()=>{state.originBenefits.splice(+e.dataset.obdel,1);renderOriginBenefits();save(false)});
 }
-function renderAll(){normalizeState();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderAttacks();renderConditions();renderOriginBenefits();recalc()}
+function renderAll(){normalizeState();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();recalc()}
 function showFatalError(error){
   console.error(error);
   const banner=document.createElement("div");
@@ -1387,7 +1641,17 @@ try{
   showFatalError(error);
 }
 
-$$("[data-save]").forEach(e=>e.addEventListener("input",()=>{if(e.id==="nivel"){renderPowers();refreshPowerPickerIfOpen()}recalc();if(e.id==="divindade")refreshPowerPickerIfOpen()}));$("#spellAttr").addEventListener("change",recalc);$("#classe").addEventListener("change",()=>{state.skillData={};renderPowers();refreshPowerPickerIfOpen();recalc()});$("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});$("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc()});$("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc()});
+$$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
+  if(e.id==="nivel"){renderPowers();refreshPowerPickerIfOpen()}
+  recalc();
+  if(e.id==="divindade") refreshPowerPickerIfOpen();
+  save(false);
+}));
+$("#spellAttr").addEventListener("change",()=>{recalc();save(false)});
+$("#classe").addEventListener("change",()=>{state.skillData={};renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
+$("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
+$("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc();save(false)});
+$("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc();save(false)});
 $$("[data-tab]").forEach(b=>b.onclick=()=>{$$("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));$$(".tab").forEach(t=>t.classList.toggle("active",t.id===`tab-${b.dataset.tab}`))});
 $$("[data-change]").forEach(b=>b.onclick=()=>{const[id,delta]=b.dataset.change.split(":");applyQuickResourceChange(id,Number(delta));recalc()});
 $("#spellSearchCatalog").oninput=renderSpellCatalog;$("#spellCircleFilter").onchange=renderSpellCatalog;$("#spellTypeFilter").onchange=renderSpellCatalog;$("#spellSchoolFilter").onchange=renderSpellCatalog;
@@ -1408,5 +1672,25 @@ $("#addSelectedItem").onclick=addSelectedCatalogItem;
 $("#addBlankItem").onclick=()=>{addItemEntry();closeItemPicker()};
 $("#applyOriginBtn").onclick=applyOrigin;$("#addOriginBenefit").onclick=()=>{state.originBenefits.push("");renderOriginBenefits();save(false)};$("#addCustomCondition").onclick=()=>{state.customConditions.push({name:"Nova condição",active:true,effect:""});renderCustomConditions();renderConditionMini();save(false)};
 $("#addAttack").onclick=()=>{state.attacks.push({name:"Novo ataque",bonus:0,damage:"1d6",crit:"20",mult:"x2",notes:""});renderAttacks();save(false)};
-$("#saveBtn").onclick=()=>save(true);$("#exportBtn").onclick=exportSheet;$("#resetBtn").onclick=()=>{if(confirm("Apagar a ficha salva?")){localStorage.removeItem(KEY);location.reload()}};
-$("#importInput").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);localStorage.setItem(KEY,JSON.stringify(d));location.reload()}catch{alert("Arquivo inválido.")}};r.readAsText(f)};
+$("#characterSelect").onchange=e=>switchCharacter(e.target.value);
+$("#newCharacterBtn").onclick=newCharacter;
+$("#duplicateCharacterBtn").onclick=duplicateCharacter;
+$("#renameCharacterBtn").onclick=renameCharacter;
+$("#deleteCharacterBtn").onclick=deleteCharacter;
+$("#saveBtn").onclick=()=>save(true);
+$("#exportBtn").onclick=exportSheet;
+$("#resetBtn").onclick=resetCurrentCharacter;
+$("#importInput").onchange=e=>{
+  const f=e.target.files[0];
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      importSheetData(JSON.parse(r.result));
+      e.target.value="";
+    }catch{
+      alert("Arquivo inválido.");
+    }
+  };
+  r.readAsText(f);
+};

@@ -12,7 +12,8 @@ O fluxo geral é:
 2. `data.js`, `origins.js` e `spells_catalog.js` carregam dados globais em `window`.
 3. `script.js` lê esses dados globais, preenche seletores, carrega uma ficha salva no navegador e renderiza as abas.
 4. Ao alterar campos, o script recalcula valores derivados e salva automaticamente no `localStorage`.
-5. Os botões de exportar e importar permitem mover a ficha em formato JSON.
+5. O gerenciador de personagens permite manter várias fichas no mesmo navegador.
+6. Os botões de exportar e importar permitem mover a ficha atual em formato JSON.
 
 ## Estrutura dos arquivos
 
@@ -102,7 +103,7 @@ O `state` guarda listas e estruturas que não existem como campos fixos no HTML:
 | `items` | Itens do inventário. |
 | `attacks` | Ataques da aba Combate. |
 | `skillData` | Treinamento e ajuste das perícias comuns. |
-| `conditions` | Condições oficiais marcadas, duração e origem. |
+| `conditions` | Condições oficiais marcadas. |
 | `customConditions` | Condições personalizadas. |
 | `originBenefits` | Benefícios de origem registrados manualmente. |
 | `offices` | Especializações de Ofício. |
@@ -111,21 +112,58 @@ A função `normalizeState()` garante que essas chaves existam e tenham o tipo e
 
 ## Salvamento local e migração
 
-O salvamento usa `localStorage` com a chave atual:
+O salvamento usa `localStorage` com um índice de personagens e uma chave por ficha:
+
+```js
+const CHARACTER_INDEX_KEY = "t20_characters_index_v1";
+const CHARACTER_PREFIX = "t20_character_v1_";
+```
+
+O índice guarda o personagem ativo e metadados simples:
+
+```json
+{
+  "activeId": "char_...",
+  "characters": [
+    { "id": "char_...", "name": "Personagem", "updatedAt": "..." }
+  ]
+}
+```
+
+Cada ficha completa fica em uma chave própria, como `t20_character_v1_char_...`, contendo:
+
+```json
+{
+  "fields": {},
+  "state": {}
+}
+```
+
+A chave antiga continua sendo atualizada como compatibilidade/backup da ficha ativa:
 
 ```js
 const KEY = "t20_sheet_v6_2";
 ```
 
-Também existem chaves legadas:
+Também existem chaves legadas para migração:
 
 ```js
 const LEGACY_KEYS = ["t20_sheet_v3", "t20_sheet_v4", "t20_sheet_v5", "t20_sheet_v6"];
 ```
 
-Ao carregar, `load()` procura primeiro a chave atual. Se não encontrar, tenta as chaves antigas. Quando encontra uma ficha legada, converte os dados para o formato atual e salva novamente em `t20_sheet_v6_2`.
+Ao carregar, `load()` procura primeiro o índice de personagens. Se não encontrar, tenta a chave antiga atual e depois as chaves legadas. Quando encontra uma ficha antiga, cria automaticamente o primeiro personagem do gerenciador e salva os dados no novo formato.
 
-O botão `Salvar` chama `save(true)` e mostra uma notificação. Muitas alterações chamam `save(false)`, salvando em silêncio após recalcular ou renderizar.
+O botão `Salvar` chama `save(true)` e mostra uma notificação. Muitas alterações chamam `save(false)`, salvando em silêncio após recalcular ou renderizar o personagem ativo.
+
+O gerenciador usa:
+
+| Função | Papel |
+| --- | --- |
+| `newCharacter()` | Cria uma ficha limpa e a torna ativa. |
+| `duplicateCharacter()` | Copia a ficha atual para um novo personagem. |
+| `switchCharacter(id)` | Salva a ficha atual, carrega outra e atualiza a interface. |
+| `renameCharacter()` | Renomeia o personagem ativo e atualiza o índice. |
+| `deleteCharacter()` | Remove o personagem ativo; se for o único, limpa seus dados. |
 
 ## Importação e exportação
 
@@ -144,7 +182,7 @@ O nome do arquivo segue o padrão:
 ficha-nome-do-personagem.json
 ```
 
-O botão `Importar` lê um arquivo `.json` com `FileReader`, grava seu conteúdo no `localStorage` e recarrega a página. Se o JSON for inválido, o app mostra um alerta.
+O botão `Importar` lê um arquivo `.json` com `FileReader`. O usuário escolhe se quer importar como novo personagem ou substituir o personagem atual. Se o JSON for inválido, o app mostra um alerta.
 
 ## Inicialização
 
@@ -258,7 +296,7 @@ As condições oficiais ficam dentro de `CONDITION_LIBRARY` em `script.js`. Cada
 | `desc` | Texto resumido exibido na aba Condições. |
 | `effects` | Penalidades automáticas aplicadas em defesa, ataques, perícias ou grupos de atributos. |
 
-`activeConditionEffects()` percorre as condições ativas e acumula os efeitos. Essas penalidades são usadas em `recalc()`, `renderSkills()` e rolagens de ataque.
+`activeConditionEffects()` percorre as condições ativas e aplica a pior penalidade de cada tipo, respeitando a regra de que condições com os mesmos efeitos não se acumulam. Essas penalidades são usadas em `recalc()`, `renderSkills()` e rolagens de ataque.
 
 Condições personalizadas ficam em `state.customConditions`. Elas aparecem no resumo de condições ativas, mas não aplicam penalidades automáticas.
 
@@ -426,4 +464,3 @@ Para alterar bases de conteúdo, prefira mexer nos arquivos de dados:
 - `data.js` para classes, raças e perícias.
 - `origins.js` para origens.
 - `spells_catalog.js` para magias.
-

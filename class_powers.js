@@ -258,6 +258,10 @@
       ["Presença de Muralha", "Heróis de Arton"]
     ],
     clerigo: [
+      ["Abençoar Arma", "Jogo do Ano"],
+      ["Aumento de Atributo", "Jogo do Ano"],
+      ["Autoridade Eclesiástica", "Jogo do Ano"],
+      ["Canalizar Energia Positiva/Negativa", "Jogo do Ano"],
       ["Canalizar Amplo", "Jogo do Ano"],
       ["Comunhão Vital", "Jogo do Ano"],
       ["Conhecimento Mágico", "Jogo do Ano"],

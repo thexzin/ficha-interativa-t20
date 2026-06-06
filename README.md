@@ -7,6 +7,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 ## Atualizações recentes
 
 - Habilidades de raça automáticas: ao selecionar uma raça, a aba Poderes recebe automaticamente as habilidades fixas daquela raça.
+- Gerenciador de personagens no cabeçalho: permite criar, trocar, duplicar, renomear e excluir várias fichas salvas no mesmo navegador.
 - O resumo da raça mostra modificadores de atributos; tamanho e deslocamento base aparecem em campos editáveis logo abaixo. Quando a raça não informa esses dados, a ficha assume tamanho Médio e deslocamento 9m.
 - Progressão de classe automática: habilidades recebidas por nível entram sozinhas na aba Poderes, com descrições completas.
 - Poderes em sanfona, duas entradas por linha, mostrando nome e tipo mesmo recolhidos.
@@ -26,11 +27,24 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 
 1. Abra `index.html`.
 2. Preencha os dados principais no cabeçalho: raça, classe, nível, origem, divindade e atributos.
-3. Use as abas para completar a ficha.
-4. A ficha salva automaticamente no navegador.
-5. Use `Exportar` para gerar um JSON da ficha e `Importar` para carregar esse JSON depois.
+3. Use o seletor de personagem no cabeçalho para criar novas fichas, duplicar, renomear, excluir ou alternar entre personagens.
+4. Use as abas para completar a ficha.
+5. A ficha salva automaticamente no navegador.
+6. Use `Exportar` para gerar um JSON da ficha atual e `Importar` para carregar esse JSON depois.
 
-O botão `Salvar` força o salvamento local. O botão `Limpar` apaga a ficha salva no navegador atual.
+O botão `Salvar` força o salvamento local do personagem ativo. O botão `Limpar` limpa a ficha do personagem atual, sem apagar os demais personagens salvos.
+
+## Personagens
+
+O gerenciador de personagens salva várias fichas no `localStorage` do navegador. Você não precisa exportar/importar para alternar entre personagens no mesmo dispositivo: basta escolher pelo seletor no cabeçalho.
+
+- `Novo` cria uma ficha limpa.
+- `Duplicar` copia a ficha atual.
+- `Renomear` muda o nome do personagem ativo.
+- `Excluir` remove o personagem ativo; se for o único, a ficha é apenas limpa.
+- `Exportar` e `Importar` continuam úteis para backup, transferência entre navegadores/dispositivos ou envio para outra pessoa.
+
+Como o salvamento é local do navegador, GitHub Pages não sincroniza automaticamente entre computadores ou celulares. Para isso seria necessário usar uma solução externa de nuvem/database.
 
 ## Abas
 
