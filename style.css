@@ -44,9 +44,11 @@ h1,h2{font-family:Cinzel,serif;margin:0}.topbar{position:sticky;top:0;z-index:10
 .summaryCard span{color:var(--muted);font-size:.84rem;line-height:1.35}
 .summaryCard p{margin:.25rem 0 0;color:#d9c6a8;line-height:1.4}
 .summaryCard p+p{margin-top:.05rem}
-.summaryMove{margin-top:.35rem;display:grid;grid-template-columns:1fr 92px;grid-template-areas:"label input" "hint input";gap:.1rem .55rem;align-items:center;border:1px solid #654038;border-radius:8px;background:#17130f;padding:.55rem .6rem;color:var(--muted)}
+.summaryRaceControls{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-top:.35rem}
+.summaryMove{display:grid;grid-template-columns:1fr minmax(92px,120px);grid-template-areas:"label input" "hint input";gap:.1rem .55rem;align-items:center;border:1px solid #654038;border-radius:8px;background:#17130f;padding:.55rem .6rem;color:var(--muted)}
 .summaryMove span{grid-area:label;color:#f4d9b0;font-size:.82rem;font-weight:800}
-.summaryMove input{grid-area:input;min-height:38px;padding:.25rem;text-align:center;color:#f1c98d;font-size:1.15rem;font-weight:800;background:#211912;border-color:#7a4a36}
+.summaryMove input,.summaryMove select{grid-area:input;min-height:38px;padding:.25rem;text-align:center;color:#f1c98d;font-size:1.02rem;font-weight:800;background:#211912;border-color:#7a4a36}
+.summaryMove input{font-size:1.15rem}
 .summaryMove small{grid-area:hint;color:#8f7b60;font-size:.72rem}
 .summarySplit{display:grid;grid-template-columns:1.35fr 1fr;gap:1rem;margin-top:1rem}
 .originBox,.conditionMini{border:1px solid var(--line);border-radius:10px;padding:.8rem;background:#0002}
@@ -62,7 +64,7 @@ h1,h2{font-family:Cinzel,serif;margin:0}.topbar{position:sticky;top:0;z-index:10
 .conditionTitle input[type=checkbox],.customConditionCard input[type=checkbox]{width:18px;height:18px;accent-color:var(--red-bright);justify-self:end}
 .conditionCard p{margin:0;color:var(--muted);font-size:.85rem;line-height:1.35}
 @media(max-width:900px){.summarySplit,.conditionGrid{grid-template-columns:1fr 1fr}}
-@media(max-width:620px){.summaryCards,.summarySplit,.originChoices,.conditionGrid{grid-template-columns:1fr}}
+@media(max-width:620px){.summaryCards,.summarySplit,.originChoices,.conditionGrid,.summaryRaceControls{grid-template-columns:1fr}}
 
 .originBenefitHead{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin:.8rem 0 .5rem}
 .originBenefits{display:grid;gap:.45rem;margin-bottom:.7rem}

@@ -7,7 +7,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 ## Atualizações recentes
 
 - Habilidades de raça automáticas: ao selecionar uma raça, a aba Poderes recebe automaticamente as habilidades fixas daquela raça.
-- O resumo da raça mostra modificadores de atributos e tamanho; o deslocamento base aparece no campo editável logo abaixo. Quando a raça não informa esses dados, a ficha assume tamanho Médio e deslocamento 9m.
+- O resumo da raça mostra modificadores de atributos; tamanho e deslocamento base aparecem em campos editáveis logo abaixo. Quando a raça não informa esses dados, a ficha assume tamanho Médio e deslocamento 9m.
 - Progressão de classe automática: habilidades recebidas por nível entram sozinhas na aba Poderes, com descrições completas.
 - Poderes em sanfona, duas entradas por linha, mostrando nome e tipo mesmo recolhidos.
 - Grimório, Poderes e Inventário usam cards recolhidos/expansíveis para manter a ficha mais limpa.

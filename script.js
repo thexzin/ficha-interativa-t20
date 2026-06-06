@@ -199,6 +199,10 @@ function recalc(){
   const originDesc=origin.beneficio?`<br><b>Descrição:</b> ${escapeHtml(origin.beneficio)}`:"";
   $("#originInfo").innerHTML=`<b>Perícias sugeridas:</b> ${escapeHtml(originSkills)}.<br><b>Poderes/benefícios:</b> ${escapeHtml(originPowers)}.${originDesc}<br><b>Itens:</b> ${escapeHtml(origin.itens||"registre manualmente")}.${origin.regiao?`<br><b>Região:</b> ${escapeHtml(origin.regiao)}.`:""}`;
   const raceSummary=raceSummaryText(value("raca"),race);
+  const baseSize=raceBaseSize(race);
+  const customSize=value("tamanho");
+  const sizeValue=customSize||baseSize;
+  const baseSizeText=`Base ${baseSize}`;
   const baseMove=raceBaseMove(race);
   const customMove=value("deslocamento");
   const moveValue=customMove!==""?customMove:baseMove;
@@ -210,7 +214,10 @@ function recalc(){
     <strong>${escapeHtml(race.nome)}</strong>
     <span>${escapeHtml(race.fonte)}</span>
     <p>${raceSummary}</p>
-    <label class="summaryMove"><span>Deslocamento</span><input id="summaryMoveInput" type="number" min="0" step="1" value="${escapeHtml(moveValue)}"><small>${escapeHtml(baseMoveText)}</small></label>
+    <div class="summaryRaceControls">
+      <label class="summaryMove summarySize"><span>Tamanho</span><select id="summarySizeInput">${sizeSelectOptions(sizeValue)}</select><small>${escapeHtml(baseSizeText)}</small></label>
+      <label class="summaryMove"><span>Deslocamento</span><input id="summaryMoveInput" type="number" min="0" step="1" value="${escapeHtml(moveValue)}"><small>${escapeHtml(baseMoveText)}</small></label>
+    </div>
   </article>
   <article class="summaryCard">
     <small>Classe</small>
@@ -219,6 +226,8 @@ function recalc(){
     <p><b>PV:</b> ${cls.pv1}+CON no 1º nível, ${cls.pvNivel}+CON por nível adicional.</p>
     <p><b>PM:</b> ${pmSummary}.</p>
   </article>`;
+  const sizeInput=$("#summarySizeInput");
+  if(sizeInput) sizeInput.onchange=()=>{const sizeField=$("#tamanho");if(sizeField) sizeField.value=sizeInput.value===baseSize?"":sizeInput.value;save(false)};
   const moveInput=$("#summaryMoveInput");
   if(moveInput) moveInput.oninput=()=>{const moveField=$("#deslocamento");if(moveField) moveField.value=moveInput.value;save(false)};
   renderProgress();renderSkills();renderInventorySummary();save(false);
@@ -370,6 +379,11 @@ function raceBaseMove(race){
   const move=Number(race?.deslocamento);
   return Number.isFinite(move)?move:9;
 }
+const SIZE_OPTIONS=["Minúsculo","Pequeno","Médio","Grande","Enorme","Colossal"];
+function sizeSelectOptions(selected){
+  const options=SIZE_OPTIONS.includes(selected)?SIZE_OPTIONS:[selected,...SIZE_OPTIONS].filter(Boolean);
+  return options.map(size=>`<option ${size===selected?"selected":""}>${escapeHtml(size)}</option>`).join("");
+}
 function raceAliasesFor(raceId,race){
   const names=[race?.nome,raceId,...(RACE_POWER_ALIASES[raceId]||[])].filter(Boolean);
   return [...new Set(names.flatMap(name=>String(name).split("/")).concat(names).map(powerCatalogKey).filter(Boolean))];
@@ -413,8 +427,7 @@ function raceAttributeSummary(raceId,race){
 }
 function raceSummaryText(raceId,race){
   const attrs=raceAttributeSummary(raceId,race);
-  const size=raceBaseSize(race);
-  return [attrs,size].filter(Boolean).map(escapeHtml).join("<br>");
+  return attrs?escapeHtml(attrs):'<span class="muted">Atributos conforme raça ou escolha.</span>';
 }
 function powerTypeOptions(selected){
   selected=normalizePowerType(selected);
