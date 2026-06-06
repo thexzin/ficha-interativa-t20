@@ -341,6 +341,7 @@ const CLASS_POWER_SOURCE_ORDER=["Jogo do Ano","Heróis de Arton","Deuses de Arto
 const POWER_CATALOG_SOURCE_ORDER=["Jogo do Ano","Heróis de Arton","Ameaças de Arton","Deuses de Arton","Atlas de Arton"];
 const GENERAL_POWER_SUBTYPES=["Combate","Magia","Destino"];
 const AUTO_CLASS_FEATURE_FLAG="progressaoClasse";
+const AUTO_RACE_ABILITY_FLAG="habilidadeRacial";
 const RACE_POWER_ALIASES={
   qareen:["Qareen da Água","Qareen da Agua","Qareen do Ar","Qareen do Fogo","Qareen da Terra","Qareen da Luz","Qareen das Trevas"],
   sereia:["Sereia","Tritão","Tritao","Sereia/Tritão","Sereia/Tritao"],
@@ -448,20 +449,53 @@ function currentAutoClassFeatures(){
 }
 function syncAutoClassFeatures(){
   state.powers=Array.isArray(state.powers)?state.powers:[];
-  const manual=state.powers.filter(power=>power.autoClassFeature!==AUTO_CLASS_FEATURE_FLAG);
+  const manual=state.powers.filter(power=>power.autoClassFeature!==AUTO_CLASS_FEATURE_FLAG && power.autoRaceAbility!==AUTO_RACE_ABILITY_FLAG);
   const manualClassFeatureKeys=new Set(manual
     .filter(power=>normalizePowerType(power.type)==="Classe")
     .map(power=>classFeatureBaseKey(power.name))
     .filter(Boolean));
+  const manualRaceAbilityKeys=new Set(manual
+    .filter(power=>normalizePowerType(power.type)==="Raça")
+    .map(power=>powerCatalogKey(power.name))
+    .filter(Boolean));
   const auto=currentAutoClassFeatures().filter(power=>!manualClassFeatureKeys.has(classFeatureBaseKey(power.name)));
-  state.powers=[...auto,...manual];
+  const autoRace=currentAutoRaceAbilities().filter(power=>!manualRaceAbilityKeys.has(powerCatalogKey(power.name)));
+  state.powers=[...auto,...autoRace,...manual];
   expandedPowerCards=new Set([...expandedPowerCards].filter(index=>index<state.powers.length));
+}
+function isAutoRaceAbilityEntry(power){
+  if(normalizePowerType(power.type)!=="Raça") return false;
+  const raceId=value("raca");
+  const sourceKey=powerCatalogKey(power.source);
+  const nameKey=powerCatalogKey(power.name);
+  const raceKeys=(power.races||[]).map(powerCatalogKey);
+  if(nameKey.startsWith("moreauheranca") || nameKey==="moreauherancadacoruja") return false;
+  if(raceId==="golem_ameacas" && sourceKey==="jogodoano" && raceKeys.includes("golem")) return false;
+  if(raceId!=="golem_ameacas" && sourceKey==="ameacasdearton" && raceKeys.includes("golem")) return false;
+  if(powerCatalogKey(power.subtype)==="habilidadederaca") return true;
+  return sourceKey==="jogodoano" && raceKeys.length>0 && !raceKeys.includes("varias");
+}
+function currentAutoRaceAbilities(){
+  const raceId=value("raca");
+  const race=T20_DATA.racas[raceId];
+  return currentRacePowers()
+    .filter(isAutoRaceAbilityEntry)
+    .map(power=>({
+      ...power,
+      type:"Raça",
+      source:`${power.source||race?.fonte||"Raça"} • ${race?.nome||"Raça"}`,
+      autoRaceAbility:AUTO_RACE_ABILITY_FLAG,
+      autoRaceId:raceId,
+      autoRaceAbilityKey:`${raceId}|${powerCatalogKey(power.name)}|${powerCatalogKey(power.source)}`
+    }));
 }
 function renderPowerCard(p,i){
   const isOpen=expandedPowerCards.has(i);
   p.type=normalizePowerType(p.type||"Classe");
-  const isAuto=p.autoClassFeature===AUTO_CLASS_FEATURE_FLAG;
-  const autoText=isAuto?`Automático • nível ${p.autoLevel||"?"}`:escapeHtml(p.type);
+  const isAutoClass=p.autoClassFeature===AUTO_CLASS_FEATURE_FLAG;
+  const isAutoRace=p.autoRaceAbility===AUTO_RACE_ABILITY_FLAG;
+  const isAuto=isAutoClass||isAutoRace;
+  const autoText=isAutoClass?`Automático • nível ${p.autoLevel||"?"}`:isAutoRace?"Automático • raça":escapeHtml(p.type);
   const lockAttr=isAuto?" readonly":"";
   const disabledAttr=isAuto?" disabled":"";
   return `<div class="card powerAccordionCard ${isOpen?"expanded":""}">
@@ -473,7 +507,7 @@ function renderPowerCard(p,i){
       <div class="powerMainFields">
         <label>Nome<input data-p="${i}" data-k="name" value="${escapeHtml(p.name||"")}" placeholder="Nome"${lockAttr}></label>
         <label>Tipo<select data-p="${i}" data-k="type"${disabledAttr}>${powerTypeOptions(p.type||"Classe")}</select></label>
-        ${isAuto?`<span class="autoPowerBadge">Progressão</span>`:`<button type="button" class="remove" data-pdel="${i}">Excluir</button>`}
+        ${isAuto?`<span class="autoPowerBadge">${isAutoRace?"Raça":"Progressão"}</span>`:`<button type="button" class="remove" data-pdel="${i}">Excluir</button>`}
       </div>
       <div class="powerMeta">
         <label>Custo/uso<input data-p="${i}" data-k="cost" value="${escapeHtml(p.cost||"")}" placeholder="Custo/uso"${lockAttr}></label>
@@ -1251,7 +1285,7 @@ try{
   showFatalError(error);
 }
 
-$$("[data-save]").forEach(e=>e.addEventListener("input",()=>{if(e.id==="nivel"){renderPowers();refreshPowerPickerIfOpen()}recalc();if(e.id==="divindade")refreshPowerPickerIfOpen()}));$("#spellAttr").addEventListener("change",recalc);$("#classe").addEventListener("change",()=>{state.skillData={};renderPowers();refreshPowerPickerIfOpen();recalc()});$("#raca").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc()});$("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc()});$("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc()});
+$$("[data-save]").forEach(e=>e.addEventListener("input",()=>{if(e.id==="nivel"){renderPowers();refreshPowerPickerIfOpen()}recalc();if(e.id==="divindade")refreshPowerPickerIfOpen()}));$("#spellAttr").addEventListener("change",recalc);$("#classe").addEventListener("change",()=>{state.skillData={};renderPowers();refreshPowerPickerIfOpen();recalc()});$("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});$("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc()});$("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc()});
 $$("[data-tab]").forEach(b=>b.onclick=()=>{$$("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));$$(".tab").forEach(t=>t.classList.toggle("active",t.id===`tab-${b.dataset.tab}`))});
 $$("[data-change]").forEach(b=>b.onclick=()=>{const[id,delta]=b.dataset.change.split(":");applyQuickResourceChange(id,Number(delta));recalc()});
 $("#spellSearchCatalog").oninput=renderSpellCatalog;$("#spellCircleFilter").onchange=renderSpellCatalog;$("#spellTypeFilter").onchange=renderSpellCatalog;
