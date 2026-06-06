@@ -10,6 +10,7 @@ function normalizeState(){
     if(Array.isArray(defaults[k]) && !Array.isArray(state[k])) state[k]=[];
     if(!Array.isArray(defaults[k]) && typeof state[k]!=="object") state[k]={};
   }
+  state.spells=state.spells.map(spell=>normalizeSpellDetailFields({...spell}));
 }
 
 let state={powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}]};
@@ -103,6 +104,16 @@ function fillSelects(){
   const groups={};
   Object.entries(T20_DATA.classes).forEach(([k,v])=>{(groups[v.fonte]??=[]).push([k,v])});
   $("#classe").innerHTML=Object.entries(groups).map(([source,arr])=>`<optgroup label="${source}">${arr.map(([k,v])=>`<option value="${k}">${v.nome}${v.variante?` (variante de ${v.classeBase})`:""}</option>`).join("")}</optgroup>`).join("");
+  fillSpellSchoolFilter();
+}
+function fillSpellSchoolFilter(){
+  const select=$("#spellSchoolFilter");
+  if(!select) return;
+  const current=select.value;
+  const schools=[...new Set((window.T20_SPELL_CATALOG||[]).map(spell=>spell.school).filter(Boolean))]
+    .sort((a,b)=>String(a).localeCompare(String(b),"pt-BR"));
+  select.innerHTML=`<option value="">Todas</option>${schools.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}`;
+  if(schools.includes(current)) select.value=current;
 }
 function trainingBonus(){const l=num("nivel");return l>=15?6:l>=7?4:2}
 function halfLevel(){return Math.floor(num("nivel")/2)}
@@ -155,7 +166,8 @@ function recalc(){
   $("#pvMaxView").textContent=isDying?deathLimit:pvMax;$("#pmMaxView").textContent=pmMax;$("#pvAtualView").textContent=pvAtual;$("#pmAtualView").textContent=num("pmAtual");
   $("#pvTempView").textContent=pvTemp?` +${pvTemp} temp`:"";$("#pmTempView").textContent=pmTemp?` +${pmTemp} temp`:"";
   const conditionFx=activeConditionEffects();
-  $("#defView").textContent=10+num("DES")+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+conditionFx.defense;
+  const defenseDex=$("#defUseDex")?.checked!==false?num("DES"):0;
+  $("#defView").textContent=10+defenseDex+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+conditionFx.defense;
   const penalties=[];
   if(conditionFx.defense) penalties.push(`Defesa ${conditionFx.defense}`);
   if(conditionFx.attack) penalties.push(`Ataques ${conditionFx.attack}`);
@@ -186,15 +198,11 @@ function recalc(){
   const originPowers=(origin.poderes||[]).join(", ")||"consulte a descrição";
   const originDesc=origin.beneficio?`<br><b>Descrição:</b> ${escapeHtml(origin.beneficio)}`:"";
   $("#originInfo").innerHTML=`<b>Perícias sugeridas:</b> ${escapeHtml(originSkills)}.<br><b>Poderes/benefícios:</b> ${escapeHtml(originPowers)}.${originDesc}<br><b>Itens:</b> ${escapeHtml(origin.itens||"registre manualmente")}.${origin.regiao?`<br><b>Região:</b> ${escapeHtml(origin.regiao)}.`:""}`;
-  const raceDetails=[];
-  if(race.tamanho) raceDetails.push(race.tamanho);
-  if(race.atributos) raceDetails.push(`atributos ${escapeHtml(race.atributos)}`);
-  if(race.pagina) raceDetails.push(`p. ${race.pagina}`);
-  const raceSummary=raceDetails.join(", ")||"consulte a fonte";
-  const baseMove=Number.isFinite(Number(race.deslocamento))?Number(race.deslocamento):"";
+  const raceSummary=raceSummaryText(value("raca"),race);
+  const baseMove=raceBaseMove(race);
   const customMove=value("deslocamento");
   const moveValue=customMove!==""?customMove:baseMove;
-  const baseMoveText=baseMove!==""?`Base ${baseMove}m`:"Sem base cadastrada";
+  const baseMoveText=`Base ${baseMove}m`;
   const variantText=cls.variante?` — variante de ${escapeHtml(cls.classeBase)}`:"";
   const pmSummary=`${cls.pmNivel} por nível${classUsesSpellAttrForPm(cls)?" + atributo-chave de magia":""}`;
   $("#summaryText").innerHTML=`<article class="summaryCard">
@@ -355,6 +363,59 @@ const POWER_TYPE_ALIASES={"RaÃ§a":"Raça","RaÃƒÂ§a":"Raça","DistinÃ§Ã�
 function normalizePowerType(type){
   return POWER_TYPE_ALIASES[type]||type||"Classe";
 }
+function raceBaseSize(race){
+  return String(race?.tamanho||"Médio").trim()||"Médio";
+}
+function raceBaseMove(race){
+  const move=Number(race?.deslocamento);
+  return Number.isFinite(move)?move:9;
+}
+function raceAliasesFor(raceId,race){
+  const names=[race?.nome,raceId,...(RACE_POWER_ALIASES[raceId]||[])].filter(Boolean);
+  return [...new Set(names.flatMap(name=>String(name).split("/")).concat(names).map(powerCatalogKey).filter(Boolean))];
+}
+function racePowerMatchesRace(power,raceId,race){
+  const races=power.races||[];
+  if(races.some(raceName=>powerCatalogKey(raceName)==="varias")) return true;
+  const aliases=raceAliasesFor(raceId,race);
+  return races.some(raceName=>aliases.includes(powerCatalogKey(raceName)));
+}
+function isRaceAttributeModifierPower(power){
+  if(normalizePowerType(power.type)!=="Raça") return false;
+  const name=String(power.name||"");
+  const nameKey=powerCatalogKey(name);
+  const descKey=powerCatalogKey(power.desc||"");
+  if(descKey.includes("modificadoresdeatributos")) return true;
+  if(nameKey==="donsdeduende") return true;
+  const hasNumericBonus=/[+-]\s*\d/.test(name);
+  const mentionsAttribute=nameKey.includes("atributo")||["forca","destreza","constituicao","inteligencia","sabedoria","carisma","for","des","con","int","sab","car"].some(attr=>nameKey.includes(attr));
+  return hasNumericBonus && mentionsAttribute;
+}
+function raceAttributeTextFromPower(power){
+  const name=String(power.name||"").trim();
+  if(powerCatalogKey(name)==="donsdeduende"){
+    return compactInlineText(power.desc).split(".")[0]||name;
+  }
+  return name;
+}
+function raceAttributeSummary(raceId,race){
+  if(race?.atributos) return String(race.atributos);
+  const powers=powerCatalogEntries().filter(power=>
+    isRaceAttributeModifierPower(power) && racePowerMatchesRace(power,raceId,race)
+  );
+  const seen=new Set();
+  return powers.map(raceAttributeTextFromPower).filter(text=>{
+    const key=powerCatalogKey(text);
+    if(!key||seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).join("; ");
+}
+function raceSummaryText(raceId,race){
+  const attrs=raceAttributeSummary(raceId,race);
+  const size=raceBaseSize(race);
+  return [attrs,size].filter(Boolean).map(escapeHtml).join("<br>");
+}
 function powerTypeOptions(selected){
   selected=normalizePowerType(selected);
   const options=POWER_TYPES.includes(selected)?POWER_TYPES:[selected,...POWER_TYPES].filter(Boolean);
@@ -449,7 +510,7 @@ function currentAutoClassFeatures(){
 }
 function syncAutoClassFeatures(){
   state.powers=Array.isArray(state.powers)?state.powers:[];
-  const manual=state.powers.filter(power=>power.autoClassFeature!==AUTO_CLASS_FEATURE_FLAG && power.autoRaceAbility!==AUTO_RACE_ABILITY_FLAG);
+  const manual=state.powers.filter(power=>power.autoClassFeature!==AUTO_CLASS_FEATURE_FLAG && power.autoRaceAbility!==AUTO_RACE_ABILITY_FLAG && !isRaceAttributeModifierPower(power));
   const manualClassFeatureKeys=new Set(manual
     .filter(power=>normalizePowerType(power.type)==="Classe")
     .map(power=>classFeatureBaseKey(power.name))
@@ -572,17 +633,14 @@ function currentGeneralPowers(){
 }
 function currentRaceAliases(){
   const raceId=value("raca"), race=T20_DATA.racas[raceId];
-  const names=[race?.nome,raceId,...(RACE_POWER_ALIASES[raceId]||[])].filter(Boolean);
-  return [...new Set(names.flatMap(name=>String(name).split("/")).concat(names).map(powerCatalogKey).filter(Boolean))];
+  return raceAliasesFor(raceId,race);
 }
 function powerMatchesCurrentRace(power){
-  const races=power.races||[];
-  if(races.some(race=>powerCatalogKey(race)==="varias")) return true;
-  const aliases=currentRaceAliases();
-  return races.some(race=>aliases.includes(powerCatalogKey(race)));
+  const raceId=value("raca"), race=T20_DATA.racas[raceId];
+  return racePowerMatchesRace(power,raceId,race);
 }
 function currentRacePowers(){
-  return sortCatalogPowers(powerCatalogEntries().filter(power=>power.type==="Raça" && powerMatchesCurrentRace(power)));
+  return sortCatalogPowers(powerCatalogEntries().filter(power=>normalizePowerType(power.type)==="Raça" && powerMatchesCurrentRace(power) && !isRaceAttributeModifierPower(power)));
 }
 function uniqueCatalogPowers(powers){
   const seen=new Set();
@@ -739,7 +797,16 @@ function stripSpellDescriptionLeaks(desc){
 function applySpellHeader(spell, header){
   const text=compactInlineText(header);
   if(!text) return;
-  const labels="Alvo(?: ou Área)?|Área(?: ou Alvo)?|Efeito|Alvo\\/Área\\/Efeito|Duração|Resistência|Alcance|Execução";
+  const labels=[
+    "Alvo\\/Área\\/Efeito",
+    "Alvo(?:s| ou Área)?",
+    "Área(?: de Efeito)?(?: ou Alvo)?",
+    "Efeito",
+    "Duração",
+    "Resistência",
+    "Alcance",
+    "Execução"
+  ].join("|");
   const firstLabel=text.search(new RegExp(`(?:^|[.;]\\s*)(?:${labels}):`,"i"));
   if(firstLabel>0){
     const target=cleanSpellDetail(text.slice(0,firstLabel));
@@ -759,6 +826,11 @@ function applySpellHeader(spell, header){
     else if(label.includes("execução")) spell.execution=value;
     else spell.target=value;
   }
+}
+function normalizeSpellDetailFields(spell){
+  const fieldLabels={execution:"Execução",range:"Alcance",target:"Alvo/Área/Efeito",duration:"Duração",resistance:"Resistência"};
+  for(const key of Object.keys(fieldLabels)) applySpellHeader(spell,`${fieldLabels[key]}: ${spell[key]||""}`);
+  return spell;
 }
 function moveLeakedDetailTextToDescription(spell){
   for(const key of ["execution","range","target","duration","resistance"]){
@@ -783,7 +855,7 @@ function readSpellHeaderPrefix(desc, needsContinuation){
   const chunk=text.slice(0,firstBlank>=0?firstBlank:Math.min(text.length,300));
   const compact=compactInlineText(chunk);
   const fullCompact=compactInlineText(text);
-  const hasLabel=/^(?:Alvo(?: ou Área)?|Área(?: ou Alvo)?|Efeito|Alvo\/Área\/Efeito|Duração|Resistência|Alcance|Execução):/i.test(compact);
+  const hasLabel=/^(?:Alvo\/Área\/Efeito|Alvo(?:s| ou Área)?|Área(?: de Efeito)?(?: ou Alvo)?|Efeito|Duração|Resistência|Alcance|Execução):/i.test(compact);
   const hasUnlabeledTarget=/^[^.\n]+;\s*(?:Duração|Resistência):/i.test(compact);
   if(firstBlank>=0 && (hasLabel||hasUnlabeledTarget||needsContinuation)) return [text.slice(0,firstBlank),text.slice(firstBlank).replace(/^\n+/,"")];
   if(hasLabel||hasUnlabeledTarget||needsContinuation){
@@ -810,11 +882,10 @@ function normalizeSpellForDisplay(spell){
     desc=desc.replace(/^\s*texto;\s*/i,"");
   }
   const targetText=String(result.target||"");
-  const needsContinuation=/(?:Duração|Resistência|Alvo|Área|Efeito):\s*$/i.test(targetText);
+  const needsContinuation=/(?:Duração|Resistência|Alvo(?:s)?|Área(?: de Efeito)?|Efeito):\s*$/i.test(targetText);
   const [prefix,rest]=readSpellHeaderPrefix(desc,needsContinuation);
   applySpellHeader(result,[targetText,prefix].filter(Boolean).join(" "));
-  const fieldLabels={execution:"Execução",range:"Alcance",target:"Alvo",duration:"Duração",resistance:"Resistência"};
-  for(const key of Object.keys(fieldLabels)) applySpellHeader(result,`${fieldLabels[key]}: ${result[key]||""}`);
+  normalizeSpellDetailFields(result);
   result.desc=rest.trim();
   completeSplitResistance(result);
   moveLeakedDetailTextToDescription(result);
@@ -894,11 +965,13 @@ function renderSpellCatalog(){
   const search=(value("spellSearchCatalog")||"").trim().toLowerCase();
   const circle=value("spellCircleFilter");
   const type=value("spellTypeFilter");
+  const school=value("spellSchoolFilter");
   const filtered=(window.T20_SPELL_CATALOG||[]).filter(spell=>{
     const matchesSearch=!search || spell.name.toLowerCase().includes(search);
     const matchesCircle=!circle || String(spell.circle)===String(circle);
     const matchesType=!type || spell.type===type;
-    return matchesSearch && matchesCircle && matchesType;
+    const matchesSchool=!school || spell.school===school;
+    return matchesSearch && matchesCircle && matchesType && matchesSchool;
   });
   $("#spellCatalogCount").textContent=filtered.length;
   const byCircle={1:[],2:[],3:[],4:[],5:[]};
@@ -950,7 +1023,6 @@ function renderGrimoireSpellCard(s,i){
         <label>Escola<input data-s="${i}" data-k="school" value="${escapeHtml(s.school||"")}" placeholder="Escola"></label>
         <label>Tipo<input data-s="${i}" data-k="type" value="${escapeHtml(s.type||"")}" placeholder="Arcana, Divina..."></label>
         <label>Fonte<input data-s="${i}" data-k="publication" value="${escapeHtml(s.publication||"")}" placeholder="Publicacao"></label>
-        <button type="button" class="remove" data-sdel="${i}">Excluir</button>
       </div>
       <div class="grimoireSpellFields">
         <label>Círculo<input data-s="${i}" data-k="circle" type="number" min="1" max="5" value="${circle}"></label>
@@ -962,7 +1034,7 @@ function renderGrimoireSpellCard(s,i){
         <label>Resistência<input data-s="${i}" data-k="resistance" value="${escapeHtml(s.resistance||"")}" placeholder="Vontade anula"></label>
       </div>
       <label>Descrição e aprimoramentos<textarea data-s="${i}" data-k="desc" rows="7" placeholder="Descricao e aprimoramentos">${escapeHtml(s.desc||"")}</textarea></label>
-      <div class="smallActions"><button type="button" class="cast" data-cast="${i}">Conjurar (-${cost} PM)</button></div>
+      <div class="smallActions grimoireSpellActions"><button type="button" class="cast" data-cast="${i}">Conjurar (-${cost} PM)</button><button type="button" class="remove iconRemove" data-sdel="${i}" aria-label="Excluir magia ${escapeHtml(s.name||"")}" title="Excluir">&times;</button></div>
     </div>
   </div>`;
 }
@@ -1167,7 +1239,24 @@ function renderAttacks(){
   bindCollection("a",state.attacks,renderAttacks);$$("[data-adel]").forEach(e=>e.onclick=()=>{state.attacks.splice(+e.dataset.adel,1);renderAttacks();save(false)});$$("[data-aroll]").forEach(e=>e.onclick=()=>rollD20(Number(state.attacks[+e.dataset.aroll].bonus||0)+activeConditionEffects().attack,state.attacks[+e.dataset.aroll].name));$$("[data-droll]").forEach(e=>e.onclick=()=>{try{const a=state.attacks[+e.dataset.droll],r=rollDice(a.damage);notify(`<b>${a.name}</b><br><span style="font-size:2rem;color:var(--gold)">${r.total}</span><br>${r.details.join(" + ")}`)}catch(err){alert(err.message)}});
 }
 function bindCollection(prefix,arr,rerender){$$(`[data-${prefix}]`).forEach(e=>e.onchange=()=>{let v=e.value;if(e.type==="number")v=Number(v||0);if(e.tagName==="SELECT"&&(v==="true"||v==="false"))v=v==="true";arr[+e.dataset[prefix]][e.dataset.k]=v;if(prefix==="i")renderInventorySummary();save(false);if(prefix==="s"||prefix==="p"||prefix==="i"||prefix==="a")rerender()})}
-function save(show=true){const fields={};$$("[data-save]").forEach(e=>fields[e.id]=e.value);localStorage.setItem(KEY,JSON.stringify({fields,state}));if(show)notify("Ficha salva neste navegador.")}
+function savedFieldValue(element){
+  return element.type==="checkbox"?element.checked:element.value;
+}
+function collectSavedFields(){
+  const fields={};
+  $$("[data-save]").forEach(e=>fields[e.id]=savedFieldValue(e));
+  return fields;
+}
+function restoreSavedField(id,value){
+  const element=$("#"+id);
+  if(!element) return;
+  if(element.type==="checkbox"){
+    element.checked=value===true || value==="true" || value==="on" || value==="1";
+    return;
+  }
+  element.value=value;
+}
+function save(show=true){const fields=collectSavedFields();localStorage.setItem(KEY,JSON.stringify({fields,state}));if(show)notify("Ficha salva neste navegador.")}
 function load(){
   let raw=localStorage.getItem(KEY);
   if(!raw){
@@ -1191,13 +1280,13 @@ function load(){
       originBenefits:Array.isArray(saved.originBenefits)?saved.originBenefits:[],
       offices:Array.isArray(saved.offices)&&saved.offices.length?saved.offices:[{name:"",trained:false,adjust:0}]
     };
-    Object.entries(d.fields||{}).forEach(([id,v])=>{if($("#"+id))$("#"+id).value=v});
-    localStorage.setItem(KEY,JSON.stringify({fields:d.fields||{},state}));
+    Object.entries(d.fields||{}).forEach(([id,v])=>restoreSavedField(id,v));
+    localStorage.setItem(KEY,JSON.stringify({fields:collectSavedFields(),state}));
   }catch(err){
     console.error("Falha ao carregar ficha salva:",err);
   }
 }
-function exportSheet(){const fields={};$$("[data-save]").forEach(e=>fields[e.id]=e.value);const blob=new Blob([JSON.stringify({fields,state},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`ficha-${(value("nome")||"personagem").replace(/\W+/g,"-")}.json`;a.click()}
+function exportSheet(){const fields=collectSavedFields();const blob=new Blob([JSON.stringify({fields,state},null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`ficha-${(value("nome")||"personagem").replace(/\W+/g,"-")}.json`;a.click()}
 function renderConditions(){
   $("#conditionsList").innerHTML=Object.entries(CONDITION_LIBRARY).map(([name,desc])=>{
     const c=state.conditions[name]||{active:false};state.conditions[name]={active:!!c.active};
@@ -1288,7 +1377,7 @@ try{
 $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{if(e.id==="nivel"){renderPowers();refreshPowerPickerIfOpen()}recalc();if(e.id==="divindade")refreshPowerPickerIfOpen()}));$("#spellAttr").addEventListener("change",recalc);$("#classe").addEventListener("change",()=>{state.skillData={};renderPowers();refreshPowerPickerIfOpen();recalc()});$("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});$("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc()});$("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc()});
 $$("[data-tab]").forEach(b=>b.onclick=()=>{$$("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));$$(".tab").forEach(t=>t.classList.toggle("active",t.id===`tab-${b.dataset.tab}`))});
 $$("[data-change]").forEach(b=>b.onclick=()=>{const[id,delta]=b.dataset.change.split(":");applyQuickResourceChange(id,Number(delta));recalc()});
-$("#spellSearchCatalog").oninput=renderSpellCatalog;$("#spellCircleFilter").onchange=renderSpellCatalog;$("#spellTypeFilter").onchange=renderSpellCatalog;
+$("#spellSearchCatalog").oninput=renderSpellCatalog;$("#spellCircleFilter").onchange=renderSpellCatalog;$("#spellTypeFilter").onchange=renderSpellCatalog;$("#spellSchoolFilter").onchange=renderSpellCatalog;
 $$("[data-close-spell-modal]").forEach(el=>el.onclick=closeSpellModal);$("#spellModalAdd").onclick=()=>{if(window.__selectedCatalogSpell){addSpellToGrimoire(window.__selectedCatalogSpell);closeSpellModal();}};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSpellModal();});
 $("#addPower").onclick=openPowerPicker;
 $("#closePowerPicker").onclick=closePowerPicker;

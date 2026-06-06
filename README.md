@@ -7,6 +7,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 ## Atualizações recentes
 
 - Habilidades de raça automáticas: ao selecionar uma raça, a aba Poderes recebe automaticamente as habilidades fixas daquela raça.
+- O resumo da raça mostra modificadores de atributos e tamanho; o deslocamento base aparece no campo editável logo abaixo. Quando a raça não informa esses dados, a ficha assume tamanho Médio e deslocamento 9m.
 - Progressão de classe automática: habilidades recebidas por nível entram sozinhas na aba Poderes, com descrições completas.
 - Poderes em sanfona, duas entradas por linha, mostrando nome e tipo mesmo recolhidos.
 - Grimório, Poderes e Inventário usam cards recolhidos/expansíveis para manter a ficha mais limpa.
@@ -17,7 +18,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 - Perícias permitem trocar o atributo-chave, destacam treinadas, aplicam penalidade de armadura e indicam limitações de treinamento.
 - Defesa possui campos para penalidade de armadura e resistência a dano.
 - Inventário possui menu de itens mundanos e mágicos, com categorias simplificadas.
-- Magias têm filtros por arcanas, divinas e universais.
+- Magias têm filtros por arcanas, divinas, universais e escola de magia.
 - Aba Condições foi simplificada: foco em descrição e aplicação, sem campos de duração/origem.
 - Nova aba Notas para anotações livres.
 
@@ -60,7 +61,7 @@ Registra poderes e habilidades do personagem. A aba combina:
 - poderes concedidos;
 - poderes manuais.
 
-Habilidades automáticas ficam bloqueadas para edição direta e são atualizadas quando raça, classe ou nível mudam. Entradas que exigem escolha, como herança de Moreau, presentes de Duende, talentos de Kobolds ou bênçãos de Kallyanach, aparecem como orientação, mas a escolha específica continua manual.
+Habilidades automáticas ficam bloqueadas para edição direta e são atualizadas quando raça, classe ou nível mudam. Modificadores raciais de atributos aparecem no resumo da raça, não como poderes. Entradas que exigem escolha, como herança de Moreau, presentes de Duende, talentos de Kobolds ou bênçãos de Kallyanach, aparecem como orientação, mas a escolha específica continua manual.
 
 ### Combate
 
@@ -84,7 +85,7 @@ Lista condições oficiais e personalizadas. Marcar uma condição aplica seus m
 
 ### Magias
 
-Catálogo de magias. Permite pesquisar, filtrar por círculo e tipo de magia, ver descrição e adicionar ao Grimório.
+Catálogo de magias. Permite pesquisar, filtrar por círculo, tipo e escola de magia, ver descrição e adicionar ao Grimório.
 
 ## Cálculos e automações
 
@@ -92,7 +93,7 @@ Catálogo de magias. Permite pesquisar, filtrar por círculo e tipo de magia, ve
 - PM base: usa PM por nível da classe e, para conjuradores compatíveis, soma o atributo-chave de magia.
 - CD de magia: `10 + metade do nível + atributo-chave + bônus`.
 - Limite de PM: nível + bônus + ajuste livre.
-- Defesa: base 10 + Destreza + armadura + escudo + bônus + ajuste + condições.
+- Defesa: base 10 + Destreza opcional + armadura + escudo + bônus + ajuste + condições. Desmarque “Somar Destreza” quando usar armaduras pesadas ou qualquer efeito que remova esse bônus.
 - Morte: quando os PV atuais ficam negativos, a barra passa a representar o limite negativo. Um personagem com 30 PV máximos tem limite em -15 e morre em -16.
 - Perícias: usam metade do nível, atributo-chave selecionado, treino, ajustes, penalidade de armadura e condições.
 

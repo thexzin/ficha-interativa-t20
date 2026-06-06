@@ -96,6 +96,7 @@
       <div class="resourceGrid">
         <label>Armadura<input id="armadura" data-save type="number" value="0"></label>
         <label>Escudo<input id="escudo" data-save type="number" value="0"></label>
+        <label class="defenseToggle">Somar Destreza<input id="defUseDex" data-save type="checkbox" checked></label>
         <label>Penalidade de armadura<input id="armorPenalty" data-save type="number" min="0" value="0"></label>
         <label>RD<input id="rd" data-save type="number" min="0" value="0"></label>
         <label>Outros bônus<input id="defBonus" data-save type="number" value="0"></label>
@@ -178,6 +179,7 @@
       <label>Buscar magia<input id="spellSearchCatalog" placeholder="Ex.: Bola de Fogo"></label>
       <label>Círculo<select id="spellCircleFilter"><option value="">Todos</option><option value="1">1º círculo</option><option value="2">2º círculo</option><option value="3">3º círculo</option><option value="4">4º círculo</option><option value="5">5º círculo</option></select></label>
       <label>Tipo<select id="spellTypeFilter"><option value="">Todas</option><option value="Arcana">Arcanas</option><option value="Divina">Divinas</option><option value="Universal">Universais</option></select></label>
+      <label>Escola<select id="spellSchoolFilter"><option value="">Todas</option></select></label>
       <div class="catalogInfo"><small>Magias exibidas</small><strong id="spellCatalogCount">0</strong></div>
     </div>
     <div id="spellCatalogList" class="spellCatalogList"></div>
