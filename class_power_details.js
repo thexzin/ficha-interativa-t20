@@ -1,0 +1,3112 @@
+window.T20_CLASS_POWER_DETAILS = {
+  "arcanista|Jogo do Ano|Arcano de Batalha": {
+    "desc": "Quando lança uma magia, você soma seu atributo-chave na rolagem de dano.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Caldeirão do Bruxo": {
+    "desc": "Você pode criar poções, como se tivesse o poder geral Preparar Poção. Se tiver ambos, pode criar poções de até 5º círculo. Pré-requisitos: Bruxo, treinado em Ofício (alquimista).",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Conhecimento Mágico": {
+    "desc": "Você aprende duas magias de qualquer círculo que possa lançar. Você pode escolher este poder quantas vezes quiser.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Contramágica Aprimorada": {
+    "desc": "Uma vez por rodada, você pode fazer uma contramágica como uma reação (veja a página 173). Pré-requisito: Dissipar Magia.",
+    "cost": "",
+    "action": "Reação"
+  },
+  "arcanista|Jogo do Ano|Envolto em Mistério": {
+    "desc": "Sua aparência e postura assombrosas o permitem manipular e assustar pessoas ignorantes ou supersticiosas. O mestre define o que exatamente você pode fazer e quem se encaixa nessa descrição. Como regra geral, você recebe +5 em Enganação e Intimidação contra pessoas não treinadas em Conhecimento ou Misticismo.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Escriba Arcano": {
+    "desc": "Você pode aprender magias copiando os textos de pergaminhos e grimórios de outros magos. Aprender uma magia dessa forma exige um dia de trabalho e T$ 250 em matérias-pri mas por PM necessário para lançar a magia. Assim, aprender uma magia de 3º círculo (6 PM) exige 6 dias de trabalho e o gasto de T$ 1.500. Pré-requisitos: Mago, treinado em Ofício (escriba).",
+    "cost": "6 PM",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Especialista em Escola": {
+    "desc": "Escolha uma escola de magia. A CD para resistir a suas magias dessa escola aumenta em +2. Pré-requisito: Bruxo ou Mago.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Familiar": {
+    "desc": "Você possui um animal de estimação mágico. Veja o quadro para detalhes.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Fluxo de Mana": {
+    "desc": "Você pode manter dois efeitos sustentados ativos simultaneamente com apenas uma ação livre, pagando o custo de cada efeito separadamente. Pré-requisito: 10º nível de arcanista.",
+    "cost": "",
+    "action": "Ação livre"
+  },
+  "arcanista|Jogo do Ano|Foco Vital": {
+    "desc": "Se você estiver segurando seu foco e sofrer dano que o levaria a 0 PV ou menos, você fica com 1 PV e o foco perde PV igual ao valor excedente ou até ser destruído (se o foco for destruído, você sofre o dano excedente). Pré-requisito: Bruxo. e",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Fortalecimento Arcano": {
+    "desc": "A CD para resistir a suas magias aumenta em +1. Se você puder lançar magias de 4º círculo, em vez disso ela aumenta em +2. Pré-requisito: 5º nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Herança Aprimorada": {
+    "desc": "Você recebe a herança aprimorada de sua linhagem sobrenatural. Pré-requisitos: Feiticeiro, 6º nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Herança Superior": {
+    "desc": "Você recebe a herança superior de sua linhagem sobrenatural. Pré-requisitos: Herança Aprimorada, 11º nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Magia Pungente": {
+    "desc": "Quando lança uma magia, você pode pagar 1 PM para aumentar em +2 a CD para resistir a ela.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Mestre em Escola": {
+    "desc": "Escolha uma escola de magia. O custo para lançar magias dessa escola diminui em –1 PM. Pré-requisitos: Especialista em Escola com a escola escolhida, 8º nível de arcanista.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Poder Mágico": {
+    "desc": "Você recebe +1 ponto de mana por nível de arcanista. Quando sobe de nível, os PM",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Raio Arcano": {
+    "desc": "Você pode gastar uma ação padrão para causar 1d8 pontos de dano de essência num alvo em alcance curto. Esse dano aumenta em +1d8 para cada círculo de magia acima do 1º que você puder lançar. O alvo pode fazer um teste de Reflexos (CD atributo-chave) para reduzir o dano à metade. O raio arcano conta como uma magia para efeitos de habilidades e itens que beneficiem suas magias. e",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "arcanista|Jogo do Ano|Raio Elemental": {
+    "desc": "Quando usa Raio Arcano, você pode pagar 1 PM para que ele cause dano de ácido, eletricidade, fogo, frio ou trevas, a sua escolha. Se o alvo falhar no teste de Reflexos, sofre uma condição, de acordo com o tipo de dano (veja a descrição das condições na página 394). Ácido: vulnerável por 1 rodada. Eletricidade: ofuscado por 1 rodada. Fogo: fica em chamas. Frio: lento por 1 rodada. Trevas: não pode curar PV por 1 rodada. Pré-requisito: Raio Arcano. e",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Raio Poderoso": {
+    "desc": "Os dados de dano do seu Raio Arcano aumentam para d12 e o alcance dele aumenta para médio. Pré-requisito: Raio Arcano. e",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Jogo do Ano|Tinta do Mago": {
+    "desc": "Você pode criar pergaminhos, como se tivesse o poder Escrever Pergaminho. Se tiver ambos, seu custo para criar pergaminhos é reduzido à metade. Pré-requisitos: Mago, treinado em Ofício (escriba).",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Alma de Bronze": {
+    "desc": "Quando entra em fúria, você recebe uma quantidade de pontos de vida tempo rários igual a seu nível + sua Força.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Brado Assustador": {
+    "desc": "Você pode gastar uma ação de movimento e 1 PM para soltar um berro feroz. Todos os inimigos em alcance curto ficam vulneráveis até o fim da cena. Pré-requisito: treinado em Intimidação. Medo.",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "barbaro|Jogo do Ano|Crítico Brutal": {
+    "desc": "Seu multiplicador de crítico com armas corpo a corpo e de arremesso aumenta em +1. Por exemplo, seu multiplicador com um machado de batalha (normalmente x3) será x4. Pré-requisito: 6º nível de bárbaro.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Destruidor": {
+    "desc": "Quando causa dano com uma arma corpo a corpo de duas mãos, você pode rolar novamente qualquer resultado 1 ou 2 das rolagens de dano da arma. Pré-requisito: For 1.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Espírito Inquebrável": {
+    "desc": "Enquanto está em fúria, você não fica inconsciente por estar com 0 PV ou menos (você ainda morre se chegar em um valor negativo igual à metade de seus pontos de vida máximos). Pré-requisito: Alma de Bronze.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Esquiva Sobrenatural": {
+    "desc": "Seus instintos são tão apurados que você consegue reagir ao perigo antes que seus sentidos o percebam. Você nunca fica surpreendido.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Força Indomável": {
+    "desc": "Quando faz um teste de Força ou Atletismo, você pode gastar 1 PM para somar seu nível nele. Você pode usar esta habilidade depois de rolar o dado, mas deve usá-la antes de o mestre dizer se você passou ou não.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Frenesi": {
+    "desc": "Uma vez por rodada, se estiver em fúria e usar a ação agredir para fazer um ataque corpo a corpo ou com uma arma de arremesso, você pode gastar 2 PM para fazer um ataque adicional.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Fúria da Savana": {
+    "desc": "Seu deslocamento aumenta em +3m. Quando usa Fúria, você aplica o bônus em ataque e dano também a armas de arremesso.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Fúria Raivosa": {
+    "desc": "Se sua Fúria for terminar por você não ter atacado nem sido alvo de um efeito hostil, você pode pagar 1 PM para continuar em fúria nesta rodada. Se você atacar ou for atacado na rodada seguinte, sua fúria continua normalmente.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Golpe Poderoso": {
+    "desc": "Ao acertar um ataque corpo a corpo ou com uma arma de arremesso, você pode gastar 1 PM para causar um dado extra de dano do mesmo tipo (por exemplo, com um montante, causa +1d6, para um dano total de 3d6; com um machado de guerra, causa +1d12, para um dano total de 2d12).",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Ímpeto": {
+    "desc": "Você pode gastar 1 PM para aumentar seu deslocamento em +6m por uma rodada.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Investida Imprudente": {
+    "desc": "Quando faz uma investida, você pode aumentar sua penalidade na Defesa pela investida para –5 para receber um bônus de +1d12 na rolagem de dano deste ataque.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Pele de Aço": {
+    "desc": "O bônus de Pele de Ferro aumenta para +8. Pré-requisitos: Pele de Ferro, 8º nível de bárbaro.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Pele de Ferro": {
+    "desc": "Você recebe +4 na Defesa, mas apenas se não estiver usando armadura pesada.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Sangue dos Inimigos": {
+    "desc": "Enquanto está em fúria, quando faz um acerto crítico ou reduz um inimigo a 0 PV , você recebe um bônus cumulativo de +1 em testes de ataque e rolagens de dano, limitado pelo seu nível, até o fim da cena.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Superstição": {
+    "desc": "Você odeia magia, o que faz com que seja mais resistente a ela. Você recebe resistência a magia +5.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Totem Espiritual": {
+    "desc": "Você soma sua Sabedoria no seu total de pontos de mana. Escolha um animal totêmico (veja o quadro ao lado). Você aprende e pode lançar uma magia definida pelo animal escolhido (atributo-chave Sabedoria) e pode lançá-la mesmo em fúria. Pré-requisitos: Sab 1, 4º nível de bárbaro. e",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Jogo do Ano|Vigor Primal": {
+    "desc": "Você pode gastar uma ação de movimento e uma quantidade de PM limitada por sua Constituição. Para cada PM que gastar, você recupera 1d12 pontos de vida. Instinto Selvagem. No 3º nível, você recebe +1 em rolagens de dano, Percepção e Reflexos. A cada seis níveis, esse bônus aumenta em +1. Redução de Dano. A partir do 5º nível, graças a seu vigor e força de vontade, você ignora parte de seus ferimentos. Você recebe redução de dano 2 (todo dano que sofre é reduzido em 2). A cada três níveis, sua RD aumenta em 2, até um máximo de RD 10 no 17º nível. Fúria Titânica. No 20º nível, o bônus que você recebe nos testes de ataque e rolagens de dano quando usa Fúria é dobrado. Por exemplo, se gastar 5 PM, em vez de um bônus de +5, recebe um bônus de +10.",
+    "cost": "Variável",
+    "action": "Ação de movimento"
+  },
+  "bardo|Jogo do Ano|Arte Mágica": {
+    "desc": "Enquanto você estiver sob efeito de sua Inspiração, a CD para resistir a suas habilidades de bardo aumenta em +2.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Aumentar Repertório": {
+    "desc": "Você aprende duas magias de qualquer círculo que possa lançar. Elas devem pertencer às escolas que você sabe usar, mas podem ser arcanas ou divinas. Você pode escolher este poder quantas vezes quiser.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Dança das Lâminas": {
+    "desc": "Quando você lança uma magia com execução de uma ação padrão, pode gastar 1 PM para fazer um ataque corpo a corpo como uma ação livre. Pré-requisitos: Esgrima Mágica, 10º nível de bardo.",
+    "cost": "1 PM",
+    "action": "Ação padrão"
+  },
+  "bardo|Jogo do Ano|Esgrima Mágica": {
+    "desc": "Sua arte mescla esgrima e magia, transformando dança em golpes. Se estiver sob efeito de Inspiração, você pode substituir testes de Luta por testes de Atuação, mas apenas para ataques com armas corpo a corpo leves ou de uma mão.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Estrelato": {
+    "desc": "Suas apresentações o tornaram famoso, fazendo com que você seja reconhecido e bem tratado por aqueles que apreciam a arte. Por outro lado, pode ser difícil passar despercebido, especial mente em grandes cidades. Quando usa Atuação para impressionar uma plateia, o bônus recebido em perícias baseadas em Carisma aumenta para +5. Pré-requisito: 6º nível de bardo.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Fascinar em Massa": {
+    "desc": "Quando usa Música: Balada Fascinante, você pode gastar +2 PM. Se fizer isso, afeta todas as criaturas a sua escolha no alcance da música (você faz um único teste de Atuação, oposto pelo teste de Vontade de cada criatura). Pré-requisito: Música: Balada Fascinante.",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Melodia Restauradora": {
+    "desc": "Quando você usa Música: Melodia Curativa, pode gastar +2 PM. Se fizer isso, escolha uma das condições a seguir: abalado, alquebrado, apavorado, atordoado, cego, confuso, enfeitiçado, esmorecido, exausto, fatigado, frustrado, pasmo ou surdo. Você remove a condição escolhida das criaturas afetadas pela música. Pré-requisito: Música: Melodia Curativa.",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Mestre dos Sussurros": {
+    "desc": "Você é dissimulado, atento para rumores e ótimo em espalhar fofocas. Quando faz um teste de Investigação para interrogar ou um teste de Enganação para intriga, você rola dois dados e usa o melhor resultado. Além disso, pode fazer esses testes em ambientes sociais (taverna, festival, corte...) sem custo e em apenas um minuto. Pré-requisitos: Car 1, treinado em Enganação e Investigação.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Paródia": {
+    "desc": "Uma vez por rodada, quando vê outra criatura lançando uma magia em alcance médio, você pode pagar 1 PM e fazer um teste de Atuação (CD 15 + custo em PM da magia). Se passar, até o final de seu próximo turno você pode lançar essa magia. e",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Prestidigitação": {
+    "desc": "Quando faz uma ação padrão, você pode aproveitar seus gestos para lançar uma magia com execução de ação completa ou menor. Faça um teste de Atuação (CD 15 + custo em PM da magia). Se passar, você lança a magia como uma ação livre. Se falhar, a magia não funciona, mas você gasta os PM mesmo assim. Outros personagens só percebem que você lançou uma magia com um teste de Misticismo (CD 20). Pré-requisito: 6º nível de bardo. Eclético. A partir do 2º nível, quando vai fazer um teste de perícia, você pode gastar 1 PM para receber os benefícios de ser treinado nessa perícia para este teste.",
+    "cost": "1 PM",
+    "action": "Ação completa"
+  },
+  "bardo|Jogo do Ano|Golpe Elemental": {
+    "desc": "Enquanto estiver sob efeito de Inspiração, sempre que você acertar um ataque corpo a corpo, pode gastar 1 PM para causar 1d6 de dano extra de ácido, eletricidade, fogo ou frio, a sua esco lha. Para cada quatro níveis que possuir, pode gastar +1 PM para aumentar o dano em +1d6. Pré-requisito: Golpe Mágico. e",
+    "cost": "1 PM, +1 PM",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Golpe Mágico": {
+    "desc": "Enquanto estiver sob efeito de Inspiração, sempre que você acertar um ataque corpo a corpo em um inimigo, recebe 2 PM tempo rários cumulativos. Você pode ganhar um máximo de PM temporários por cena igual ao seu nível. Esses pontos temporários desaparecem no final da cena. Pré-requisito: Esgrima Mágica. e",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Inspiração Marcial": {
+    "desc": "Quando você usa Inspiração, você e seus aliados aplicam o bônus recebido em rolagens de dano (além de testes de perícia).",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Lendas e Histórias": {
+    "desc": "Você é um arquivo vivo de relatos, canções e folclore. Além de outros benefí cios a critério do mestre, quando faz um teste de Conhecimento, Misticismo, Nobreza ou Religião para informação, identificar criaturas ou identificar itens mágicos, você pode gastar 1 PM para rolá-lo novamente. Pré-requisito: Int 1.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Manipular": {
+    "desc": "Você pode gastar 1 PM para fazer uma criatura fascinada por você ficar enfeitiçada até o fim da cena (Von CD Car anula). Se a criatura passar, fica imune a este efeito por um dia. Usar esta habilidade não conta como ameaça à criatura fascinada. Pré-requisito: Música: Balada Fascinante.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Manipular em Massa": {
+    "desc": "Quando usa Manipular, você pode gastar +2 PM. Se fizer isso, afeta todas as criaturas a sua escolha em alcance curto. Pré-requisitos: Fascinar em Massa, Manipular, 10º nível de bardo.",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Música: Balada Fascinante": {
+    "desc": "Faça um teste de Atuação oposto pelo teste de Vontade de uma criatura no alcance. Se você passar, ela fica fascinada enquanto você se concentrar (uma ação padrão por rodada). Um alvo hostil ou envolvido em combate recebe +5 no teste de resistência e tem direito a um novo teste sempre que você se concentrar. Se a criatura passar, fica imune a este efeito por um dia.",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "bardo|Jogo do Ano|Música: Canção Assustadora": {
+    "desc": "Faça um teste de Atuação oposto pelo teste de Vontade de cada criatura a sua escolha dentro do alcance (você faz um único teste). Alvos que falhem ficam abalados até o fim da cena. Alvos que passem ficam imunes a este efeito por um dia.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Jogo do Ano|Música: Melodia Curativa": {
+    "desc": "Criaturas a sua esco lha no alcance recuperam 1d6 PV . Quando usa esta habilidade, você pode gastar mais pontos de mana. Para cada PM extra, aumente a cura em +1d6 PV . Músicas de Bardo Alguns poderes do bardo são Músicas. Esses poderes compartilham as seguintes regras.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Apostador": {
+    "desc": "Você pode gastar um dia para encontrar e participar de uma mesa de wyrt ou outro jogo de azar. Escolha um valor e faça um teste de Jogatina contra a CD correspondente: T$ 100 (CD 15), T$ 200 (CD 20), T$ 400 (CD 25), T$ 800 (CD 30), T$ 1.600 (CD 35) e assim por diante. Se passar, você ganha o valor escolhido (ou um item ou favor equivalente, a critério do mestre). Se falhar, perde esse mesmo o valor. A critério do mestre, o lugar onde você está pode limitar ou impossibilitar o uso deste poder. Pré-requisito: treinado em Jogatina.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Ataque Acrobático": {
+    "desc": "Quando se aproxima de um inimigo com um salto ou pirueta (em termos de jogo, usando Atletismo ou Acrobacia para se mover) e o ataca no mesmo turno, você recebe +2 nesse teste de ataque e na rolagem de dano.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Aventureiro Ávido": {
+    "desc": "Uma vez por rodada, você pode gastar 5 PM para realizar uma ação padrão ou de movimento adicional. Se possuir o poder Surto Heroico, em vez disso seu custo diminui em –2 PM.",
+    "cost": "5 PM",
+    "action": "Ação padrão"
+  },
+  "bucaneiro|Jogo do Ano|Abusar dos Fracos": {
+    "desc": "Quando ataca uma criatura sob efeito de uma condição de medo, seu dano aumenta em um passo. Pré-requisito: Flagelo dos Mares.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Amigos no Porto": {
+    "desc": "Quando chega em uma comunidade portuária, você pode fazer um teste de Carisma (CD 10). Se passar, encontra um amigo para o qual pode pedir um favor ou que pode ajudá-lo como parceiro veterano de um tipo a sua escolha por um dia. Pré-requisitos: Car 1, 6º nível de bucaneiro.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Aparar": {
+    "desc": "Uma vez por rodada, quando é atingido por um ataque, você pode gastar 1 PM para fazer um teste de ataque com bônus igual ao seu nível (além do normal). Se o resultado do seu teste for maior que o do oponente, você evita o ataque. Você só pode usar este poder se estiver usando uma arma corpo a corpo leve ou ágil. Pré-requisito: Esgrimista.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Bravata Audaz": {
+    "desc": "Você jura fazer uma façanha específica, como roubar o tesouro de Sckhar ou ganhar um beijo do príncipe e da princesa até o fim do baile. Se cumprir a bravata, seus PM aumentam em +2 por nível de bucaneiro até o fim da aventura.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Bravata Imprudente": {
+    "desc": "Na primeira rodada de um combate, você pode jurar derrotar seus inimigos com uma restrição a sua escolha, como lutar com uma mão nas costas, de guarda aberta (em termos de jogo, desprevenido), de olhos vendados (cego) etc. Uma restrição só é válida se prejudicá-lo (por exemplo, lutar com uma mão nas costas só vale como restrição se você luta com duas armas). O mestre tem a palavra final sobre a validade de uma restrição. Você sofre a penalidade durante todo o combate, mas, se vencer, recebe +2 nos testes de ataque e na margem de ameaça até o fim da aventura.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|En Garde": {
+    "desc": "Você pode gastar uma ação de movimento e 1 PM para assumir postura de luta. Até o fim da cena, se estiver usando uma arma corpo a corpo leve ou ágil, você recebe +2 na margem de ameaça com essas armas e +2 na Defesa. Pré-requisito: Esgrimista.",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "bucaneiro|Jogo do Ano|Esgrimista": {
+    "desc": "Quando usa uma arma corpo a corpo leve ou ágil, você soma sua Inteligência nas rolagens de dano (limitado pelo seu nível). Pré-requisito: Int 1.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Flagelo dos Mares": {
+    "desc": "Você aprende e pode lançar Amedrontar (atributo-chave Carisma). Esta não é uma habilidade mágica e provém de sua capacidade de incutir medo em seus inimigos. Pré-requisito: treinado em Intimidação.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Folião": {
+    "desc": "Você sabe fazer amizades durante fes tas, de noitadas em tavernas a bailes na corte. Nesses locais, você recebe +2 em testes de perícias de Carisma e a atitude de todas as pessoas em relação a você melhora em uma categoria. Pré-requisito: Car 1.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Grudar o Cano": {
+    "desc": "Quando faz um ataque à distância com uma arma de fogo contra um oponente adjacente, você não sofre a penalidade de –5 no teste de ataque e aumenta seu dano em um passo. Pré-requisitos: treinado em Luta, Pistoleiro.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Pernas do Mar": {
+    "desc": "Você recebe +2 em Acrobacia e Atletismo. Além disso, quando está se equilibrando ou escalando, você não fica desprevenido e seu deslocamento não é reduzido à metade.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Pistoleiro": {
+    "desc": "Você recebe proficiência com armas de fogo e +2 nas rolagens de dano com essas armas.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Presença Paralisante": {
+    "desc": "Você soma seu Carisma em Iniciativa e, se for o primeiro na iniciativa, ganha uma ação padrão extra na primeira rodada. Pré-requisitos: Car 1, 4º nível de bucaneiro.",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "bucaneiro|Jogo do Ano|Ripostar": {
+    "desc": "Quando usa a habilidade aparar e evita o ataque, você pode gastar 1 PM. Se fizer isso, pode fazer um ataque corpo a corpo imediato contra o inimigo que o atacou (se ele estiver em alcance). Pré-requisitos: Aparar, 12º nível de bucaneiro.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bucaneiro|Jogo do Ano|Touché": {
+    "desc": "Quando se aproxima de um inimigo e o ataca com uma arma corpo a corpo leve ou ágil no mesmo turno, você pode gastar 2 PM para aumentar seu dano em um passo e receber +5 na margem de ameaça neste ataque. Pré-requisitos: Esgrimista, 10º nível de bucaneiro. Esquiva Sagaz. No 3º nível, você recebe +1 na Defesa e em Reflexos. Esse bônus aumenta em +1 a cada quatro níveis. Esta habilidade exige liberdade de movimentos; você não pode usá-la se estiver de armadura pesada ou na condição imóvel. Panache. A partir do 5º nível, sempre que faz um acerto crítico em combate ou reduz um inimigo a 0 PV , você recupera 1 PM.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Ambidestria": {
+    "desc": "Se estiver empunhando duas ar mas (e pelo menos uma delas for leve) e fizer a ação agredir, você pode fazer dois ataques, um com cada arma. Se fizer isso, sofre –2 em todos os testes de ataque até o seu próximo turno. Pré-requisito: Des 2.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Armadilha: Arataca": {
+    "desc": "A vítima sofre 2d6 pontos de dano de perfuração e fica agarrada. Uma criatura agarrada pode escapar com uma ação padrão e um teste de Força ou Acrobacia (CD Sab).",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "cacador|Jogo do Ano|Armadilha: Espinhos": {
+    "desc": "A vítima sofre 6d6 pontos de dano de perfuração. Um teste de Reflexos (CD Sab) reduz o dano à metade.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Armadilha: Laço": {
+    "desc": "A vítima deve fazer um teste de Reflexos (CD Sab). Se passar, fica caída. Se falhar, fica agarrada. Uma criatura agarrada pode se soltar com uma ação padrão e um teste de Força ou Acro bacia (CD Sab).",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "cacador|Jogo do Ano|Armadilha: Rede": {
+    "desc": "Todas as criaturas na área ficam enredadas e não podem sair da área. Uma vítima pode se libertar com uma ação padrão e um teste de Força ou Acrobacia (CD 25). Além disso, a área ocupada pela rede é considerada terreno difícil. Nesta armadilha você escolhe quantas criaturas precisam estar na área para ativá-la.",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "cacador|Jogo do Ano|Armadilheiro": {
+    "desc": "Você soma sua Sabedoria no dano e na CD de suas armadilhas (cumulativo). Pré-requisitos: um poder de armadilha, 5º nível de caçador.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Arqueiro": {
+    "desc": "Se estiver usando uma arma de ataque à distância, você soma sua Sabedoria nas rolagens de dano (limitado pelo seu nível). Pré-requisito: Sab 1.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Bote": {
+    "desc": "Se estiver empunhando duas armas e fizer uma investida, você pode pagar 1 PM para fazer um ataque adicional com sua arma secundária. Pré-requisito: Ambidestria, 6º nível de caçador.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Camuflagem": {
+    "desc": "Você pode gastar 2 PM para se esconder mesmo sem camuflagem ou cobertura disponível. Pré-requisito: 6º nível de caçador.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Chuva de Lâminas": {
+    "desc": "Uma vez por rodada, quando usa Ambidestria, você pode pagar 2 PM para fazer um ataque adicional com sua arma primária. Pré -requisitos: Des 4, Ambidestria, 12º nível de caçador.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Ponto Fraco": {
+    "desc": "Quando usa a habilidade Marca da Presa, seus ataques contra a criatura marcada rece bem +2 na margem de ameaça. Esse bônus dobra com a habilidade Inimigo.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Companheiro Animal": {
+    "desc": "Você recebe um compa nheiro animal. Veja o quadro na página 62. Pré-requisito: Car 1, treinado em Adestramento.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Elo com a Natureza": {
+    "desc": "Você soma sua Sabedoria em seu total de pontos de mana e aprende e pode lançar Caminhos da Natureza (atributo-chave Sabedoria). Pré-requisitos: Sab 1, 3º nível de caçador. e",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Emboscar": {
+    "desc": "Você pode gastar 2 PM para realizar uma ação padrão adicional em seu turno. Você só pode usar este poder na primeira rodada de um combate. Pré-requisito: treinado em Furtividade.",
+    "cost": "2 PM",
+    "action": "Ação padrão"
+  },
+  "cacador|Jogo do Ano|Empatia Selvagem": {
+    "desc": "Você pode se comunicar com animais por meio de linguagem corporal e vocalizações. Você pode usar Adestramento com animais para mudar atitude e persuasão (veja Diplomacia, na página 118).",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Escaramuça": {
+    "desc": "Quando se move 6m ou mais, você recebe +2 na Defesa e Reflexos e +1d8 nas rolagens de dano de ataques corpo a corpo e à distância em alcance curto até o início de seu próximo turno. Você não pode usar esta habilidade se estiver vestindo armadura pesada. Pré-requisito: Des 2, 6º nível de caçador.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Escaramuça Superior": {
+    "desc": "Quando usa Escaramuça, seus bônus aumentam para +5 na Defesa e Reflexos e +1d12 em rolagens de dano. Pré-requisitos: Escaramuça, 12º nível de caçador.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Espreitar": {
+    "desc": "Quando usa a habilidade Marca da Presa, você recebe um bônus de +1 em testes de perícia contra a criatura marcada. Esse bônus aumenta em +1 para cada PM adicional gasto na habilidade e também dobra com a habilidade Inimigo.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Ervas Curativas": {
+    "desc": "Você pode gastar uma ação completa e uma quantidade de PM a sua escolha (limitado por sua Sabedoria) para aplicar ervas que curam ou desintoxicam em você ou num aliado adjacente. Para cada PM que gastar, cura 2d6 PV ou remove uma condição envenenado afetando o alvo.",
+    "cost": "Variável",
+    "action": "Ação completa"
+  },
+  "cacador|Jogo do Ano|Ímpeto": {
+    "desc": "Você pode gastar 1 PM para aumentar seu deslocamento em +6m por uma rodada.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Inimigo de (Criatura)": {
+    "desc": "Escolha um tipo de criatura entre animal, construto, espírito, monstro ou morto-vivo, ou duas raças humanoides (por exemplo, orcs e gnolls, ou elfos e qareen). Quando você usa a habilidade Marca da Presa contra uma criatura do tipo ou da raça escolhida, dobra os dados de bônus no dano. O nome desta habilidade varia de acordo com o tipo de criatura escolhida (Inimigo de Monstros, Inimigo de Mortos-Vivos etc.). Você pode escolher este poder outras vezes para inimigos diferentes.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Jogo do Ano|Olho do Falcão": {
+    "desc": "Você pode usar a habilidade Marca da Presa em criaturas em alcance longo.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Autoridade Feudal": {
+    "desc": "Você pode gastar uma hora e 2 PM para conclamar o povo a ajudá-lo (qualquer pessoa sem um título de nobreza ou uma posição numa igreja reconhecida pelo seu reino). Em termos de jogo, essas pessoas contam como um parceiro iniciante de um tipo a sua escolha (aprovado pelo mestre) que lhe acompanha até o fim da aventura. Esta habilidade só pode ser usada em locais onde sua posição carregue alguma influência (a critério do mestre). Pré-requisito: 6º nível de cavaleiro.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Desprezar os Covardes": {
+    "desc": "Você recebe redução de dano 5 se estiver caído, desprevenido ou flanqueado.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Escudeiro": {
+    "desc": "Você recebe os serviços de um escudeiro, um parceiro especial que cuida de seu equipamento. Suas armas fornecem +1 em rolagens de dano e sua armadura concede +1 na Defesa. Além disso, você pode pagar 1 PM para receber ajuda do escudeiro em combate. Você recebe uma ação de movimento que pode usar para se levantar, sacar um item ou trazer sua montaria. O escudeiro não conta em seu limite de parceiros. Caso ele morra, você pode treinar outro com um mês de trabalho.",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "cavaleiro|Jogo do Ano|Especialização em Armadura": {
+    "desc": "Se estiver usando armadura pesada, você recebe redução de dano 5 (cumulativa com a RD fornecida por Bastião). Pré-requisito: 12º nível de cavaleiro.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Estandarte": {
+    "desc": "Sua flâmula torna-se um símbolo de inspiração. No início de cada cena, você e todos os aliados que possam ver seu estandarte recebem um número de PM temporários igual ao seu Carisma (mínimo 1). Esses pontos temporários desaparecem no final da cena. Pré-requisitos: Título, 14º nível de cavaleiro.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Etiqueta": {
+    "desc": "Você recebe +2 em Diplomacia e Nobreza e quando faz um teste dessas perícias pode gastar 1 PM para rolá-lo novamente.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Investida Destruidora": {
+    "desc": "Quando faz a ação investida, você pode gastar 2 PM. Se fizer isso, causa +2d8 pontos de dano. Você deve usar esta habilidade antes de rolar o ataque.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Montaria Corajosa": {
+    "desc": "Sua montaria concede +1d6 em rolagens de dano corpo a corpo (cumulativo com qualquer bônus que ela já forneça como parceiro). Pré-requisito: Montaria.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Pajem": {
+    "desc": "Você recebe os serviços de um pajem, um parceiro que o auxilia em pequenos afazeres. Você recebe +2 em Diplomacia, por estar sempre aprumado, e sua condição de descanso é uma cate goria acima do padrão pela situação (veja a página 106). O pajem pode executar pequenas tarefas, como entregar mensagens e comprar itens, e não conta em seu limite de parceiros. Caso ele morra, você pode treinar outro com uma semana de trabalho.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Postura de Combate: Aríete Implacável": {
+    "desc": "Ao assumir esta postura, você aumenta o bônus de ataque em investidas em +2. Para cada 2 PM adicionais que gastar quando assumir a postura, aumenta o bônus de ataque em +1. Além disso, se fizer uma investida contra um construto ou objeto, causa +2d8 de dano. Você precisa se deslocar todos os turnos para manter esta postura ativa.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Postura de Combate: Castigo de Ferro": {
+    "desc": "Sempre que um aliado adjacente sofrer um ataque corpo a corpo, você pode gastar 1 PM para fazer um ataque na criatura que o atacou.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Postura de Combate: Foco de Batalha": {
+    "desc": "Sempre que um inimigo atacá-lo, você recebe 1 PM temporário (cumulativos). Você pode ganhar um máximo de PM temporários por cena igual ao seu nível. Esses pontos temporários desaparecem no final da cena.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Postura de Combate: Muralha Intransponível": {
+    "desc": "Para assumir esta postura você precisa estar empunhando um escudo. Você recebe +1 na Defesa e em Reflexos. Além disso, quando sofre um efeito que permite um teste de Reflexos para reduzir o dano à metade, não sofre nenhum dano se passar. Para cada 2 PM adicionais que gastar quando assumir a postura, aumente esse bônus em +1. Por fim, enquanto mantiver esta postura, seu deslocamento é reduzido para 3m.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Postura de Combate: Provocação Petulante": {
+    "desc": "Enquanto esta postura estiver ativa, todos os inimigos que iniciarem seus turnos em alcance curto devem fazer um teste de Vontade (CD Car). Se falharem, qualquer ação hostil que realizarem deve ter você como alvo (mas suas outras ações não têm esta restrição). Ações hostis incluem ataques e outras ações que causem dano e/ou condições negativas. Mental.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Postura de Combate: Torre Inabalável": {
+    "desc": "Você assume uma postura defensiva que o torna imune a qualquer tentativa de tirá-lo do lugar, de forma mundana ou mágica. Enquanto mantiver a postura, você não pode se deslocar, mas soma sua Constituição na Defesa e pode substituir testes de Reflexos e Vontade por testes de Fortitude.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Solidez": {
+    "desc": "Se estiver usando um escudo, você soma o bônus na Defesa recebido pelo escudo em testes de resistência.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Título": {
+    "desc": "Você adquire um título de nobreza. Converse com o mestre para definir os benefícios exatos de seu título. Como regra geral, no início de cada aventura você recebe 20 TO por nível de cavaleiro (rendimentos dos impostos) ou a ajuda de um parceiro veterano (um membro de sua corte). Pré-requisitos: Autoridade Feudal, 10º nível de cavaleiro, ter conquistado terras ou realizado um serviço para um nobre que possa se tornar seu suserano.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Jogo do Ano|Torre Armada": {
+    "desc": "Quando um inimigo erra um ataque contra você, você pode gastar 1 PM. Se fizer isso, recebe +5 em rolagens de dano contra esse inimigo até o fim de seu próximo turno. Caminho do Cavaleiro. No 5º nível, escolha entre Bastião ou Montaria.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Canalizar Amplo": {
+    "desc": "Quando você usa a habilidade Canalizar Energia, pode gastar +2 PM para aumentar o alcance dela para médio. Pré-requisito: Canalizar Energia Positiva ou Negativa.",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Comunhão Vital": {
+    "desc": "Quando lança uma magia que cure uma criatura, você pode pagar +2 PM para que outra criatura em alcance curto (incluindo você mesmo) recupere uma quantidade de pontos de vida igual à metade dos PV da cura original. e",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Conhecimento Mágico": {
+    "desc": "Você aprende duas magias de qualquer círculo que possa lançar. Você pode escolher este poder quantas vezes quiser.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Expulsar/Comandar Mortos-Vivos": {
+    "desc": "Você pode gastar uma ação padrão e 3 PM para expulsar (se sua divindade canaliza energia positiva) ou comandar (se canaliza energia negativa) todos os mortos-vivos em alcance curto. Mortos-vivos expulsos ficam apavorados por 1d6 rodadas. Mortos-vivos comandados não inteligentes (Int –4 ou menor) ficam sob suas ordens por um dia (até um limite de ND somados igual a seu nível +3; dar uma ordem a todos eles é uma ação de movimento) e mortos-vivos comandados inteligentes ficam fascinados por uma rodada. Mortos-vivos têm direito a um teste de Vontade (CD Sab) para evitar qualquer destes efeitos. Pré-requisito: Canalizar Energia Positiva ou Negativa. e",
+    "cost": "3 PM",
+    "action": "Ação padrão"
+  },
+  "clerigo|Jogo do Ano|Liturgia Mágica": {
+    "desc": "Você pode gastar uma ação de movimento para executar uma breve liturgia de sua fé. Se fizer isso, a CD para resistir à sua próxima habilidade de clérigo (desde que usada até o final de seu próximo turno) aumenta em +2.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "clerigo|Jogo do Ano|Magia Sagrada/Profana": {
+    "desc": "Quando lança uma magia divina que causa dano, você pode gastar +1 PM. Se fizer isso, muda o tipo de dano da magia para luz (se sua divindade canaliza energia positiva) ou trevas (se canaliza energia negativa).",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Mestre Celebrante": {
+    "desc": "O número de pessoas que você afeta com uma missa aumenta em dez vezes e os benefícios que elas recebem dobram. Pré-requisitos: qualquer poder de Missa, 12º nível de clérigo.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Missa: Bênção da Vida": {
+    "desc": "Os participantes recebem pontos de vida temporários em um valor igual ao seu nível + sua Sabedoria.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Missa: Chamado às Armas": {
+    "desc": "Os participantes recebem +1 em testes de ataque e rolagens de dano.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Missa: Elevação do Espírito": {
+    "desc": "Os participantes recebem pontos de mana temporários em um valor igual a sua Sabedoria.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Missa: Escudo Divino": {
+    "desc": "Os participantes recebem +1 na Defesa e testes de resistência.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Missa: Superar as Limitações": {
+    "desc": "Cada participante recebe +1d6 num único teste a sua escolha e pode usá-lo mesmo após rolar o dado.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Jogo do Ano|Prece de Combate": {
+    "desc": "Quando lança uma magia divina com tempo de conjuração de uma ação padrão em si mesmo, você pode gastar +2 PM para lançá-la como uma ação de movimento.",
+    "cost": "+2 PM",
+    "action": "Ação padrão"
+  },
+  "clerigo|Jogo do Ano|Símbolo Sagrado Energizado": {
+    "desc": "Você pode gastar uma ação de movimento e 1 PM para fazer uma prece e energizar seu símbolo sagrado até o fim da cena. Um símbolo sagrado energizado emite uma luz dourada ou prateada (se sua divindade canaliza energia positiva) ou púrpura ou avermelhada (se canaliza energia negativa) que ilumina como uma tocha. Enquanto você estiver empunhando um símbolo sagrado energizado, o custo em PM para lançar suas magias divinas diminui em 1. e Mão da Divindade. No 20º nível, você pode gastar uma ação completa e 15 PM para canalizar energia divina. Ao fazer isso, você lança três magias divinas quaisquer (de qualquer círculo, incluindo magias que você não conhece), como uma ação livre e sem gastar PM (mas ainda precisa pagar outros custos). Você pode aplicar aprimoramentos, mas precisa pagar por eles. Após usar esta habilidade, você fica atordoado por 1d4 rodadas (mesmo se for imune a esta condição). Corpos mortais não foram feitos para lidar com tanto poder. e",
+    "cost": "1 PM, 15 PM",
+    "action": "Ação completa"
+  },
+  "druida|Jogo do Ano|Aspecto do Inverno": {
+    "desc": "Você aprende e pode lançar uma magia de convocação ou evocação, arcana ou divina, de qualquer círculo que possa lançar. Além disso, recebe redução de frio 5 e suas magias que causam dano de frio causam +1 ponto de dano por dado.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Aspecto do Outono": {
+    "desc": "Você aprende e pode lançar uma magia de necromancia, arcana ou divina, de qualquer círculo que possa lançar. Além disso, pode gastar 1 PM para impor uma penalidade de –2 nos testes de resistência de todos os inimigos em alcance curto até o início do seu próximo turno.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Aspecto da Primavera": {
+    "desc": "Você aprende e pode lançar uma magia de encantamento ou ilusão, arcana ou divina, de qualquer círculo que possa lançar. Além disso, escolha uma quantidade de magias igual ao seu Carisma (mínimo 1). O custo dessas magias é reduzido em −1 PM.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Aspecto do Verão": {
+    "desc": "Você aprende e pode lançar uma magia de transmutação, arcana ou divina, de qualquer círculo que possa lançar. Além disso, pode gastar 1 PM para cobrir uma de suas armas com chamas até o fim da cena. A arma causa +1d6 pontos de dano de fogo. Sempre que você acertar um ataque com ela em combate, recebe 1 PM temporário. Você pode ganhar um máximo de PM temporários por cena igual ao seu nível e eles desaparecem no fim da cena. e",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Companheiro Animal": {
+    "desc": "Você recebe um companheiro animal. Veja o quadro para detalhes. Você pode escolher este poder quantas vezes quiser, mas deve escolher companheiros diferentes e ainda está sujeito",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Companheiro Animal Aprimorado": {
+    "desc": "Escolha um de seus companheiros animais. Ele recebe um segundo tipo, ganhando os bônus de seu nível. Por exemplo, se você tiver um companheiro guardião veterano, pode adicionar o tipo fortão a ele, tornando-o um guardião fortão veterano que concede +3 na Defesa e +1d12 em uma rolagem de dano corpo a corpo. Pré-requisitos: Companheiro Animal, 6º nível de druida.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Companheiro Animal Lendário": {
+    "desc": "Escolha um de seus companheiros animais. Esse animal passa a dobrar os bônus concedidos de seu tipo original. Pré-requisitos: Companheiro Animal, 18º nível de druida.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Companheiro Animal Mágico": {
+    "desc": "Escolha um de seus companheiros animais. Ele recebe um segundo tipo diferente, entre adepto, destruidor, magivocador ou médico, ganhando os bônus de seu nível. Pré-requisitos: Companheiro Animal, 8º nível de druida.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Coração da Selva": {
+    "desc": "A CD para resistir a seus efeitos de veneno aumenta em +2 e estes efeitos causam +1 de perda de vida por dado.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Espírito dos Equinócios": {
+    "desc": "Você pode gastar 4 PM para ficar em equilíbrio com o mundo. Até o final da cena, quando rola um dado, pode rolar novamente qualquer resultado 1. Pré-requisitos: Aspecto da Primavera, Aspecto do Outono, 10º nível de druida. e",
+    "cost": "4 PM",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Espírito dos Solstícios": {
+    "desc": "Você transita entre os extremos do mundo natural. Quando lança uma magia, pode gastar +4 PM para maximizar os efeitos numéricos variáveis dela. Por exemplo, uma magia Curar Ferimentos aprimorada para curar 5d8+5 PV irá curar automaticamente 45 PV , sem a necessidade de rolar dados. Uma magia sem efeitos variáveis não pode ser afetada por este poder. Pré-requisitos: Aspecto do Inverno, Aspecto do Verão, 10º nível de druida.",
+    "cost": "+4 PM",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Força dos Penhascos": {
+    "desc": "Você recebe +2 em Fortitude. Quando sofre dano enquanto em contato com o solo ou uma superfície de pedra, pode gastar uma quantidade de PM limitada por sua Sabedoria. Para cada PM gasto, reduz esse dano em 10. Pré-requisito: 4º nível de druida.",
+    "cost": "Variável",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Forma Primal": {
+    "desc": "Quando usa Forma Selvagem, você pode se transformar em uma fera primal. Você recebe os benefícios de dois tipos de animais (bônus iguais não se acumulam; use o que você quiser de cada tipo). Pré-requisito: 18º nível de druida.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Forma Selvagem": {
+    "desc": "Você pode se transformar em animais (veja a seguir). e",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Forma Selvagem Aprimorada": {
+    "desc": "Quando usa For ma Selvagem, você pode gastar 6 PM ao todo para assumir uma forma aprimorada. Pré-requisitos: Forma Selvagem, 6º nível de druida. e",
+    "cost": "6 PM",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Forma Selvagem Superior": {
+    "desc": "Quando usa Forma Selvagem, você pode gastar 10 PM ao todo para assumir uma forma superior. Pré-requisitos: Forma Selvagem Aprimorada, 12º nível de druida. e",
+    "cost": "10 PM",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Liberdade da Pradaria": {
+    "desc": "Você recebe +2 em Reflexos. Se estiver ao ar livre, sempre que lança uma magia, pode gastar 1 PM para aumentar o alcance dela em um passo (de toque para curto, de curto para médio ou de médio para longo).",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Magia Natural": {
+    "desc": "Em forma selvagem, você pode lançar magias e empunhar catalisadores e esotéricos. Pré-requisito: Forma Selvagem. Companheiro Animal Um companheiro animal é um amigo valoroso e fiel. Você decide de qual espécie é seu companheiro. Vocês têm um vínculo mental, sendo capazes de entender um ao outro. Seu companheiro animal obedece a você, mesmo que isso arrisque a vida dele. Em termos de jogo, seu companheiro animal é um parceiro ajudante, assassino, atirador, combatente, fortão, guardião, perseguidor, ou uma montaria, do nível iniciante. No 7º nível ele muda para veterano e, no 15º nível, para mestre (se tiver mais de um tipo, todos mudam de nível). Se o companheiro animal morrer, você fica atordoado por uma rodada. Você pode invocar um novo companheiro após um dia inteiro de prece e meditação. A seguir, alguns exemplos de animais (mas você é livre para escolher outros). Veja a página 260 para as regras de parceiros.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Presas Afiadas": {
+    "desc": "A margem de ameaça de suas armas naturais aumenta em +2.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Segredos da Natureza": {
+    "desc": "Você aprende duas magias de qualquer círculo que possa lançar. Elas devem pertencer às escolas que você sabe usar, mas podem ser arcanas ou divinas. Você pode escolher este poder quantas vezes quiser.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Jogo do Ano|Tranquilidade dos Lagos": {
+    "desc": "Você recebe +2 em Vontade. Se estiver portando um recipiente com água (não precisa estar empunhando), uma vez por rodada, quando faz um teste de resistência, pode pagar 1 PM para refazer a rolagem.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Ambidestria": {
+    "desc": "Se estiver empunhando duas ar mas (e pelo menos uma delas for leve) e fizer a ação agredir, você pode fazer dois ataques, um com cada arma. Se fizer isso, sofre –2 em todos os testes de ataque até o seu próximo turno. Pré-requisito: Des 2.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Arqueiro": {
+    "desc": "Se estiver usando uma arma de ataque à distância, você soma sua Sabedoria em rolagens de dano (limitado pelo seu nível). Pré-requisito: Sab 1.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Ataque Reflexo": {
+    "desc": "Se um alvo em alcance de seus ataques corpo a corpo ficar desprevenido ou se mover voluntariamente para fora do seu alcance, você pode gastar 1 PM para fazer um ataque corpo a corpo contra esse alvo (apenas uma vez por alvo a cada rodada). Pré-requisito: Des 1.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Bater e Correr": {
+    "desc": "Quando faz uma investida, você pode continuar se movendo após o ataque, até o limite de seu deslocamento. Se gastar 2 PM, pode fazer uma investida sobre terreno difícil e sem sofrer a penalidade de Defesa.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Destruidor": {
+    "desc": "Quando causa dano com uma arma corpo a corpo de duas mãos, você pode rolar novamente qualquer resultado 1 ou 2 da rolagem de dano da arma. Pré-requisito: For 1.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Esgrimista": {
+    "desc": "Quando usa uma arma corpo a corpo leve ou ágil, você soma sua Inteligência em rolagens de dano (limitado pelo seu nível). Pré-requisito: Int 1.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Especialização em Arma": {
+    "desc": "Escolha uma arma. Você recebe +2 em rolagens de dano com essa arma. Você pode escolher este poder outras vezes para armas diferentes.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Especialização em Armadura": {
+    "desc": "Você recebe redução de dano 5 se estiver usando uma armadura pesada. Pré-requisito: 12º nível de guerreiro.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Golpe de Raspão": {
+    "desc": "Uma vez por rodada, quando erra um ataque, você pode gastar 2 PM. Se fizer isso, causa metade do dano que causaria (ignorando efeitos que se aplicariam caso o ataque acertasse).",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Golpe Demolidor": {
+    "desc": "Quando usa a manobra quebrar ou ataca um objeto, você pode gastar 2 PM para ignorar a redução de dano dele.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Golpe Pessoal": {
+    "desc": "Quando faz um ataque, você pode desferir seu Golpe Pessoal, uma técnica única, com efeitos determinados por você. Você constrói seu Golpe Pessoal escolhendo efeitos da lista a seguir. Cada efeito possui um custo; a soma deles será o custo do Golpe Pessoal (mínimo 1 PM). O",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Ímpeto": {
+    "desc": "Você pode gastar 1 PM para aumentar seu deslocamento em +6m por uma rodada.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Mestre em Arma": {
+    "desc": "Escolha uma arma. Com esta arma, seu dano aumenta em um passo e quando faz um teste de ataque você pode gastar 2 PM para rolá-lo novamente. Pré-requisitos: Especialização em Arma com a arma escolhida, 12º nível de guerreiro.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Planejamento Marcial": {
+    "desc": "Uma vez por dia, você pode gastar uma hora e 3 PM para escolher um po der de guerreiro ou de combate cujos pré-requisitos cumpra. Você recebe os benefícios desse poder até o próximo dia. Pré-requisitos: treinado em Guerra, 10º nível de guerreiro.",
+    "cost": "3 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Romper Resistências": {
+    "desc": "Quando faz um Ataque Especial, você pode gastar 1 PM adicional para ignorar 10 pontos de redução de dano.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Solidez": {
+    "desc": "Se estiver usando um escudo, você aplica o bônus na Defesa recebido pelo escudo em testes de resistência.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Jogo do Ano|Tornado de Dor": {
+    "desc": "Você pode gastar uma ação padrão e 2 PM para desferir uma série de golpes giratórios. Faça um ataque corpo a corpo e compare-o com a Defesa de cada inimigo em seu alcance natural. Então faça uma rolagem de dano com um bônus cumulativo de +2 para cada acerto e aplique-a em cada inimigo atingido. Pré-requisito: 6º nível de guerreiro.",
+    "cost": "2 PM",
+    "action": "Ação padrão"
+  },
+  "guerreiro|Jogo do Ano|Valentão": {
+    "desc": "Você recebe +2 em testes de ataque e rolagens de dano contra oponentes caídos, desprevenidos, flanqueados ou indefesos.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Autômato": {
+    "desc": "Você fabrica um autômato, um construto que obedece a seus comandos. Ele é um parceiro iniciante de um tipo a sua escolha entre ajudante, assassino, atirador, combatente, guardião, montaria ou vigilante. No 7º nível, ele muda para veterano e, no 15º nível, para mestre. Se o autômato for destruído, você pode fabricar um novo com uma semana de trabalho e T$ 100. Pré-requisito: Engenhoqueiro.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Autômato Prototipado": {
+    "desc": "Você pode gastar uma ação padrão e 2 PM para ativar uma melhoria experimental em seu autômato. Role 1d6. Em um resultado 2 a 6, você aumenta o nível de parceiro do autômato em um passo (até mestre), ou concede a ele a habilidade iniciante de outro de seus tipos, até o fim da cena. Em um resultado 1, o autômato enguiça como uma engenhoca. Pré-requisito: Autômato.",
+    "cost": "2 PM",
+    "action": "Ação padrão"
+  },
+  "inventor|Jogo do Ano|Balística": {
+    "desc": "Você recebe proficiência com armas marciais de ataque à distância ou com armas de fogo. Quando usa uma arma de ataque à distância, pode usar sua Inteligência em vez de Destreza nos testes de ataque (e, caso possua o poder Estilo de Disparo, nas rolagens de dano). Pré-requisitos: treinado em Pontaria e Ofício (armeiro).",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Blindagem": {
+    "desc": "Você pode usar sua Inteligência na Defesa quando usa armadura pesada. Se fizer isso, não pode somar sua Destreza, mesmo que outras habilidades ou efeitos permitam isso. Pré-requisitos: Couraceiro, 8º nível de inventor.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Cano Raiado": {
+    "desc": "Quando usa uma arma de disparo feita por você mesmo, ela recebe +1 na margem de ameaça. Pré-requisitos: Balística, 5º nível de inventor.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Catalisador Instável": {
+    "desc": "Você pode gastar uma ação completa e 3 PM para fabricar um preparado alquímico ou poção cuja fórmula conheça instantaneamente. O custo do item é reduzido à metade e você não precisa fazer o teste de Ofício (alquimista), mas ele só dura até o fim da cena. Pré-requisito: Alquimista Iniciado.",
+    "cost": "3 PM",
+    "action": "Ação completa"
+  },
+  "inventor|Jogo do Ano|Chutes e Palavrões": {
+    "desc": "Uma vez por rodada, quando faz um teste de Ofício (engenhoqueiro) para ativar uma engenhoca, você pode gastar 1 PM para rolá-lo novamente. Pré-requisito: Engenhoqueiro.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Conhecimento de Fórmulas": {
+    "desc": "Você aprende três fórmulas de quaisquer círculos que possa aprender. Você pode escolher este poder quantas vezes quiser. Pré-requisito: Alquimista Iniciado.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Couraceiro": {
+    "desc": "Você recebe proficiência com armaduras pesadas e escudos. Quando usa armadura, pode usar sua Inteligência em vez de Destreza na Defesa (mas continua não podendo somar um atributo na Defesa quando usa armadura pesada). Pré-requisito: treinado em Ofício (armeiro).",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Engenhoqueiro": {
+    "desc": "Você pode fabricar engenhocas. Veja as regras para isso na página 70. Pré-requisitos: Int 3, treinado em Ofício (engenhoqueiro).",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Farmacêutico": {
+    "desc": "Quando usa um item alquímico que cure pontos de vida, você pode gastar uma quantidade de PM a sua escolha (limitado por sua Inteligência). Para cada PM que gastar, o item cura um dado extra do mesmo tipo. Pré-requisitos: Sab 1, treinado em Ofício (alquimista).",
+    "cost": "Variável",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Ferreiro": {
+    "desc": "Quando usa uma arma corpo a corpo feita por você mesmo, o dano dela aumenta em um passo. Pré-requisitos: Armeiro, 5º nível de inventor.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Granadeiro": {
+    "desc": "Você pode arremessar itens alquímicos e poções em alcance médio. Você pode usar sua Inteligência em vez de Destreza para calcular a CD do teste de resistência desses itens. Pré-requisito: Alquimista de Batalha.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Homúnculo": {
+    "desc": "Você possui um homúnculo, uma criatura Minúscula feita de alquimia. Vocês podem se comunicar telepaticamente em alcance longo e ele obedece a suas ordens, mas ainda está limitado ao que uma criatura de seu tamanho pode fazer. Um homúnculo é um parceiro ajudante iniciante. Você pode perder 1d6 pontos de vida para seu homúnculo assumir uma forma capaz de protegê-lo e se tornar também um parceiro guardião iniciante até o fim da cena. Pré-requisito: Alquimista Iniciado.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Invenção Potente": {
+    "desc": "Quando usa um item ou engenhoca fabricado por você mesmo, você pode pagar 1 PM para aumentar em +2 a CD para resistir a ele.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Maestria em Perícia": {
+    "desc": "Escolha um número de perícias treinadas igual a sua Inteligência, exceto bônus temporários. Quando faz um teste dessas perícias, você pode gastar 1 PM para escolher 10 em qualquer situação, exceto testes de ataque.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Manutenção Eficiente": {
+    "desc": "A quantidade de engenhocas que você pode manter aumenta em +3. Além disso, cada engenhoca passa a ocupar meio espaço. Pré-requisitos: Engenhoqueiro, 5º nível de inventor.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Mestre Alquimista": {
+    "desc": "Você pode fabricar poções com fórmulas que conheça de qualquer círculo. Pré-requisitos: Int 3, Sab 3, Alquimista Iniciado, 10º nível de inventor.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Mestre Cuca": {
+    "desc": "Todas as comidas que você co zinha têm seu bônus numérico aumentado em +1. Pré-requisito: treinado em Ofício (cozinheiro).",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Mistura Fervilhante": {
+    "desc": "Quando usa um item alquímico ou poção, você pode gastar 2 PM para dobrar a área de efeito dele. Pré-requisitos: Alquimista Iniciado, 5º nível de inventor.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Oficina de Campo": {
+    "desc": "Você pode gastar uma hora e 2 PM para fazer a manutenção do equipamento de seu grupo. Cada membro do grupo escolhe uma arma, armadura ou escudo para manutenção. Armas recebem +1 em testes de ataque, armaduras e escudos aumentam seu bônus na Defesa em +1. Os benefícios duram um dia. Pré-requisito: treinado em Ofício (armeiro).",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "inventor|Jogo do Ano|Pedra de Amolar": {
+    "desc": "Você pode gastar uma ação de movimento e uma quantidade de PM a sua esco lha (limitado por sua Inteligência) para aprimorar uma arma corpo a corpo que esteja empunhando. Para cada PM que gastar, você recebe +1 em rolagens de dano com a arma até o final da cena. Pré-requisito: Armeiro.",
+    "cost": "Variável",
+    "action": "Ação de movimento"
+  },
+  "inventor|Jogo do Ano|Síntese Rápida": {
+    "desc": "Quando fabrica um item alquímico ou poção, você pode fabricar o dobro de doses no mesmo tempo (pagando o custo de matéria-prima de cada uma). Pré-requisito: Alquimista Iniciado.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Assassinar": {
+    "desc": "Você pode gastar uma ação de movimento e 3 PM para analisar uma criatura em alcance curto. Até o fim de seu próximo turno, seu primeiro Ataque Furtivo que causar dano a ela tem seus dados de dano extras dessa habilidade dobrados. Pré-requisito: 5º nível de ladino.",
+    "cost": "3 PM",
+    "action": "Ação de movimento"
+  },
+  "ladino|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Contatos no Submundo": {
+    "desc": "Quando chega em uma comunidade equivalente a uma vila ou maior, você pode gastar 2 PM para fazer um teste de Carisma (CD 10). Se passar, enquanto estiver nessa comu nidade, recebe +5 em testes de Investigação para interrogar, pode comprar itens mundanos, poções e pergaminhos com 20% de desconto (não cumulativo com barganha e outros descontos) e, de acordo com o mestre, tem acesso a itens e serviços proibidos (como armas de pólvora e venenos).",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Emboscar": {
+    "desc": "Na primeira rodada de cada combate, você pode gastar 2 PM para executar uma ação padrão adicional em seu turno. Pré-requisito: treinado em Furtividade.",
+    "cost": "2 PM",
+    "action": "Ação padrão"
+  },
+  "ladino|Jogo do Ano|Escapista": {
+    "desc": "Você recebe +5 em testes de Acrobacia para escapar, passar por espaço apertado e passar por inimigo e em testes para resistir a efeitos de movimento.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Fuga Formidável": {
+    "desc": "Você pode gastar uma ação completa e 1 PM para analisar o lugar no qual está (um castelo, um porto, a praça de uma cidade...). Até o fim da cena, recebe +3m em seu deslocamento, +5 em Acrobacia e Atletismo e ignora",
+    "cost": "1 PM",
+    "action": "Ação completa"
+  },
+  "ladino|Jogo do Ano|Gatuno": {
+    "desc": "Você recebe +2 em Atletismo. Quando escala, não fica desprevenido e avança seu deslocamento normal, em vez de metade dele.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Ladrão Arcano": {
+    "desc": "Quando causa dano com um ataque furtivo em uma criatura capaz de lançar magias, você pode “roubar” uma magia que já a tenha visto lançar. Você precisa pagar 1 PM por círculo da magia e pode roubar magias de até 4º círculo. Até o fim da cena, você pode lançar a magia roubada (atributo-chave Inteligência). Pré-requisitos: Roubo de Mana, 13º nível de ladino. e",
+    "cost": "1 PM por círculo da magia e pode roubar magias de até 4º círculo",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Mão na Boca": {
+    "desc": "Você recebe +2 em testes de agarrar. Quando acerta um ataque furtivo contra uma criatura desprevenida, você pode fazer um teste de agarrar como uma ação livre. Se agarrar a criatura, ela não poderá falar enquanto estiver agarrada. Pré-requisito: treinado em Luta.",
+    "cost": "",
+    "action": "Ação livre"
+  },
+  "ladino|Jogo do Ano|Mãos Rápidas": {
+    "desc": "Uma vez por rodada, ao fazer um teste de Ladinagem para abrir fechaduras, ocul tar item, punga ou sabotar, você pode pagar 1 PM para fazê-lo como uma ação livre. Pré-requisitos: Des 2, treinado em Ladinagem.",
+    "cost": "1 PM",
+    "action": "Ação livre"
+  },
+  "ladino|Jogo do Ano|Mente Criminosa": {
+    "desc": "Você soma sua Inteligência em Ladinagem e Furtividade. Pré-requisito: Int 1.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Oportunismo": {
+    "desc": "Uma vez por rodada, quando um inimigo adjacente sofre dano de um de seus aliados, você pode gastar 2 PM para fazer um ataque corpo a corpo contra este inimigo. Pré-requisito: 6º nível de ladino.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Rolamento Defensivo": {
+    "desc": "Sempre que sofre dano, você pode gastar 2 PM para reduzir esse dano à metade. Após usar este poder, você fica caído. Pré-requisito: treinado em Reflexos.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Roubo de Mana": {
+    "desc": "Quando você causa dano com um ataque furtivo, para cada 1d6 de dano de seu ataque furtivo, você recebe 1 PM temporário e a criatura perde 1 ponto de mana (se tiver). Você só pode usar este poder uma vez por cena contra uma mesma criatura. Pré-requisitos: Truque Mágico, 7º nível de ladino. e",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Saqueador de Tumbas": {
+    "desc": "Você recebe +5 em testes de Investigação para encontrar armadilhas e em tes tes de resistência contra elas. Além disso, gasta uma ação padrão para desabilitar mecanismos, em vez de 1d4 rodadas (veja a perícia Ladinagem).",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "ladino|Jogo do Ano|Sombra": {
+    "desc": "Você recebe +2 em Furtividade, não sofre penalidade em testes de Furtividade por se mover no seu deslocamento normal e reduz a penalidade por atacar e fazer outras ações chamativas para –10. Pré-requisito: treinado em Furtividade.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Truque Mágico": {
+    "desc": "Você aprende e pode lançar uma magia arcana de 1º círculo a sua escolha, pagando seu custo normal em PM. Seu atributo-chave para esta magia é Inteligência. Você pode escolher este poder quantas vezes quiser. Pré-requisito: Int 1. e",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Velocidade Ladina": {
+    "desc": "Uma vez por rodada, você pode gastar 2 PM para realizar uma ação de movimento adicional em seu turno. Pré-requisito: Des 2, treinado em Iniciativa.",
+    "cost": "2 PM",
+    "action": "Ação de movimento"
+  },
+  "ladino|Jogo do Ano|Veneno Persistente": {
+    "desc": "Quando aplica uma dose de veneno a uma arma, este veneno dura por três ataques (em vez de apenas um). Pré-requisitos: Veneno Potente, 8º nível de ladino.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Jogo do Ano|Veneno Potente": {
+    "desc": "A CD para resistir aos venenos que você usa aumenta em +5. Pré-requisito: treinado em Ofício (alquimista). Esquiva Sobrenatural. No 4º nível, seus instintos são tão apurados que você consegue reagir ao perigo antes que seus sentidos percebam. Você nunca fica surpreendido. Olhos nas Costas. A partir do 8º nível, você consegue lutar contra diversos inimigos como se fossem apenas um. Você não pode ser flanqueado.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Arma Improvisada": {
+    "desc": "Para você, atacar com armas improvisadas conta como fazer um ataque desarmado, mas seu dano aumenta em um passo. Você pode gastar uma ação de movimento para procurar uma pedra, cadeira, garrafa ou qualquer coisa que possa usar como arma. Faça um teste de Percepção (CD 20). Se você passar, encontra uma arma improvisada. Armas improvisadas são frágeis; se você errar um ataque e o resultado do d20 for um número ímpar, a arma quebra.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "lutador|Jogo do Ano|Até Acertar": {
+    "desc": "Se você errar um ataque desar mado, recebe um bônus cumulativo de +2 em testes de ataque e rolagens de dano desarmado contra o mesmo oponente. Os bônus terminam quando você acertar um ataque ou no fim da cena, o que acontecer primeiro.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Braços Calejados": {
+    "desc": "Se você não estiver usando armadura, soma sua Força na Defesa, limitado pelo seu nível.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Cabeçada": {
+    "desc": "Quando faz um ataque desarmado, você pode gastar 2 PM. Se fizer isso, o oponente fica desprevenido contra este ataque. Você só pode usar este poder uma vez por cena contra um mesmo alvo.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Chave": {
+    "desc": "Se estiver agarrando uma criatura e fizer um teste de manobra contra ela para causar dano, o dano desarmado aumenta em um passo. Pré-requisitos: Int 1, Lutador de Chão, 4º nível de lutador.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Confiança dos Ringues": {
+    "desc": "Quando um inimigo erra um ataque corpo a corpo contra você, você recebe 2 PM temporários (cumulativos). Você pode ganhar um máximo de PM temporários por cena igual ao seu nível. Esses pontos temporários desaparecem no final da cena. Pré-requisito: 8º nível de lutador.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Convencido": {
+    "desc": "Acostumado a contar apenas com seus músculos, você adquiriu certo desdém por artes mais sofisticadas. Você recebe resistência a medo e mental +5.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Golpe Baixo": {
+    "desc": "Quando faz um ataque desarmado, você pode gastar 2 PM. Se fizer isso e acertar o ataque, o oponente deve fazer um teste de Fortitude (CD For). Se ele falhar, fica atordoado por uma rodada (apenas uma vez por cena).",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Trincado": {
+    "desc": "Esculpido à exaustão, seu corpo se tornou uma máquina. Você soma sua Constituição nas rolagens de dano desarmado. Pré-requisitos: Con 3, Sarado, 10º nível de lutador.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Trocação": {
+    "desc": "Quando você começa a bater, não para mais. Ao acertar um ataque desarmado, pode fazer outro ataque desarmado contra o mesmo alvo, pagando uma quantidade de PM igual à quantidade de ataques já realizados por você na rodada. Ou seja, pode fazer o primeiro ataque extra gastando 1 PM, um segundo ataque extra gastando mais 2 PM e assim por diante, até errar um ataque ou não ter mais pontos de mana. Pré-requisito: 6º nível de lutador.",
+    "cost": "Variável",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Trocação Tumultuosa": {
+    "desc": "Quando usa a ação agredir para fazer um ataque desarmado, você pode gastar 2 PM para atingir todas as criaturas adjacentes — incluindo aliados! Você deve usar este poder antes de rolar o ataque e compara o resultado de seu teste contra a Defesa de cada criatura. Pré-requisitos: Trocação, 8º nível de lutador.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Valentão": {
+    "desc": "Você recebe +2 em testes de ataque e rolagens de dano contra oponentes caídos, desprevenidos, flanqueados ou indefesos.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Voadora": {
+    "desc": "Quando faz uma investida desarmada, você pode gastar 2 PM. Se fizer isso, recebe +1d6 no dano para cada 3m que se deslocar até chegar ao oponente, limitado pelo seu nível. Casca Grossa. No 3º nível, você soma sua Constituição na Defesa, limitado pelo seu nível e apenas se não estiver usando armadura pesada. Além disso, no 7º nível, e a cada quatro níveis, você recebe +1 na Defesa. Golpe Cruel. No 5º nível, você acerta onde dói. Sua margem de ameaça com ataques desarmados aumenta em +1. Golpe Violento. No 9º nível, você bate com muita força. Seu multiplicador de crítico com ataques desarmados aumenta em +1. Dono da Rua. No 20º nível, seu dano desar mado aumenta para 2d10 (para criaturas Médias). Além disso, quando usa a ação agredir para fazer um ataque desarmado, você pode fazer dois ataques, em vez de um (podendo usar Golpe Relâmpago para fazer um terceiro).",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Golpe Imprudente": {
+    "desc": "Quando usa Golpe Relâmpago, você pode atacar de forma impulsiva. Se fizer isso, seus ataques desarmados recebem um dado de dano extra do mesmo tipo (por exemplo, se o seu dano é 2d6, você causa 3d6), mas você sofre –5 na Defesa até o início de seu próximo turno.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Imobilização": {
+    "desc": "Se estiver agarrando uma criatura, você pode gastar uma ação completa para imo bilizá-la. Faça um teste de manobra contra ela. Se você passar, imobiliza a criatura — ela fica indefesa e não pode realizar nenhuma ação, exceto tentar se soltar (o que exige um teste de manobra). Se a criatura se soltar da imobilização, ainda fica agarrada. Enquanto estiver imobilizando uma criatura, você sofre as penalidades de agarrar. Pré-requisitos: Chave, 8º nível de lutador.",
+    "cost": "",
+    "action": "Ação completa"
+  },
+  "lutador|Jogo do Ano|Língua dos Becos": {
+    "desc": "Quando faz um teste de perícia baseada em Carisma, você pode pagar 1 PM para usar sua Força no lugar deste atributo. Pré-requisitos: For 1, treinado em Intimidação.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Lutador de Chão": {
+    "desc": "Você recebe +2 em testes de ataque para agarrar e derrubar. Quando agarra uma criatura, pode gastar 1 PM para fazer uma manobra derrubar contra ela como uma ação livre.",
+    "cost": "1 PM",
+    "action": "Ação livre"
+  },
+  "lutador|Jogo do Ano|Nome na Arena": {
+    "desc": "Você construiu uma reputação no circuito de lutas de Arton. Uma vez por cena, pode gastar uma ação completa para fazer um teste de Luta (CD 10) e impressionar os presentes. Se passar, você recebe +2 em todos os seus testes de perícias originalmente baseadas em Carisma até o fim da cena e a atitude de qualquer pessoa que seja fã de lutas aumenta em uma categoria em relação a você (veja a página 259). Esse bônus aumenta em +2 para cada 10 pontos pelos quais o resultado do teste exceder a CD (+4 para um resultado 20, +6 para 30 e assim por diante). Pré-requisito: 11º nível de lutador.",
+    "cost": "",
+    "action": "Ação completa"
+  },
+  "lutador|Jogo do Ano|Punhos de Adamante": {
+    "desc": "Seus ataques desarmados ignoram 10 pontos de redução de dano do alvo, se houver. Pré-requisito: 8º nível de lutador.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Rasteira": {
+    "desc": "Quando faz um ataque desarmado contra uma criatura até uma categoria de tamanho maior que a sua, você pode gastar 2 PM. Se fizer isso e acertar o ataque, a criatura fica caída.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Sarado": {
+    "desc": "Você soma sua Força no seu total de pontos de vida e em Fortitude. Você pode usar Força em vez de Carisma em testes de Diplomacia com pessoas que se atraiam por físicos bem definidos. Pré-requisito: For 3.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Jogo do Ano|Sequência Destruidora": {
+    "desc": "No início do seu tur no, você pode gastar 2 PM para dizer um número (no mínimo 2). Se fizer e acertar uma quantidade de",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Armadura Brilhante": {
+    "desc": "Você pode usar seu Carisma na Defesa quando usa armadura pesada. Se fizer isso, não pode somar sua Destreza, mesmo que outras habilidades ou efeitos permitam isso. Pré-requisito: 8º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Autoridade Feudal": {
+    "desc": "Você pode gastar uma hora e 2 PM para conclamar o povo a ajudá-lo (qualquer pessoa sem um título de nobreza ou uma posição numa igreja reconhecida pelo seu reino). Em termos de jogo, essas pessoas contam como um parceiro iniciante de um tipo a sua escolha (aprovado pelo mestre) que lhe acompanha até o fim da aventura. Esta habilidade só pode ser usada em locais onde sua posição carregue alguma influência (a critério do mestre). Pré-requisito: 6º nível de nobre.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Educação Privilegiada": {
+    "desc": "Você se torna treinado em duas perícias de nobre a sua escolha.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Estrategista": {
+    "desc": "Você pode direcionar aliados em alcance curto. Gaste uma ação padrão e 1 PM por aliado que quiser direcionar (limitado pelo seu Carisma). No próximo turno do aliado, ele ganha uma ação de movimento. Pré-requisitos: Int 1, treinado em Guerra, 6º nível de nobre.",
+    "cost": "1 PM por aliado que quiser direcionar (limitado pelo seu Carisma)",
+    "action": "Ação padrão"
+  },
+  "nobre|Jogo do Ano|Favor": {
+    "desc": "Você pode usar sua influência para pedir favores a pessoas poderosas. Isso gasta 5 PM e uma hora de conversa e bajulação, ou mais, de acordo com o mestre, e funciona como o uso persuasão de Diplomacia (veja a página 118). Porém, você pode pedir favores ainda mais caros, difíceis ou perigosos — um convite para uma festa particular, uma carona de barco até Galrasia ou mesmo acesso aos planos militares do reino. Se você falhar, não pode pedir o mesmo favor por pelo menos uma semana.",
+    "cost": "5 PM",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|General": {
+    "desc": "Quando você usa o poder Estrategista, aliados direcionados recebem 1d4 PM temporários. Esses PM duram até o fim do turno do aliado e não podem ser usados em efeitos que concedam PM. Pré-requisitos: Estrategista, 12º nível de nobre.",
+    "cost": "4 PM",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Grito Tirânico": {
+    "desc": "Você pode usar Palavras Afiadas como uma ação completa, em vez de padrão. Se fizer isso, seus dados de dano aumentam para d8 e você atinge todos os inimigos em alcance curto. Pré-requisito: 8º nível de nobre.",
+    "cost": "",
+    "action": "Ação completa"
+  },
+  "nobre|Jogo do Ano|Inspirar Confiança": {
+    "desc": "Sua presença faz as pessoas darem o melhor de si. Quando um aliado em alcance curto faz um teste, você pode gastar 2 PM para fazer com que ele possa rolar esse teste novamente.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Inspirar Glória": {
+    "desc": "A presença de um nobre motiva as pessoas a realizarem grandes façanhas. Uma vez por rodada, você pode gastar 5 PM para fazer um aliado em alcance curto ganhar uma ação padrão adicional no próximo turno dele. Você só pode usar esta habilidade uma vez por cena em cada aliado. Pré-requisitos: Inspirar Confiança, 8º nível de nobre.",
+    "cost": "5 PM",
+    "action": "Ação padrão"
+  },
+  "nobre|Jogo do Ano|Jogo da Corte": {
+    "desc": "Quando faz um teste de Diplo macia, Intuição ou Nobreza, você pode gastar 1 PM para rolá-lo novamente.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Liderar pelo Exemplo": {
+    "desc": "Você pode gastar 2 PM para servir de inspiração. Até o início de seu próximo turno, sempre que você passar em um teste de perícia, aliados em alcance curto que fizerem um teste da mesma perícia podem usar o resultado do seu teste em vez de fazer o seu próprio. Pré-requisito: 6º nível de nobre.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Língua de Ouro": {
+    "desc": "Você pode gastar uma ação padrão e 4 PM para gerar o efeito da magia Enfeitiçar com os aprimoramentos de sugerir ação e afetar to das as criaturas dentro do alcance (CD Car). Esta não é uma habilidade mágica e provém de sua capacidade de influenciar outras pessoas. Pré-requisitos: Língua de Prata, 8º nível de nobre.",
+    "cost": "4 PM",
+    "action": "Ação padrão"
+  },
+  "nobre|Jogo do Ano|Língua de Prata": {
+    "desc": "Quando faz um teste de perícia baseada em Carisma, você pode gastar 2 PM para receber um bônus no teste igual a metade do seu nível.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Língua Rápida": {
+    "desc": "Quando faz um teste de Diplo macia para mudar atitude como uma ação completa, você sofre uma penalidade de –5, em vez de –10.",
+    "cost": "",
+    "action": "Ação completa"
+  },
+  "nobre|Jogo do Ano|Presença Majestosa": {
+    "desc": "Sua Presença Aristocrática passa a funcionar contra qualquer criatura com valor de Inteligência (passa a afetar até mesmo animais, embora continue não funcionando contra criaturas sem Int). Além disso, você pode usá-la mais de uma vez contra uma mesma criatura na mesma cena. Pré-requisitos: 16º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Título": {
+    "desc": "Você adquire um título de nobreza. Converse com o mestre para definir os benefícios exatos de seu título. Como regra geral, no início de cada aventura você recebe 20 TO por nível de nobre (rendimentos dos impostos) ou a ajuda de um parceiro veterano (um membro de sua corte). Pré-requisito: Autoridade Feudal, 10º nível de nobre, ter conquistado terras ou realizado um serviço para um nobre que possa se tornar seu suserano.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Jogo do Ano|Voz Poderosa": {
+    "desc": "Você recebe +2 em Diplomacia e Intimidação. Suas habilidades de nobre com alcance curto passam para alcance médio.",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Arma Sagrada": {
+    "desc": "Quando usa Golpe Divino para atacar com a arma preferida de sua divindade, o dado de dano que você rola por Golpe Divino aumenta para d12. Pré-requisito: devoto de uma divindade (exceto Lena e Marah). e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Aura Antimagia": {
+    "desc": "Enquanto sua aura estiver ativa, você e os aliados dentro da aura podem rolar novamente qualquer teste de resistência contra magia recém realizado. Pré-requisito: 14° nível de paladino. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Salvação": {
+    "desc": "Você pode gastar 2 PM para marcar um inimigo em alcance curto. Até o fim da cena, quando você acerta um ataque corpo a corpo nesse inimigo, recupera 5 pontos de vida.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Vindicação": {
+    "desc": "Você pode gastar 2 PM para marcar um inimigo que tenha causado dano a você ou a seus aliados na cena. Você recebe +1 em testes de ataque e +1d8 em rolagens de dano contra o inimigo escolhido, mas sofre –5 em testes de ataque contra quaisquer outros alvos. No 5º nível, e a cada cinco níveis seguintes, você pode pagar +1 PM para aumentar o bônus de ataque em +1 e o bônus de dano em +1d8. O efeito termina caso o alvo fique inconsciente.",
+    "cost": "2 PM, +1 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Zelo": {
+    "desc": "Você pode gastar 1 PM para marcar um alvo em alcance longo. Pelo restante da cena, sempre que se mover na direção desse alvo, você se move com o dobro de seu deslocamento.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Orar": {
+    "desc": "Você aprende e pode lançar uma magia divina de 1º círculo a sua escolha. Seu atributo-chave para esta magia é Sabedoria. Você pode escolher este poder quantas vezes quiser. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Virtude Paladinesca: Caridade": {
+    "desc": "O custo de suas habilidades de paladino que tenham um aliado como alvo é reduzido em –1 PM.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Virtude Paladinesca: Castidade": {
+    "desc": "Você se torna imune a efeitos de encantamento e recebe +5 em testes de Intuição para perceber blefes.",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Virtude Paladinesca: Compaixão": {
+    "desc": "Você pode usar Cura pelas Mãos em alcance curto e, para cada PM que gastar, cura 2d6+1 (em vez de 1d8+1).",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Virtude Paladinesca: Humildade": {
+    "desc": "Na primeira rodada de um combate, você pode gastar uma ação completa para rezar e pedir orientação. Você recebe uma quantidade de PM temporários igual ao seu Carisma (duram até o fim da cena).",
+    "cost": "Variável",
+    "action": "Ação completa"
+  },
+  "paladino|Jogo do Ano|Aura Ardente": {
+    "desc": "Enquanto sua aura estiver ativa, no início de cada um de seus turnos, espíritos e mortos-vivos a sua escolha dentro dela sofrem dano de luz igual a 5 + seu Carisma. Pré-requisito: 10° nível de paladino. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Aura de Cura": {
+    "desc": "Enquanto sua aura estiver ativa, no início de seus turnos, você e os aliados a sua escolha dentro dela curam um número de PV igual a 5 + seu Carisma. Pré-requisito: 6° nível de paladino. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Aura de Invencibilidade": {
+    "desc": "Enquanto sua aura estiver ativa, você ignora o primeiro dano que sofrer na cena. O mesmo se aplica a seus aliados dentro da aura. Pré-requisito: 18° nível de paladino. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Aura Poderosa": {
+    "desc": "O raio da sua aura aumenta para 30m. Pré-requisito: 6° nível de paladino. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Fulgor Divino": {
+    "desc": "Quando usa Golpe Divino, todos os inimigos em alcance curto ficam ofuscados até o início do seu próximo turno. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Arrependimento": {
+    "desc": "Você pode gastar 2 PM para marcar um inimigo em alcance curto. Na próxima vez que esse inimigo acertar um ataque em você ou em um de seus aliados, deve fazer um teste de Vontade (CD Car). Se falhar, fica atordoado no próximo turno dele (apenas uma vez por cena).",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Autoridade": {
+    "desc": "Você pode gastar 1 PM para comandar uma criatura em alcance curto. Faça um teste de Diplomacia oposto pelo teste de Vontade do alvo. Se você vencer, ele obedece a um comando simples, como “pare” ou “largue a arma” (apenas uma vez por cena). Mental.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Coragem": {
+    "desc": "Você pode gastar 2 PM para inspirar coragem em uma criatura em alcance curto, incluindo você mesmo. A criatura fica imune a efeitos de medo e recebe +2 em testes de ataque contra o inimigo com maior ND na cena.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Iluminação": {
+    "desc": "Você pode mar car um inimigo em alcance curto. Quando acerta um ataque corpo a corpo nesse inimigo, você recebe 2 PM temporários. Você só pode proferir este julgamento uma vez por cena.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Justiça": {
+    "desc": "Você pode gastar 2 PM para marcar um inimigo em alcance curto. A próxima vez que esse inimigo causar dano em você ou em um de seus aliados, deve fazer um teste de Vontade (CD Car). Se falhar, sofre dano de luz igual à metade do dano que causou.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Julgamento Divino: Libertação": {
+    "desc": "Você pode gastar 5 PM para cancelar uma condição negativa qualquer (como abalado, paralisado etc.) que esteja afetando uma criatura em alcance curto. Julgamentos Divinos Alguns poderes do paladino são Julgamentos Divinos. Esses poderes compartilham as seguintes regras.",
+    "cost": "5 PM",
+    "action": ""
+  },
+  "paladino|Jogo do Ano|Virtude Paladinesca: Temperança": {
+    "desc": "Quando ingere um alimento, item alquímico ou poção, você consome apenas metade do item. Na prática, cada item desses rende duas “doses” para você. Aura Sagrada. No 3º nível, você pode gastar 1 PM para gerar uma aura com 9m de raio a partir de você e duração sustentada. A aura emite uma luz dourada e agradável. Além disso, você e os aliados dentro da aura somam seu Carisma nos testes de resistência. e",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Agrilhoar os Caídos": {
+    "desc": "Quando uma de suas magias de necromancia reduz os PV de um inimigo vivo a 0 ou menos, você pode aprisionar uma parte de seu espírito, que então fica flutuando ao seu redor. Para cada espírito, você recebe +2 na Defesa e em testes de resistência. Quando lança uma magia de dano, você pode libertar um espírito para causar +2d6 pontos de dano de trevas. Você pode acumular um máximo de espíritos simultâneos igual ao seu atributo-chave e eles permanecem ao seu redor até serem libertados ou até o fim do dia. Pré-requisito: 3º nível de arcanista. e",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Alquimia Arcana": {
+    "desc": "A CD para resistir aos preparados alquímicos e poções que você usa aumenta em +1 para cada círculo de magia a que você tiver acesso. Pré-requisito: treinado em Ofício (alquimista).",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Apoteose Celestial": {
+    "desc": "Sua conexão com o divino se torna ainda mais profunda, às custas de uma fração de sua mortalidade. Você recebe +1 em Sabedoria e aprende uma magia divina de cada círculo a que tenha acesso. Entretanto, sua Constituição diminui em –1. Pré-requisitos: Herança Superior (linhagem celestial), 17° nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Apoteose Dracônica": {
+    "desc": "A influência de sua magia dracônica se torna cada vez mais evidente, tornando-o mais e mais próximo dos dragões. As magias do seu elemento escolhido causam +1 ponto de dano por dado e, contra criaturas imunes a esse elemento, ainda causam metade do dano. Contudo, você não pode mais lançar magias do tipo oposto ao seu elemento escolhido (fogo para frio e ácido para eletricidade). Pré-requisitos: Herança Superior (linhagem dracônica), 17° nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Apoteose Feérica": {
+    "desc": "Sua natureza feérica se acentua, mas isso o afasta do mundo dos mortais. Sempre que um ou mais inimigos falharem em um teste de Vontade contra uma de suas magias, você recebe 1 PM temporário cumulativo que dura até o fim da cena. Se a magia é de encantamento ou ilusão, em vez disso você recebe 2 PM temporários. Em ambos os casos, o ganho é limitado pelo total de PM gasto na magia. Contudo, você não pode mais lançar magias de convocação e necromancia. Pré-requisitos: Herança Superior (linhagem feérica), 17° nível de arcanista.",
+    "cost": "1 PM, 2 PM",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Apoteose Rubra": {
+    "desc": "Você acolheu a corrupção rubra em seu ser — uma escolha que pode ser percebida por todos ao redor. Escolha uma magia que cause dano de cada círculo a que tem acesso. O tipo de dano dessas magias muda para psíquico. Além disso, quando lança uma magia de dano psíquico, você soma seu total de poderes da Tormenta na rolagem de dano. Este poder conta como um poder da Tormenta (exceto para perda de Carisma). Pré-requisitos: Herança Superior (linhagem rubra), 17° nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Arcanista de Linha de Frente": {
+    "desc": "Quando você lança uma magia, criaturas adjacentes sofrem –2 em seus testes de resistência contra ela e, se ela causar dano, causa um dado extra do mesmo tipo.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Asas de Sapo": {
+    "desc": "Você pode empunhar dois catalisadores diferentes em uma mão ao mesmo tempo e, quando lança uma magia, pode gastar ambos para aplicar seus efeitos. Pré-requisito: treinado em Ofício (alquimista).",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Contingência Arcana": {
+    "desc": "Quando lança Runa de Proteção com o aprimoramento que muda o alvo para “você”, você pode substituir o componente material da magia por uma penalidade em PM igual ao círculo da magia inscrita na runa. Pré-requisito: Runa de Proteção.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Contramágica Superior": {
+    "desc": "Quando anula uma magia com uma contramágica, você recebe uma quantidade de PM temporários igual ao círculo da magia anulada (limitada pelos PM que gastou para anular). Pré-requisitos: Contramágica Aprimorada, 9º nível de arcanista. 55Campeões de Arton",
+    "cost": "Variável",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Especialista em Invocações": {
+    "desc": "Você soma seu atributo-chave na Defesa de suas criaturas conjuradas por habilidades mágicas (incluindo capangas) e a ação necessária para comandá-las diminui em um passo (de padrão para movimento e de movimento para livre). Contudo, cada comando só pode ser executado uma vez por rodada.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Familiar Aprimorado": {
+    "desc": "Seu familiar pode falar e passa a fornecer um segundo benefício, escolhido entre os tipos comuns de familiares (Tormenta20, p. 38). Pré-requisitos: Familiar, 5º nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Ingrediente Especial": {
+    "desc": "Quando usa uma poção, você pode usar um catalisador e aplicar seus efeitos a ela. Pré-requisitos: Caldeirão do Bruxo, 5º nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Magia Performática": {
+    "desc": "Quando lança uma magia diante de uma ou mais criaturas inteligentes (Int –3 ou mais), você pode fazer um teste de Atuação (CD 20 + custo em PM da magia) para lançá-la de forma impressionante. Se você passar, a CD da magia aumenta em +1. Esse bônus aumenta em +1 para cada 10 pontos pelos quais o teste passar da CD. Se falhar, a magia não funciona. Pré-requisitos: Car 1, treinado em Atuação.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Memória Súbita": {
+    "desc": "Escolha uma de suas magias que não esteja memorizada. Você pode gastar uma ação de movimento para memorizar essa magia até o fim da cena. Se fizer isso, uma de suas outras magias memorizadas, a sua escolha, deixa de estar memorizada. Pré-requisito: Mago.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "arcanista|Heróis de Arton|O Próprio Sangue": {
+    "desc": "Se você aprender novamente como feiticeiro uma magia que já possa lançar por uma habilidade qualquer (como uma habilidade de raça ou um poder concedido), a CD para resistir a ela aumenta em +2. Pré-requisito: Feiticeiro.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Raio Dividido": {
+    "desc": "Você pode usar Raio Arcano como uma ação completa, em vez de padrão. Se fizer isso, ele afeta um número de alvos igual ao seu atributo-chave. Pré-requisitos: Raio Arcano, 5º nível de arcanista.",
+    "cost": "",
+    "action": "Ação completa"
+  },
+  "arcanista|Heróis de Arton|Sifão de Mana": {
+    "desc": "Quando você lança uma magia e pelo menos um inimigo falha no teste de resistência contra ela, você recupera uma quantidade de pontos de mana igual ao círculo da magia (limitada pelo total de PM gastos nela). Pré-requisito: 17° nível de arcanista.",
+    "cost": "",
+    "action": ""
+  },
+  "arcanista|Heróis de Arton|Trama Célere": {
+    "desc": "Uma vez por rodada, quando usa uma ação padrão para lançar uma magia, você pode gastar 2 PM para fazer uma conjuração dupla. Isso permite que você lance uma segunda magia de 1º círculo como ação livre, pagando seu custo em PM como normal. Pré-requisito: 9º nível de arcanista.",
+    "cost": "2 PM",
+    "action": "Ação padrão"
+  },
+  "arcanista|Heróis de Arton|Transliteração Impossível": {
+    "desc": "Quando usa um pergaminho de uma magia que conheça, você recebe +2 PM para gastar em aprimoramentos e a magia não pode ser anulada por contramágica. Pré-requisito: Escriba Arcano.",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Alma Inabalável": {
+    "desc": "Quando faz um teste de resistência, você pode gastar 1 PM para substituir a perícia normal por Intimidação. Se você passar no teste e a fonte do efeito for uma criatura, ela fica abalada por 1d4 rodadas (Vontade CD igual ao resultado do teste de Intimidação evita). Pré-requisito: treinado em Intimidação.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Ampliar Brado": {
+    "desc": "O alcance de seus brados aumenta para médio e a CD para resistir a eles aumenta em +2.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Arremesso Violento": {
+    "desc": "Enquanto você está em fúria, o dano e o alcance de suas armas de arremesso aumenta em um passo (de curto para médio e de médio para longo) e a penalidade em ataques que você sofre por arremessar armas sem alcance diminui para –2. Pré-requisito: Fúria da Savana.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Beberrão Selvagem": {
+    "desc": "Você pode gastar uma ação de movimento para ingerir um preparado alquímico que cause dano e tenha uma criatura como alvo. Se fizer isso, armazena o equivalente a 3 cargas do preparado em sua boca. Até o fim da cena, sempre que acerta um ataque corpo a corpo, você pode gastar uma carga para que o ataque cause dano adicional igual ao do preparado. Pré-requisito: Con 3.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "barbaro|Heróis de Arton|Brado: Assombroso": {
+    "desc": "Você pode gastar uma quantidade de PM limitada pela sua Constituição. Para cada PM que gastar, você causa 1d6 pontos de dano psíquico em todos os inimigos no alcance do brado (Von CD Con reduz à metade). Medo. Pré-requisito: Brado Assustador.",
+    "cost": "Variável",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Brado: Retardante": {
+    "desc": "Você dá um berro que faz seus inimigos hesi tarem. Criaturas a sua escolha no alcance do brado ficam lentas por 1 rodada. Medo.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Brado: Sísmico": {
+    "desc": "Você emite um brado que faz o chão tremer. Criaturas no alcance do brado ficam vulneráveis por 1d4 rodadas e caídas (Fort CD For reduz para vulneráveis por 1 rodada). Criaturas que já estavam vulneráveis, inclusive por este efeito, ficam desprevenidas pelo mesmo tempo. Pré-requisito: outro poder de brado.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Brado Vitorioso": {
+    "desc": "Quando faz um acerto crítico ou reduz um inimigo a 0 ou menos PV enquanto está em fúria, você pode usar um dos seus poderes de brado como ação livre. Pré-requisitos: Brado Assustador, Sangue dos Inimigos.",
+    "cost": "",
+    "action": "Ação livre"
+  },
+  "barbaro|Heróis de Arton|Enigma do Aço": {
+    "desc": "Após tantas lutas e matanças, você descobriu que a verdadeira força não reside na arma, mas na mão de quem a empunha. Se estiver empunhando uma arma mundana, você recebe +5 em testes de ataque e causa dois dados extras de dano do mesmo tipo. Pré-requisito: 17º nível de bárbaro.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Espiritualista": {
+    "desc": "Você recebe +1 PM a cada nível ímpar. Além disso, aprende e pode lançar uma magia adicional definida pelo seu animal totêmico (atributo-chave Sabedoria) e pode lançá-la e sustentá-la mesmo em fúria. As magias são: Coruja (Augúrio), Corvo (Voz Divina), Falcão (Mapear), Grifo (Físico Divino), Lobo (Localização), Raposa (Camuflagem Ilusória), Tartaruga (Vestimenta da Fé), Urso (Soco de Arsenal). Pré-requisitos: Sab 2, Totem Espiritual, 6º nível de bárbaro.e",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Fúria Bestial": {
+    "desc": "Enquanto você está em fúria, o dano das suas armas naturais aumenta em dois passos e o multiplicador de crítico delas aumenta em +1.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Fúria Elemental": {
+    "desc": "Escolha um elemento entre ácido, eletricidade, fogo ou frio. Uma vez feita, essa escolha não pode ser mudada. Enquanto está em fúria e faz um ataque em que aplique seus benefícios, você causa +1d12 pontos de dano do tipo escolhido. Pré-requisitos: Totem Espiritual, 11º nível de bárbaro. e",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Impiedoso": {
+    "desc": "Você recebe +2 em testes de ataque, rolagens de dano e na CD de suas habilidades contra criaturas vulneráveis.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Invocar os Ancestrais": {
+    "desc": "Você pode gastar uma ação completa e 2 PM para invocar 1d4+1 ancestrais capangas em espaços desocupados em alcance curto. Eles têm Defesa igual à sua, 1 PV , são incorpóreos e falham automaticamente em qualquer teste de resistência ou oposto. Você pode gastar uma ação de movimento para fazê-los se mover (deslocamento 9m). Cada ancestral fornece um bônus cumulativo de +2 em rolagens de dano a um personagem adjacente e, uma vez por rodada, quando faz a ação agredir, você pode gastar um ancestral pra fazer um ataque adicional. Pré-requisitos: Totem Espiritual, 11º nível de bárbaro. e",
+    "cost": "2 PM",
+    "action": "Ação completa"
+  },
+  "barbaro|Heróis de Arton|Manifestar Totem": {
+    "desc": "Escolha um tipo de parceiro entre assassino, atirador, combatente, fortão, guardião, perseguidor ou montaria. Uma vez feita, essa escolha não pode ser mudada. Você pode gastar 3 PM e uma ação de movimento para invocar uma manifestação espiritual de seu animal totêmico até o fim da cena. Ele é um parceiro veterano do tipo escolhido. Pré-requisitos: Totem Espiritual, 7º nível de bárbaro. e",
+    "cost": "3 PM",
+    "action": "Ação de movimento"
+  },
+  "barbaro|Heróis de Arton|Recuperação Gutural": {
+    "desc": "Quando usa um brado enquanto está em fúria, você recebe uma quantidade de PV temporários igual à metade do seu nível + sua Força. Pré-requisitos: Alma de Bronze, um poder de brado.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Regeneração Sobrenatural": {
+    "desc": "Enquanto está em fúria e com menos da metade de seus PV máximos, você tem Cura Acelerada 5. Pré-requisitos: Con 5, Vigor Primal, 5º nível de bárbaro.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Revide": {
+    "desc": "Uma vez por rodada, quando sofre dano de um ataque corpo a corpo enquanto está em fúria, você pode gastar 2 PM para fazer um ataque corpo a corpo contra a criatura que o atacou, desde que ela esteja em seu alcance. Pré-requisitos: Frenesi, 11º nível de bárbaro.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Rigidez Selvagem": {
+    "desc": "Enquanto está em fúria, você soma o bônus da fúria na Defesa, em Fortitude e em RD.",
+    "cost": "",
+    "action": ""
+  },
+  "barbaro|Heróis de Arton|Sede Sanguinária": {
+    "desc": "Enquanto está em fúria, quando faz um acerto crítico ou reduz um inimigo a 0 PV ou menos, você recupera 10 PV e 2 PM. Pré-requisitos: Sangue dos Inimigos, 5º nível de bárbaro.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Acorde Místico": {
+    "desc": "Se estiver empunhando um instrumento musical, você pode gastar uma ação padrão para fazer um teste de Atuação oposto ao teste de Vontade de uma criatura em alcance curto. Se você vencer, a criatura sofre 1d6 pontos de dano de essência e fica vulnerável por 1 rodada. Esse dano aumenta em +1d6 para cada círculo de magia acima do 1º que você puder lançar. Quando faz um ataque como parte da execução de uma magia (como pelo aprimoramento de Toque Chocante), você pode usar este poder no lugar do ataque. e",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "bardo|Heróis de Arton|Acorde Poderoso": {
+    "desc": "Os dados de dano do seu Acorde Místico aumentam para d10, o alcance dele aumenta para médio e, se você vencer o teste oposto, a vítima fica desprevenida, em vez de vulnerável. Pré-requisito: Acorde Místico. e",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Adereço Musical": {
+    "desc": "Você pode gastar 10 minutos para acoplar (ou desacoplar) um item esotérico a um instrumento musical. Isso permite empunhar o esotérico com a mesma mão que empunha o instrumento e usar seu efeito em Acorde Místico, como se esse poder fosse uma magia. Cada instrumento musical só pode ter um esotérico acoplado.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Apresentação Impactante": {
+    "desc": "Quando usa Inspiração, você impacta também os inimigos dentro do alcance. Na próxima vez que um inimigo fizer um teste de ataque ou de resistência nessa cena, ele rola dois dados e usa o pior resultado (apenas uma vez por cena).",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Balada do Atirador": {
+    "desc": "Você pode usar Esgrima Mágica, e qualquer poder de bardo que o tenha como pré-requisito, com armas de ataque à distância leves ou de uma mão. Quando faz isso, você pode substituir testes de Pontaria por Atuação. Pré-requisito: Esgrima Mágica.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Celebridade Artoniana": {
+    "desc": "No início de cada cena, você pode gastar 3 PM para fazer um teste de Atuação oposto pelo teste de Vontade de uma criatura inteligente (Int –3 ou maior) que possa ver. Se você vencer, a criatura se revela sua fã. Você recebe +5 em todos os testes de perícia contra ela e ela sofre –5 em todos os testes dela contra você até o fim da aventura. Quem vai querer agredir seu ídolo? Pré-requisitos: Estrelato, 17º nível de bardo.",
+    "cost": "3 PM",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Dança Acrobática": {
+    "desc": "Você pode substituir testes de Acrobacia por Atuação. Quando você faz isso para passar por um inimigo, ele só pode usar Acrobacia ou Iniciativa no teste oposto.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Espada Encantada": {
+    "desc": "Quando você causa dano com seu Golpe Elemental, o alvo sofre uma condição conforme o tipo de dano escolhido. Ácido: vulnerável por 1 rodada. Eletricidade: ofuscado por 1 rodada. Fogo: em chamas. Frio: lento por 1 rodada. Pré-requisito: Golpe Elemental.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|História de Acampamento": {
+    "desc": "Você pode gastar 1 hora para entreter um número de pessoas igual ao seu nível com histórias e canções. A recuperação de PM por descanso dessas pessoas aumenta em +1 por nível nesse dia.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Inspiração Espirituosa": {
+    "desc": "Na primeira vez que você usa Inspiração em cada combate, você e seus aliados recebem uma quantidade de PM temporários igual ao bônus fornecido por essa habilidade. Pré-requisito: 11º nível de bardo.",
+    "cost": "Variável",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Inspiração Resoluta": {
+    "desc": "Quando você usa Inspiração, você e seus aliados aplicam o bônus recebido na Defesa (além de testes de perícia).",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Inspiração Revigorante": {
+    "desc": "Quando você usa Inspiração, você e seus aliados recebem uma quantidade de PV temporários igual a 5 vezes o bônus fornecido.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Magia Performática": {
+    "desc": "Quando lança uma magia diante de uma ou mais criaturas inteligentes (Int –3 ou mais), você pode fazer um teste de Atuação (CD 20 + custo em PM da magia) para lançá-la de forma impressionante. Se você passar, a CD da magia aumenta em +1. Esse bônus aumenta em +1 para cada 10 pontos pelos quais o teste passar da CD. Se falhar, a magia não funciona. Pré-requisitos: Car 1, treinado em Atuação.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Mago Vermelho": {
+    "desc": "Se estiver empunhando uma arma leve ou ágil, você soma o círculo máximo de magias que pode lançar nos testes de ataque e nas rolagens de dano com ela. Além disso, a mão da arma é considerada livre para lançar magias. Pré-requisito: treinado em Misticismo.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Música: Marcha Vitoriosa": {
+    "desc": "Faça um teste de Atuação. Para cada 10 pontos no resultado desse teste, seus aliados dentro do alcance recebem +1 em rolagens de dano por 1 rodada. Pré-requisitos: Inspiração Marcial, 5º nível de bardo.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Música: Réquiem Sombrio": {
+    "desc": "Um cadáver de uma criatura Média ou menor dentro do alcance se ergue como um morto-vivo sob seu comando. Ele é um parceiro iniciante de um tipo a sua escolha aprovado pelo mestre que não conta em seu limite de parceiros. Você pode animar um máximo de cadáveres simultâneos igual ao seu Carisma. Os cadáveres se decompõem no fim da cena. Pré-requisito: necromancia como uma de suas escolas de magia. e",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Música: Sonata da Distração": {
+    "desc": "Faça um teste de Atuação oposto pela Vontade de cada criatura a sua escolha dentro do alcance (você faz um único teste). Alvos que falharem ficam desprevenidos por 1 rodada. Alvos que passarem ficam imunes a este efeito por 1 dia. Mental.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Portas da Fama": {
+    "desc": "Você recebe +10 em testes de Diplomacia, Enganação e Furtividade para entrar em lugares proibidos — as pessoas simplesmente presumem que você tem acesso a tudo! Pré-requisito: Estrelato.",
+    "cost": "",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Ressoar": {
+    "desc": "Quando lança uma magia que tenha apenas você como alvo, você pode gastar 2 PM e fazer um teste de Atuação (CD 15 + custo em PM da magia). Se você passar, um aliado em alcance curto que esteja sob efeito de sua Inspiração é afetado pelo efeito básico da magia como se você a tivesse lançado nele. Pré-requisito: 17º nível de bardo.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "bardo|Heróis de Arton|Triunfo do Amor": {
+    "desc": "Se você “conquistar” romanticamente um NPC, seus PM aumentam em +1 por nível até o fim da aventura. O mestre define exatamente o que você precisa fazer, de acordo com o NPC. Por padrão, isso envolve aumentar a atitude dele em relação a você para prestativo e então passar em um teste de Atuação, Diplomacia ou Enganação oposto pela Vontade do NPC +10. Você pode receber esse benefício até duas vezes por aventura (ou seja, pode conquistar até duas pessoas por aventura para ganhar +2 PM por nível).",
+    "cost": "+2 PM por nível)",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Ardil Afiado": {
+    "desc": "Você pode usar Audácia em testes de manobra. Se fizer isso contra um oponente desprevenido, soma o dobro do Carisma no teste. Pré-requisitos: Car 1, treinado em Enganação.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Bloqueio Desconcertante": {
+    "desc": "Quando uma criatura erra um ataque corpo a corpo contra você, ou quando você bloqueia um ataque com Aparar, você pode gastar 1 PM. Se você fizer isso, a criatura fica desprevenida contra seu próximo ataque feito até o fim do seu próximo turno. Pré-requisito: Esgrimista.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Bom de Trago": {
+    "desc": "Uma vez por rodada, você pode ingerir uma bebida, preparado ou poção que esteja empunhando como uma ação livre.",
+    "cost": "",
+    "action": "Ação livre"
+  },
+  "bucaneiro|Heróis de Arton|Charme Cafajeste": {
+    "desc": "Você aprende e pode lançar Enfeitiçar (atributo-chave Carisma). A CD para resistir a esta habilidade aumenta em +2 para criaturas inamistosas e em +5 para criaturas hostis. Esta não é uma habilidade mágica e provém de sua habilidade de cativar seus adversários (veja “Magias Simuladas”, p. 44). Pré-requisitos: treinado em Enganação, 3º nível de bucaneiro.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Cobrir de Pólvora": {
+    "desc": "Você pode gastar uma ação de movimento, 1 PM e uma bala de arma de fogo para cobrir uma criatura em alcance curto com uma pequena quantidade de pólvora. O alvo fica cego por 1 rodada (Ref CD Car evita) e, até o fim da cena, o próximo ataque contra ele causa +1d6 pontos de dano de fogo e deixa-o em chamas.",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "bucaneiro|Heróis de Arton|Cortejo de Espadas": {
+    "desc": "Quando você faz um teste de Acrobacia para passar por um inimigo, o espaço ocupado por esse inimigo não conta como terreno difícil e ele só pode usar Iniciativa para o teste oposto. Se você vencer esse teste, recebe +2 na Defesa e em Reflexos contra esse inimigo por 1 rodada. Pré-requisito: treinado em Acrobacia.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Dançar nas Cordas": {
+    "desc": "Se você usar Ataque Acrobático tendo vencido um teste oposto para passar pelo espaço de um inimigo, os bônus fornecidos por esse poder aumentam para +5 e se aplicam a todos os seus ataques contra esse inimigo nessa rodada. Pré-requisito: Ataque Acrobático.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Entrada Triunfal": {
+    "desc": "Se um combate começar e você for o primeiro na iniciativa, recebe uma quantidade de PV temporários igual à metade de seus PV máximos.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Esgrima Sambur": {
+    "desc": "Se estiver empunhando duas armas corpo a corpo leves ou ágeis e fizer a ação agredir, você pode gastar 1 PM para fazer dois ataques, um com cada arma (se tiver Ambidestria ou Estilo de Duas Armas, em vez disso não sofre penalidade para usá-los). Além disso, se tiver o poder Aparar, pode usá-lo uma segunda vez na rodada. Pré-requisito: Esgrimista.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Estampido Ensurdecedor": {
+    "desc": "Quando faz um ataque à distância com uma arma de fogo, você pode pagar 1 PM para deixar todas as criaturas adjacentes a você abaladas e surdas (Fort CD Car reduz a duração das condições para 1 rodada). Pré-requisito: Grudar o Cano.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Estocada no Flanco": {
+    "desc": "Uma vez por rodada, quando vence um teste oposto para passar por um inimigo, você pode gastar 2 PM para fazer um ataque contra ele. Se você acertar o ataque e causar dano de corte ou perfuração, o inimigo fica sangrando. Pré-requisito: Cortejo de Espadas.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Gole da Coragem": {
+    "desc": "Uma vez por cena, quando ingerir uma bebida, preparado ou poção, você recebe uma ação padrão adicional nesse turno.",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "bucaneiro|Heróis de Arton|Golpe Humilhante": {
+    "desc": "Você pode gastar 2 PM para humilhar uma criatura em alcance curto. Até o fim da cena, sempre que você acertar um ataque nessa criatura, ela sofre uma penalidade de –1 na Defesa. A penalidade é cumulativa, limitada pelo seu Carisma e dura até o fim da cena.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Onda de Sangue": {
+    "desc": "Sempre que você deixa alguém sangrando, a perda de vida causada por sangramento aumenta em um passo (cumulativo até um máximo de d12) e a criatura falha automaticamente em seu próximo teste de Constituição para remover essa condição. Prérequisito: Estocada no Flanco.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Passo das Ondas": {
+    "desc": "Uma vez por rodada, quan do acerta um ataque em um inimigo, você pode gastar 2 PM para se mover até a me tade do seu des locamento. Esse deslocamento ignora terreno difícil e não ativa reações dos inimigos (como pelo poder Ataque Reflexo). Pré-requisito: Pernas do Mar.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Pirouette": {
+    "desc": "Enquanto está sob efeito de En Garde, você pode gastar uma ação de movimento para receber +5 na Defesa por 1 rodada. Pré-requisito: En Garde.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "bucaneiro|Heróis de Arton|Remise": {
+    "desc": "Enquanto está sob efeito de En Garde, uma vez por rodada, quando usa a ação agredir, você pode gastar 2 PM para realizar um ataque adicional. Pré-requisitos: En Garde, 7º nível de bucaneiro.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Introdução Calorosa": {
+    "desc": "Na primeira rodada de um combate, você pode gastar uma ação a para se apresentar. Veja o quadro acima para os tipos de ação que você pode gastar e seus respectivos benefícios. Você recebe todos os benefícios das ações anteriores e eles duram até o fim da cena.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Lobo do Mar": {
+    "desc": "Você já viu quase todo o mundo e almeja ver o resto. Quando você chega a um lugar no qual nunca esteve, pelo resto da aventura o custo de Audácia diminui em –1 PM e você pode usá-la em testes de ataque (ambos nesse lugar). Pré-requisito: 17º nível de bucaneiro.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Lorotas da Terra e do Mar": {
+    "desc": "Você pode gastar 10 minutos para contar uma mentira sobre seu passado. Escolha uma cena de uma de suas aventuras e reconte-a de forma “criativa” para um NPC que não a testemunhou. Então faça um teste de Enganação (CD 15 + 5 para cada vez que usou este poder na mesma aventura). Se passar, pode usar um poder qualquer cujos pré-requisitos cumpra e que seja relacionado à sua mentira (a critério do mestre), até o fim do dia ou até usar este efeito novamente. Se falhar, não pode mais usar este efeito até o fim da aventura. Pré-requisitos: treinado em Enganação, 11º nível de bucaneiro.",
+    "cost": "",
+    "action": ""
+  },
+  "bucaneiro|Heróis de Arton|Sucesso Atrai Sucesso": {
+    "desc": "Você pode gastar 2 PM para invocar uma onda de boa sorte. Sempre que fizer um acerto crítico em um inimigo, você recebe um bônus cumulativo de +2 nas rolagens de dano (limitado pelo seu Carisma) até o fim da cena.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Armadilha Alquímica": {
+    "desc": "Quando prepara uma armadilha, você pode gastar uma dose de um preparado alquímico. Se fizer isso, as criaturas afetadas pela armadilha também sofrem os efeitos desse preparado automaticamente. Prérequisito: Armadilheiro.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Avanço do Predador": {
+    "desc": "Uma vez por rodada, quando uma criatura marcada por sua Marca da Presa se afasta voluntariamente de você, você pode gastar 1 PM para se mover na direção dela (até o limite do seu deslocamento). Pré-requisitos: Ímpeto, 11° nível de caçador.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Batedor Marcial": {
+    "desc": "Você pode usar testes de Sobrevivência no lugar de testes de Guerra. Além disso, se passar em um teste para analisar terreno, além de quaisquer benefícios encontrados, na próxima vez que usar Marca da Presa nessa cena você recupera 1 PM.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Curandeiro dos Ermos": {
+    "desc": "Você pode usar Ervas Curativas como uma ação de movimento e os dados de cura dessa habilidade aumentam para d8. Pré-requisito: Ervas Curativas.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "cacador|Heróis de Arton|Elo com a Natureza Maior": {
+    "desc": "Escolha duas magias entre Abençoar Alimentos, Acalmar Animal, Alarme, Aviso, Conjurar Armadilhas , Detectar Ameaças, Orientação ou Suporte Ambiental. Você aprende e pode lançar as magias escolhidas (atributo-chave Sabedoria) e pode usar seus aprimoramentos como se tivesse acesso aos mesmos círculos de magia que um druida do seu nível. Você pode escolher este poder mais vezes para magias diferentes. Pré-requisito: Elo com a Natureza. e",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Explorador Viajado": {
+    "desc": "Você pode escolher dois tipos de terrenos extras para sua habilidade Explorador. Você pode escolher este poder mais vezes para tipos de terrenos adicionais. Pré-requisito: 5º nível de caçador.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Flecheiro": {
+    "desc": "Você pode usar Sobrevivência no lugar de Ofício para fabricar munições e pode fabricar munições com uma melhoria. Pré-requisito: 3° nível de caçador.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Golpe do Predador": {
+    "desc": "Se você causar dano em uma criatura analisada por sua Marca da Presa, ela fica sangrando. Se ela já estiver sangrando, a perda de vida por sangramento aumenta em um passo (cumulativo até um máximo de d12) e ela falha automaticamente em seu próximo teste de Constituição para remover essa condição.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Herói do Povo": {
+    "desc": "Você recebe +2 na Defesa e em testes de resistência. Além disso, sempre que acertar um ataque em um vilão que esteja ameaçando pessoas comuns (um bandido assolando camponeses, um nobre tirano, um monstro devorando viajantes...), você recebe 2 PM temporários. Você pode receber um número máximo de PM temporários por cena igual ao seu nível e eles desaparecem no fim da cena. Pré-requisito: 5º nível de caçador.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Identificar Presas": {
+    "desc": "Você pode identificar criaturas como uma ação de movimento. Além disso, se passar nesse teste, para cada informação obtida você recebe +1 em rolagens de dano contra criaturas dessa espécie até o fim da cena.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "cacador|Heróis de Arton|Lâminas Guardiãs": {
+    "desc": "Enquanto você estiver empunhando duas armas corpo a corpo, recebe +2 na Defesa e em testes de resistência contra inimigos em seu alcance natural. Pré-requisitos: Ambidestria, 5° nível de caçador.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Lanceiro": {
+    "desc": "Você recebe +2 em testes de ataque e rolagens de dano com lanças (exceto lanças montadas e de justa). Além disso, se estiver empunhando uma dessas armas com as duas mãos, seu dano com ela aumenta em um passo e ela é considerada uma arma alongada.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Pega!": {
+    "desc": "Você pode gastar uma ação de movimento e 1 PM para fazer a manobra agarrar contra uma criatura em alcance curto usando Adestramento em vez de Luta, usando seu companheiro animal para isso. Se o alvo estiver sob efeito de sua Marca da Presa, você soma os dados dessa habilidade como um bônus no teste. A criatura permanece agarrada até vencer um teste de manobra contra seu companheiro animal (como acima) ou até você mandar seu animal soltá-la (uma ação livre). Pré-requisito: Companheiro Animal.",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "cacador|Heróis de Arton|Primeiro Sangue": {
+    "desc": "Na primeira rodada de cada combate, você recebe +2 em testes de ataque e todos os seus dados de dano aumentam em dois passos. Pré-requisito: Emboscar.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Sequência Dilaceradora": {
+    "desc": "Quando usa Ambidestria, se acertar ambos os ataques, você pode gastar 1 PM para causar +2d8 pontos de dano no segundo ataque. Pré-requisitos: Ambidestria, 11° nível de caçador.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Sequência do Predador": {
+    "desc": "Quando usa Ambidestria com armas que causam tipos de dano diferentes, se acertar ambos os ataques, você pode gastar 1 PM para fazer uma manobra entre desarmar, derrubar ou quebrar contra o mesmo alvo. Pré-requisitos: Ambidestria, 8° nível de caçador.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Sombra dos Ermos": {
+    "desc": "Você pode gastar uma ação de movimento e 1 PM para receber camuflagem leve com duração sustentada. Pré-requisito: Camuflagem.",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "cacador|Heróis de Arton|Tiro de Abate": {
+    "desc": "Quando usa a ação mirar, até o fim do turno você recebe +2 em testes de ataque e na margem de ameaça com ataques à distância, e os dados extras de sua habilidade Marca da Presa também são multiplicados em caso de acerto crítico. Pré-requisitos: Sab 1, Espreitar.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Tiro Trespassante": {
+    "desc": "Quando você faz um ataque à distância com uma arma de disparo e reduz os pontos de vida do alvo a 0 ou menos, pode gastar 1 PM para fazer um ataque adicional contra outra criatura que esteja adiante na mesma linha, usando a mesma arma e munição do ataque original. Pré-requisito: Arqueiro.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Tempestade de Lâminas": {
+    "desc": "Quando usa Chuva de Lâminas, você pode fazer um ataque adicional com sua arma secundária (para um total de quatro ataques na ação). Pré-requisitos: Chuva de Lâminas, 17º nível de caçador.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Tocaia Habilidosa": {
+    "desc": "Sua Marca da Presa também fornece +1 na CD de suas habilidades contra a criatura marcada para cada PM gasto. Esse bônus dobra com a habilidade Inimigo.",
+    "cost": "",
+    "action": ""
+  },
+  "cacador|Heróis de Arton|Último Sangue": {
+    "desc": "Seus ataques contra criaturas sangrando causam um dado extra de dano do mesmo tipo. Pré-requisito: 5º nível de caçador.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Armas da Cavalaria": {
+    "desc": "Você recebe +2 em testes de ataque e rolagens de dano com espadas longas e bastardas, escudos leves e pesados, lanças montadas e de justa, maças e alabardas. Pré-requisito: 5º nível de cavaleiro.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Cavaleiro das Paixões": {
+    "desc": "Você recebe +5 em testes de atributo para usar suas Paixões. Pré-requisito: um poder de Paixão.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Cavaleiro Bandido": {
+    "desc": "Você abandonou sua honra em favor de vitórias fáceis. Você perde as habilidades Código de Honra e Duelo, mas recebe Ataque Furtivo como se fosse um ladino do seu nível de cavaleiro. Pré-requisitos: Código de Honra, Duelo.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Cavaleiro Sagrado": {
+    "desc": "Você recebe um poder de paladino cujos pré-re quisitos cumpra, usando seu nível de cavaleiro como nível de paladino. Pré-requisitos: treinado em Religião, devoto de uma divindade que aceite paladinos.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Duelista Escudado": {
+    "desc": "Enquanto sua habilidade Duelo estiver ativa e você estiver empunhando um escudo, você recebe RD igual ao bônus concedido pela habilidade.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Duelo Irrecusável": {
+    "desc": "Enquanto sua habilidade Duelo estiver ativa, a criatura escolhida sofre uma penalidade em testes de ataque e rolagens de dano contra seus aliados igual ao bônus concedido pela habilidade.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Grão-Mestre": {
+    "desc": "Você é um cavaleiro lendário. Talvez seja um oficial de alto escalão — ou mesmo o líder — de uma ordem de cavalaria, talvez seja apenas um cavaleiro errante famoso no Reinado e além. Você recebe +5 em testes de Diplomacia e Nobreza e, quando ataca um inimigo contra o qual esteja recebendo os bônus de Duelo, ou quando faz uma investida, você causa dois dados de dano extras do mesmo tipo. Pré-requisito: 17º nível de cavaleiro.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Honra Compartilhada": {
+    "desc": "Quando usa o poder Armadura da Honra, você pode fornecer seu benefício a todos os aliados em alcance curto. Pré-requisito: Armadura da Honra.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Inércia do Aço": {
+    "desc": "Quando acerta um ataque com uma arma de duas mãos em uma criatura, você pode gastar 3 PM para causar metade do dano desse ataque a cada inimigo adjacente a essa criatura. Pré-requisito: 5º nível de cavaleiro.",
+    "cost": "3 PM",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Investida Convicta": {
+    "desc": "Quando faz uma investida, você pode gastar 1 PM para somar seu Carisma nos testes de ataque e rolagens de dano dela.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Investida Defensiva": {
+    "desc": "Quando faz uma investida, você não sofre a penalidade de –2 na Defesa e seu deslocamento não ativa reações de inimigos (como por Ataque Reflexo).",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Mestre das Posturas": {
+    "desc": "O custo para assumir uma postura de combate diminui em –1 PM e você pode assumir e manter duas posturas ao mesmo tempo. Pré-requisitos: dois poderes de postura, 11º nível de cavaleiro.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Paixão: Amor": {
+    "desc": "Ao escolher esta Paixão, decida a quem ela vai se aplicar. Pode ser um personagem específico (como um amigo, parente ou interesse romântico) ou um grupo de pessoas (como sua família). Você pode evocar esta Paixão para extrair forças desse amor. Se passar, recupera 2d4 PM por ponto de bônus máximo que sua habilidade Duelo pode fornecer.",
+    "cost": "4 PM por ponto de bônus máximo que sua habilidade Duelo pode fornecer",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Paixão: Honra": {
+    "desc": "A principal virtude de um cavaleiro, a honra é o combustível de seus feitos. Você pode evocar esta Paixão para resistir aos mais severos ferimentos. Se passar, recupera 2d12 PV por ponto de bônus máximo que sua habilidade Duelo pode fornecer.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Paixão: Hospitalidade": {
+    "desc": "Para um cavaleiro, a hospitalidade vai além do abrigo físico: representa também o papel do cavaleiro como guardião daqueles ao seu redor. Você pode evocar esta Paixão para proteger seus aliados. Se passar, você emana uma aura de 6m de raio; dentro dela, você e seus aliados recebem um bônus na Defesa e em testes de resistência igual ao bônus máximo que sua habilidade Duelo pode fornecer.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Paixão: Lealdade": {
+    "desc": "Ao escolher esta Paixão, decida a quem sua lealdade será dedicada. Pode ser um nobre, uma organização, uma região etc. Você pode evocar esta Paixão para buscar forças nesse compromisso de fidelidade. Se passar, você recebe um bônus em testes de ataque e rolagens de dano igual ao bônus máximo que sua habilidade Duelo pode fornecer.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Postura de Combate: Armamento Pesado": {
+    "desc": "Para assumir esta postura, você precisa estar empunhando uma arma corpo a corpo de duas mãos. Você recebe +2 em Fortitude e em rolagens de dano com esta arma. Para cada PM adicional que você gastar quando assumir a postura, esse bônus aumenta em +1 (até um limite de +5). Além disso, quando acerta um ataque nesta postura, você pode empurrar o alvo 1,5m. Você precisa atacar todos os turnos para manter esta postura ativa.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Postura de Combate: Quebra-Magia": {
+    "desc": "Você recebe resistência a magia +2. Para cada PM adicional que você gastar quando assumir esta postura, esse bônus aumenta em +1. Além disso, uma vez por rodada, quando uma criatura em seu alcance usa uma habilidade mágica, você pode gastar 1 PM para fazer um ataque corpo a corpo contra ela.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Postura de Combate: Sequência Blindada": {
+    "desc": "Para assumir esta postura, você precisa estar vestindo armadura pesada. Quando faz a ação agredir, você pode fazer um ataque desarmado além de seus demais ataques.",
+    "cost": "",
+    "action": ""
+  },
+  "cavaleiro|Heróis de Arton|Presença de Muralha": {
+    "desc": "Você pode gastar 1 PM para gerar uma aura com 9m de raio e duração sustentada. Cada inimigo que começar seu turno nessa área deve fazer um teste de Vontade (CD Car). Se falhar, seu deslocamento é reduzido à metade pela duração do efeito. Se passar, não é mais afetado por este efeito nesse dia. Medo.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Acólito Escudeiro": {
+    "desc": "Você recebe os serviços de um acólito escudeiro, um parceiro especial que não conta em seu limite de parceiros. Você recebe +2 em Religião e o custo de uma de suas magias de 1º círculo, escolhida ao você receber este poder, diminui em –1 PM. Além disso, você pode gastar 1 PM para receber os efeitos de um esotérico ou catalisador em seu inventário, mesmo que não o esteja empunhando. Caso perca seu acólito, você pode treinar outro com uma semana de trabalho. Pré-requisito: Autoridade Eclesiástica.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Arma Divina": {
+    "desc": "Quando você usa Abençoar Arma, além dos efeitos normais, a sua arma adquire os efeitos do encanto sagrado (se você canalizar energia positiva) ou do encanto profano (se você canalizar energia negativa). Pré-requisitos: Abençoar Arma, 7º nível de clérigo.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Bênção de Batalha": {
+    "desc": "Bênção passa a afetar também você (em vez de apenas seus aliados). Além disso, na primeira rodada de combate, você pode lançar essa magia como ação de movimento (em vez de padrão). Pré-requisito: Bênção.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "clerigo|Heróis de Arton|Canalizar Abençoado": {
+    "desc": "Quando você usa Canalizar Energia Positiva, pode gastar 1 PM. Se fizer isso, além do normal, as criaturas afetadas recebem 10 PV temporários. Pré-requisitos: Canalizar Energia Positiva, 11° nível de clérigo.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Canalizar Concentrado": {
+    "desc": "Quando usa Canalizar Energia, você pode afetar apenas uma criatura no alcance (em vez de todas). Se fizer isso, a cura ou o dano da habilidade aumenta em +1 por dado e a CD aumenta em +2. Pré-requisitos: Canalizar Energia, 11° nível de clérigo.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Canalizar Profanado": {
+    "desc": "Quando você usa Canalizar Energia Negativa, pode gastar 1 PM. Se fizer isso, além do normal, criaturas que falhem na resistência não podem recuperar PV por 1 rodada. Pré-requisitos: Canalizar Energia Negativa, 11° nível de clérigo.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Canalizar Poderoso": {
+    "desc": "Os dados de seu Canalizar Energia mudam para d10. Pré-requisitos: Canalizar Amplo, 9° nível de clérigo.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Conversão de Fé": {
+    "desc": "Uma vez por cena, você pode gastar uma ação completa e 3 PM para pregar sua fé a uma criatura inteligente (Int –3 ou maior) do tipo lacaio em alcance curto. Faça um teste de Religião oposto ao teste de Vontade da criatura (você recebe +5 no teste com devotos de seu deus, mas sofre –5 com devotos de outros deuses). Se você vencer, até o fim da cena a atitude da criatura se torna prestativa com relação a você e ela passa a atuar como um parceiro iniciante de um tipo à escolha do mestre, que não conta no seu limite de parceiros. Pré-requisito: Autoridade Eclesiástica.",
+    "cost": "3 PM",
+    "action": "Ação completa"
+  },
+  "clerigo|Heróis de Arton|Dizimar Infiéis": {
+    "desc": "Se estiver usando uma arma afetada por Abençoar Arma, você pode gastar uma ação padrão e 2 PM para canalizar a punição divina! Faça um ataque corpo a corpo e compare o resultado com a Defesa de cada criatura em alcance curto. Então faça uma rolagem de dano e aplique-a em cada criatura atingida. Cada inimigo atingido fica ofuscado (se você canaliza energia positiva) ou vulnerável (se canaliza energia negativa) por 1 rodada. Pré-requisitos: Abençoar Arma, 5º nível de clérigo.",
+    "cost": "2 PM",
+    "action": "Ação padrão"
+  },
+  "clerigo|Heróis de Arton|Égide da Fé": {
+    "desc": "Quando você lança Escudo da Fé, a magia também fornece 5 PV temporários para cada +1 na Defesa. Esses PV temporários duram até o fim da cena. Pré-requisito: Escudo da Fé.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Força da Devoção": {
+    "desc": "Quando você lança uma magia de clérigo, sua CD aumenta em +1 para cada dois poderes concedidos de sua divindade que você possui. Pré-requisito: 6º nível de clérigo.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Liturgia Marcial": {
+    "desc": "Você pode gastar uma ação de movimento para executar uma breve liturgia de sua fé. Se fizer isso, você recebe +2 no teste de ataque e na rolagem de dano de seu próximo ataque corpo a corpo nesse turno.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "clerigo|Heróis de Arton|Missa: Compartilhar Milagre": {
+    "desc": "Escolha um dos seus poderes concedidos. Até o fim do dia, cada participante desta Missa pode usar esse poder durante 1 rodada, como se fosse devoto da sua divindade (os demais pré-requisitos do poder ainda devem ser cumpridos). Pré-requisito: 17° nível de clérigo.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Missa: Imposição da Vontade": {
+    "desc": "A CD para resistir às habilidades dos participantes aumenta em +1.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Missa: Mente Abençoada": {
+    "desc": "Os participantes recebem +2 em testes de perícias baseadas em Sabedoria.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Presente dos Deuses": {
+    "desc": "Você recebe uma arma superior e mágica, com duas melhorias e um encanto a sua escolha. Normalmente, será a arma preferida de seu deus, mas pode ser outra, de acordo com o mestre. A cada quatro níveis, a arma ganha mais uma melhoria e um encanto a sua escolha. Nas mãos de uma pessoa que não seja devota de sua divindade, a arma se comporta como um item mundano. Se a arma for perdida ou destruída, você pode receber outra fazendo uma penitência (como se tivesse descumprido as Obrigações & Restrições de sua divindade). Pré-requisito: 9º nível de clérigo.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Punição Divina": {
+    "desc": "Uma vez por rodada, quando lança uma magia divina com tempo de execução de ação de movimento em si mesmo, você pode gastar +2 PM fazer um ataque como ação livre. Pré-requisito: Prece de Combate. Mestre Celebrante O poder Mestre Celebrante (Tormenta20, p. 58) dobra os benefícios de Missas celebradas pelo personagem. Abaixo detalhamos como isso se aplica. • Se a Missa fornece um bônus numérico que se aplica por toda sua duração, como o de Mente Abençoada, esse bônus é dobrado. • Se fornece uma quantidade de PV ou PM, como Elevação do Espírito, essa quantidade é dobrada. • Se permite usar uma habilidade ou receber um benefício uma vez, como Compartilhar Milagre, esse efeito pode ser usado uma vez adicional pela duração da Missa.",
+    "cost": "+2 PM",
+    "action": "Ação de movimento"
+  },
+  "clerigo|Heróis de Arton|Representante Divino": {
+    "desc": "Você fala com a autoridade de seu deus. Escolha uma magia divina que possa lançar com tempo de execução de ação padrão ou completa. Você pode lançar essa magia como uma ação de movimento, sem precisar gesticular ou se concentrar (mas ainda precisa falar). Pré-requisito: 17º nível de clérigo.",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "clerigo|Heróis de Arton|Solo Profanado": {
+    "desc": "Quando você lança uma magia de dano de trevas dentro de uma área de Profanar, criaturas que falhem no teste de resistência da magia não podem curar PV por um número de rodadas igual ao círculo da magia. Pré-requisito: Profanar.",
+    "cost": "",
+    "action": ""
+  },
+  "clerigo|Heróis de Arton|Solo Sagrado": {
+    "desc": "Quando você lança uma magia de luz dentro de uma área de Consagrar, criaturas a sua escolha nessa área recebem RD igual ao dobro do círculo da magia contra o próximo dano que sofrerem até o início do seu próximo turno. Pré-requisito: Consagrar.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Arma Tradicional": {
+    "desc": "Quando faz um ataque com uma foice, você pode gastar 2 PM para lançar uma magia de ácido, eletricidade, fogo ou frio com execução de movimento, padrão ou completa como ação livre. Considere que a mão da arma está livre para lançar essa magia. Pré-requisitos: druida de Arton, 5º nível de druida.",
+    "cost": "2 PM",
+    "action": "Ação livre"
+  },
+  "druida|Heróis de Arton|Auspício do Crepúsculo": {
+    "desc": "Você pode gastar 1 PM para cobrir uma de suas armas com sombras até o fim da cena. A arma causa +1d6 pontos de dano de trevas. Se você estiver sob efeito de escuridão, sempre que acertar um ataque com ela em combate, recebe 5 PV temporários cumulativos. Pré-requisito: druida de Tenebra.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Auspício da Madrugada": {
+    "desc": "Você pode gastar 1 PM para impor uma penali dade de –1 em testes de perícia e na CD de habilidades de criaturas a sua escolha em alcance curto por 1 rodada. Se você estiver sob efeito de escuridão, a penalidade se torna –2. Pré-requisito: druida de Tenebra.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Auspício da Meia-Noite": {
+    "desc": "Você pode gastar uma ação de movimento e 2 PM para aumentar a CD das suas habilidades de druida em +1 até o fim da cena. Se você usar este poder sob efeito de escuridão, o bônus na CD se torna +2. Pré-requisito: druida de Tenebra.",
+    "cost": "2 PM",
+    "action": "Ação de movimento"
+  },
+  "druida|Heróis de Arton|Banquete Selvagem": {
+    "desc": "Se você estiver em forma selvagem e gastar uma ação padrão para devorar um pedaço de uma criatura inconsciente que esteja com 0 PV ou menos (exceto construtos e seres incorpóreos), recebe +2 em Força, +5 em Intimidação e 2 PV temporários por nível até o fim da cena. Se a criatura é do tipo lacaio, ela morre. Pré-requisitos: druida de Megalokk, Forma Selvagem.",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "druida|Heróis de Arton|Ciclo da Vida": {
+    "desc": "Uma vez por cena, você pode gastar uma ação padrão para fazer um cadáver em alcance curto se decompor instantaneamente. Se fizer isso, você recebe +2 pontos de mana por ND que a criatura tinha em vida. Esses PM adicionais duram até o fim do dia.",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "druida|Heróis de Arton|Companheiro Aberrante": {
+    "desc": "Escolha um de seus companheiros animais. Ele recebe o tipo aberrante, ganhando os bônus de seu nível. Um parceiro aberrante fornece os benefícios a seguir. Iniciante: uma vez por rodada, você pode gastar 1 PM para disparar um pulso mental contra uma criatura em alcance curto; ela sofre 2d6 pontos de dano psíquico ou perde 1d4 PM, a sua escolha. Veterano: você também pode gastar 2 PM para causar 4d6 pontos de dano ou fazer a criatura perder 2d4 PM. Mestre: você também pode gastar 4 PM para causar 6d6 pontos de dano ou fazer a criatura perder 3d4 PM. Pré-requisitos: druida de Aharadak, Companheiro Animal, 6º nível de druida.",
+    "cost": "1 PM, 2 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Companheiro Elemental": {
+    "desc": "Escolha um de seus companheiros animais. Ele recebe o tipo destruidor, ganhando os bônus de seu nível. Se você possuir o suplemento Ameaças de Arton, em vez disso ele pode se tornar também um parceiro aquin’ne, t’peel, pakk ou terrier (também ganhando o bônus de seu nível). Pré-requisitos: druida de Arton, Companheiro Animal.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Erupção Elemental": {
+    "desc": "Se você estiver em forma elemental, pode gastar uma ação de movimento e 2 PM. Se fizer isso, seu próximo ataque com uma arma natural realizado nessa cena afeta todas as criaturas em um cone de 6m (faça um único ataque corpo a corpo e compare o resultado com a Defesa de cada criatura na área) e causa dois dados de dano extras. Pré-requisito: Forma Elemental.",
+    "cost": "2 PM",
+    "action": "Ação de movimento"
+  },
+  "druida|Heróis de Arton|Força da Natureza": {
+    "desc": "Se estiver em forma selvagem, você pode gastar 4 PM para se cobrir de terra e raízes, como um elemental da própria terra, até o fim da cena. Nesse estado, você recebe +4 em um atributo a sua escolha. Pré-requisitos: Forma Selvagem Superior, 17º nível de druida.",
+    "cost": "4 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Forma Aberrante": {
+    "desc": "Quando usa Forma Selvagem, você pode gastar +2 PM para assumir uma forma aberrante. Nessa forma, você conta como se tivesse dois poderes da Tormenta adicionais (exceto para perda de Carisma). Pré-requisitos: druida de Aharadak, Forma Selvagem. e",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Forma de Cardume": {
+    "desc": "Quando usa Forma Selvagem, você pode gastar +1 PM para assumir a forma de um cardume de criaturas anfíbias com duração sustentada. Você recebe imunidade a manobras de combate, sofre apenas metade do dano de armas, pode entrar nos espaços ocupados por inimigos e criaturas no mesmo espaço que você ficam em condição ruim para lançar magias. Pré-requisitos: druida de Oceano, Forma Selvagem. e",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Forma Elemental": {
+    "desc": "Quando usa Forma Selvagem, você pode gastar +2 PM para assumir uma forma elemental. Escolha entre ácido, eletricidade, fogo ou frio. Você recebe imunidade ao tipo de dano escolhido e vulnerabilidade ao tipo oposto. Além disso, o alcance de suas armas naturais aumenta em +1,5m e elas causam dano do tipo escolhido (em vez de seu dano normal). Pré-requisitos: druida de Arton, Forma Selvagem. e",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Forma Esquelética": {
+    "desc": "Quando usa Forma Selvagem, você pode gastar +2 PM para assumir uma forma esquelética. Seu tipo muda para morto-vivo e você recebe redução de corte, frio e perfuração 5 e imunidade a efeitos de cansaço, metabólicos e de veneno. Por fim, você sofre dano por efeitos mágicos de cura de luz (Vontade CD do efeito reduz à metade) e recupera PV com dano de trevas. Pré-requisitos: druida de Tenebra, Forma Selvagem. e",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Forma Vegetal": {
+    "desc": "Quando usa Forma Selvagem, você pode gastar +2 PM para assumir uma forma vegetal. Você recebe RD 5/corte ou fogo e Natureza Vegetal (fica imune a atordoamento e metamorfose, mas é afetado por efeitos que afetem plantas monstruosas — se o efeito não tiver um teste de resistência, você tem direito a um teste de Fortitude). Pré-requisitos: druida de Allihanna, Forma Selvagem. e",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Instinto Venenoso": {
+    "desc": "Você pode usar Sab como atributo-chave de venenos (em vez de Int). Além disso, em Forma Selvagem, pode aplicar venenos de contato em suas armas naturais como ação livre. Pré-requisito: Coração da Selva.",
+    "cost": "",
+    "action": "Ação livre"
+  },
+  "druida|Heróis de Arton|Metamorfose Instantânea": {
+    "desc": "Uma vez por rodada, quando usa Forma Selvagem, você pode gastar +2 PM para usar essa habilidade como ação livre. Pré-requisitos: Forma Selvagem, 11º nível de druida.",
+    "cost": "+2 PM",
+    "action": "Ação livre"
+  },
+  "druida|Heróis de Arton|Oráculo da Natureza": {
+    "desc": "Você pode gastar uma ação de movimento para se conectar com as energias naturais do mundo. Enquanto você permanecer no mesmo lugar, a CD para resistir a suas magias aumenta em +2 e, sempre que você lança uma magia, recebe 2 PM para gastar em aprimo ramentos. Se você estiver em um ambiente urbano, a ação necessária para usar este poder muda para completa. Pré-requisitos: Xamã Místico, 11º nível de druida.",
+    "cost": "2 PM",
+    "action": "Ação de movimento"
+  },
+  "druida|Heróis de Arton|Orador dos Elementos": {
+    "desc": "Você aprende e pode lançar uma magia de dano de ácido, eletricidade, fogo ou frio, arcana ou divina, de qualquer círculo que possa lançar. Além disso, você pode aprender magias arcanas de ácido, eletricidade, fogo ou frio como se fossem divinas.",
+    "cost": "",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Proteção Fúngica": {
+    "desc": "Você pode gastar 1 PM para cobrir seu corpo de esporos com duração sustentada. Nesse estado, sempre que você sofrer um ataque corpo a corpo de uma criatura adjacente, ela perde 1d8 PV . A cada quatro níveis acima do 1º, você pode gastar +1 PM quando usa este poder para aumentar a perda de vida em +1d8. Veneno. Pré-requisito: Coração da Selva.",
+    "cost": "1 PM, +1 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Transformação Repugnante": {
+    "desc": "Quando usa Forma Selvagem, você pode gastar +2 PM. Se fizer isso, inimigos em alcance curto sofrem 1d6 pontos de dano psíquico para cada poder da Tormenta que você possui e ficam alquebrados e frustrados (Vontade CD Sab reduz à metade e evita as condições). Pré-requisito: Forma Aberrante.",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "druida|Heróis de Arton|Xamã Místico": {
+    "desc": "Você recebe +1 PM por nível de druida, pode aprender e lançar magias de uma escola adicional e a CD para resistir a suas magias aumenta em +1. Prérequisito: não possuir Forma Selvagem.",
+    "cost": "+1 PM por nível de druida",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Análise Tática": {
+    "desc": "Você recebe +2 em Guerra e pode fazer testes dessa perícia para identificar criatura contra humanoides (veja Misticismo em Tormenta20, p. 121). Pré-requisito: treinado em Guerra.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Arremesso de Investida": {
+    "desc": "Quando faz uma investida, você pode gastar 1 PM para realizar um ataque à distância adicional com uma arma de arremesso contra o alvo da investida.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Bloqueio Brutal": {
+    "desc": "Uma vez por rodada, quando é atingido por um ataque, você pode gastar 2 PM para fazer uma rolagem de dano corpo a corpo e subtrair o resultado dessa rolagem do dano causado pelo ataque. Pré-requisito: For 5.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Corte Ágil": {
+    "desc": "Uma vez por rodada, quando faz um ataque com uma arma ágil ou leve, você pode gastar 1 PM para se mover até metade do seu deslocamento antes ou depois de fazer o ataque. Esse movimento não ativa reações dos inimigos (como de Ataque Reflexo). Pré-requisito: Des 1.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Criar Oportunidade": {
+    "desc": "Quando você ou um aliado em alcance curto atacar uma criatura sob efeito do seu Xadrez de Batalha, você pode gastar 1 PM para que esse ataque cause +1d10 pontos de dano. Pré-requisito: Xadrez de Batalha.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Defesa Estratégica": {
+    "desc": "Você soma sua Inteligência na Defesa, limitada pelo seu nível. Pré-requisito: Int 1.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Determinação Inabalável": {
+    "desc": "Enquanto estiver com metade dos seus pontos de vida ou menos, você recebe +2 em testes de resistência e o custo de sua habilidade Durão diminui em –1 PM. Pré-requisito: 11º nível de guerreiro.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Estrategista Inspirador": {
+    "desc": "Em seu primeiro turno de um combate, você pode gastar uma ação padrão e fazer um teste de Guerra. Se fizer isso, para cada 10 pontos no resultado do teste, você e seus aliados em alcance curto recebem 1 PM temporário. Esses PM temporários desaparecem no fim da cena. Pré-requisito: treinado em Guerra.",
+    "cost": "1 PM",
+    "action": "Ação padrão"
+  },
+  "guerreiro|Heróis de Arton|Executor": {
+    "desc": "Você recebe +1d6 nas rolagens de dano contra criaturas que estejam com menos da metade dos pontos de vida. A cada quatro níveis além do 1º, esse dano extra aumenta em um passo.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Fender Defesas": {
+    "desc": "Quando você acerta um ataque usando Ataque Especial, a criatura sofre uma penalidade na Defesa igual ao total de PM gastos nessa habilidade por 1 rodada.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Inércia do Aço": {
+    "desc": "Quando acerta um ataque com uma arma de duas mãos em uma criatura, você pode gastar 3 PM para causar metade do dano desse ataque a cada inimigo adjacente a essa criatura. Pré-requisito: 5º nível de guerreiro.",
+    "cost": "3 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Investida Ricochete": {
+    "desc": "Uma vez por rodada, quando faz uma investida e acerta o ataque, você pode gastar 2 PM para atacar outra criatura que você consiga alcançar como parte dessa investida. Pré-requisito: Bater e Correr, 5º nível de guerreiro.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Manobra Dupla": {
+    "desc": "Uma vez por rodada, quando faz uma manobra de combate usando uma arma versátil, você pode pagar 1 PM para executar uma manobra diferente extra.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Mente Disciplinada": {
+    "desc": "Sempre que você é afetado por uma habilidade de um aliado que fornece um bônus numérico em testes de perícia, rolagens de dano ou na Defesa, para você esse bônus aumenta em +1. Pré-requisito: 6º nível de guerreiro.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Operações Combinadas": {
+    "desc": "Quando usa Ordens de Engajamento, você pode gastar +3 PM. Se fizer isso, pode atacar junto do aliado e, se um de vocês usar habilidades com custo em PM que forneçam bônus a esse ataque ou a seu dano, o outro também é afetado (apenas se isso for aplicável ao ataque). Pré-requisitos: Ordens de Engajamento, 14º nível de guerreiro.",
+    "cost": "+3 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Ordens de Engajamento": {
+    "desc": "Uma vez por rodada, quando acerta um ataque em uma criatura sob efeito do seu Xadrez de Batalha, você pode gastar 2 PM para que um aliado em alcance curto possa fazer um ataque contra essa criatura. Pré-requisitos: Criar Oportunidade, 11º nível de guerreiro.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Recuperar Fôlego": {
+    "desc": "Uma vez por cena, se estiver com 0 PM, você pode gastar uma ação de movimento para recuperar 1d8 PM.",
+    "cost": "0 PM, 8 PM",
+    "action": "Ação de movimento"
+  },
+  "guerreiro|Heróis de Arton|Resiliência Marcial": {
+    "desc": "Sempre que sofrer dano letal, você recebe redução de dano 1 cumulativa (limitada pelo seu nível). Esse efeito dura até o fim da cena ou até você recuperar pontos de vida de qualquer forma. Pré-requisito: 4º nível de guerreiro.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Soldado de Infantaria": {
+    "desc": "Você recebe +3m em seu deslocamento e seu limite de carga au menta em 6 espaços.",
+    "cost": "",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Velho de Guerra": {
+    "desc": "Seus olhos já viram muito e você não se abala facilmente. Você recebe +5 em Intimidação e imunidade a medo. Além disso, uma vez por cena pode gastar 5 PM para evitar completamente um efeito qualquer (ataque, magia etc.) usado contra você por outra criatura. Se o efeito for de área ou tiver outros alvos, continua funcionando normalmente contra eles. Pré-requisito: 17º nível de guerreiro.",
+    "cost": "5 PM",
+    "action": ""
+  },
+  "guerreiro|Heróis de Arton|Xadrez de Batalha": {
+    "desc": "Você pode gastar uma ação de movimento e 1 PM para analisar um oponente em alcance curto. Se fizer isso, você recebe +2 na Defesa e em testes de Reflexos contra essa criatura até o fim da cena. Esse bônus aumenta em +1 para cada outro poder que você possua que tenha Xadrez de Batalha como pré-requisito. Pré-requisito: treinado em Guerra. O Império de Tauron quer VOCÊO Império de Tauron quer VOCÊ",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "inventor|Heróis de Arton|Alquimista Exímio": {
+    "desc": "Quando você usa um preparado alquímico ou uma poção, a CD para resistir a ele aumenta em +2 e, se ele causar dano ou recuperar PV ou PM, esse efeito aumenta em +1 por dado. Pré-requisito: Alquimista Iniciado.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Alterar Programação": {
+    "desc": "Você pode gastar uma ação completa e 3 PM para alterar a programação de um construto não inteligente (Int –4 ou menor) adjacente. Faça um teste de Ofício (artesão) oposto ao teste de Vontade do construto. Se você vencer, ele fica confuso por 1 rodada e vulnerável. Se for um lacaio, em vez disso fica sob seu controle até o fim da aventura (veja Domar Criatura, p. 17). Você só pode controlar um construto dessa forma por vez e cada construto só pode ser alvo deste poder uma vez por cena. Pré-requisito: treinado em Ofício (artesão).",
+    "cost": "3 PM",
+    "action": "Ação completa"
+  },
+  "inventor|Heróis de Arton|Aparato Personalizado": {
+    "desc": "O primeiro aparato de cada uma de suas enge nhocas não aumenta a CD para ativá-la. Pré-requisito: Engenhoqueiro.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Armadura Avançada": {
+    "desc": "Quando ativa uma engenhoca acoplada, você recebe um bônus no teste de ativação igual ao número de melhorias da armadura. Além disso, você pode gastar 4 PM para ativar uma engenhoca acoplada como ação livre (apenas se sua ativação for ação de movimento, padrão ou completa). Pré-requisitos: Armadura Mecanizada, 7º nível de inventor.",
+    "cost": "4 PM",
+    "action": "Ação de movimento"
+  },
+  "inventor|Heróis de Arton|Armadura Mecanizada": {
+    "desc": "Você pode gastar T$ 100 e 1 dia de trabalho para acoplar uma engenhoca em sua armadura. Armaduras leves podem ter uma engenhoca acoplada e armaduras pesadas podem ter até três. Uma engenhoca acoplada não conta em seu limite de itens vestidos e não precisa ser empunhada. Pré-requisito: Engenhoqueiro.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Artesão Criativo": {
+    "desc": "Você pode usar Ofício (artesão) no lugar de qualquer outro Ofício para qualquer fim (como pré-requisitos, por exemplo). Pré-requisito: treinado em Ofício (artesão).",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Autômato Alquímico": {
+    "desc": "Seu autômato pode armazenar itens alquímicos e poções, com uma capacidade de carga igual à sua Inteligência. Além disso, uma vez por rodada, você pode gastar 1 PM para usar um desses itens como uma ação livre. Pré-requisito: Autômato.",
+    "cost": "1 PM",
+    "action": "Ação livre"
+  },
+  "inventor|Heróis de Arton|Autômato Engenhocado": {
+    "desc": "Você pode gastar T$ 100 e 1 dia de trabalho para acoplar em seu autômato uma engenhoca que simule uma magia de 1º círculo com alvo 1 criatura ou objeto, ou que afete uma área. Uma vez por rodada, se o autômato estiver em alcance curto, você pode gastar +2 PM para ativar essa engenhoca como uma ação de movimento, tendo como origem o autômato. Pré-requisito: Autômato Prototipado.",
+    "cost": "+2 PM",
+    "action": "Ação de movimento"
+  },
+  "inventor|Heróis de Arton|Catalisador Experimental": {
+    "desc": "Quando ativa uma engenhoca, você pode usar um catalisador e aplicar seus efeitos a ela. Pré-requisitos: Engenhoqueiro, 5º nível de inventor.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Estilista": {
+    "desc": "Se estiver vestindo um item de vestuário feito por você mesmo, o bônus em perícias fornecido por ele aumenta em +1 e se aplica também a testes de Diplomacia e Enganação com criaturas inteligentes (Int –3 ou maior). Pré-requisitos: Car 1, treinado em Ofício (alfaiate).",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Explicação Científica": {
+    "desc": "Você pode gastar uma ação de movimento e uma quantidade de PM limitada pela sua Inteligência para receber resistência a magia igual aos PM gastos até o fim da cena. Pré-requisito: 5º nível de inventor.",
+    "cost": "Variável",
+    "action": "Ação de movimento"
+  },
+  "inventor|Heróis de Arton|Explorar Fraqueza": {
+    "desc": "Quando usa Encontrar Fraqueza em um inimigo, você também ignora 5 pontos da redução de dano dele até o fim da cena. Pré-requisito: Encontrar Fraqueza.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Farmácia Mágica": {
+    "desc": "Você pode usar Farmacêutico em poções de cura. Pré-requisitos: Alquimista Iniciado, Farmacêutico.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Forçar a Calibragem": {
+    "desc": "Quando faz um teste para ativar uma engenhoca, você pode sofrer uma penalidade de –5 nesse teste para aumentar a CD para resistir à engenhoca em +2. Pré-requisito: Engenhoqueiro.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Galvanização": {
+    "desc": "Você pode gastar uma ação padrão para adicio nar um material especial a um item adequado (isso não conta no limite de melhorias do item e se acumula com outros materiais especiais). O preço do material é reduzido a 5% do normal e você não precisa fazer o teste de Ofício para aplicá-lo, mas ele só dura até o fim da cena. Pré-requisito: treinado em Ofício (artesão).",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "inventor|Heróis de Arton|Gênio Inovador": {
+    "desc": "Você entende o mundo de forma diferente, e sua capacidade de inovar é quase ilimitada. Você pode usar Inteligência como atributo-chave de até duas perícias a sua escolha (em vez do atributo normal). Além disso, quando fabrica um item superior, você pode adicionar uma melhoria extra gratuita, que não conta no limite (por exemplo, por T$ +6.000, adiciona cinco melhorias, em vez de quatro). Por fim, os itens que você fabrica podem ter dois materiais especiais diferentes (em vez de apenas um). Pré-requisito: 17º nível de inventor.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Golpe de Gênio": {
+    "desc": "Uma vez por aventura (ou uma vez por mês, de acordo com o mestre), você pode usar Engenhosidade duas vezes em um mesmo teste, ou pode fabricar um item superior ou mágico com uma semana de trabalho (em vez de um mês). Pré-requisito: 11º nível de inventor.",
+    "cost": "",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Infusão Distante": {
+    "desc": "Quando usa um item alquímico ou uma poção que normalmente afetaria apenas um alvo adjacente, você pode gastar 1 PM para afetar um alvo em alcance curto. Se tiver o poder Granadeiro, em vez disso você afeta um alvo em alcance médio. Pré-requisito: Alquimista Iniciado.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Oficina Esotérica": {
+    "desc": "Você pode usar Oficina de Campo em itens esotéricos, poções e pergaminhos. Itens esotéricos aumentam o limite de PM para magias em +1, poções rendem duas doses (a segunda dose deve ser consumida até o fim do dia) e pergaminhos permitem gastar +1 PM em aprimoramentos (mesmo que o usuário não conheça a magia). Pré-requisitos: treinado em Misticismo, Oficina de Campo.",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "inventor|Heróis de Arton|Saraivada Alquímica": {
+    "desc": "Quando usa um preparado alquímico ou uma poção de dano, você pode gastar 2 PM e uma dose extra do mesmo item para aumentar o dano causado em 50%. Pré-requisitos: Granadeiro, 7º nível de inventor.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Ameaça Brutal": {
+    "desc": "Se fizer um teste de Intimidação para assustar uma criatura na qual tenha causado dano desde a última rodada, você recebe +5 no teste e ela fica apavorada se você passar por 5 ou mais (em vez de 10 ou mais).",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Assassino em Série": {
+    "desc": "Você pode gastar 2 PM para usar Ataque Furtivo uma segunda vez na rodada. Pré-requisito: 11º nível de ladino.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Ataque Furtivo Letal": {
+    "desc": "Quando você faz um ataque furtivo, sempre que rolar o resultado máximo ou um ponto abaixo em um dado da habilidade (por exemplo, um 5 ou 6 ao rolar 1d6), role um dado extra. Pré-requisito: 5º nível de ladino.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Bombardeiro Furtivo": {
+    "desc": "Você pode usar Ataque Furtivo ao utilizar preparados alquímicos de dano. Pré-requisito: treinado em Ofício (alquimista).",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Chefe de Gangue": {
+    "desc": "Seus capangas podem usar Ataque Furtivo +1d6 e Evasão, e podem fazer testes de Reflexos usando o seu valor nessa perícia. Pré-requisito: 5º nível de ladino.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Conhecimento Anatômico": {
+    "desc": "Contra humanoides, os dados do seu Ataque Furtivo aumentam em um passo. Pré-requisito: treinado em Cura.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Enganar os Olhos": {
+    "desc": "Quando você faz um teste de Acrobacia para passar por inimigo, a criatura o considera invisível por 1 rodada (Reflexos CD Des evita).",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Finta Acrobática": {
+    "desc": "Você soma sua Destreza em testes de Enganação para fintar. Pré-requisitos: treinado em Acrobacia e Enganação.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Improvisação Arcana": {
+    "desc": "Quando passa em um teste de Misticismo para lançar uma magia arcana que não conhece de um pergaminho, para cada 2 pontos pelos quais seu teste superar a CD, você pode gastar 1 PM em aprimoramentos da magia. Pré-requisito: treinado em Misticismo.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Investida Rasteira": {
+    "desc": "Se você acertar um ataque corpo a corpo contra uma criatura que sofreu uma investida desde a última rodada, ela fica desprevenida por 1 rodada e caída (Reflexos CD Des evita).",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Mestre Assassino": {
+    "desc": "Quando usa Assassinar, você pode gastar +2 PM para: • Usar esse poder como uma ação livre. • Rolar dois dados no teste de ataque contra a criatura analisada e usar o melhor resultado. • Ignorar a imunidade a acertos críticos da criatura analisada. Você pode usar quantos desses modificadores quiser (desde que pague por eles!). Assim, se gastar +6 PM, você usa Assassinar como ação livre, rola dois dados no teste de ataque e afeta criaturas imunes. Pré-requisitos: treinado em Cura e Percepção, Assassinar, Ataque Furtivo Letal, 11º nível de ladino.",
+    "cost": "+2 PM, +6 PM",
+    "action": "Ação livre"
+  },
+  "ladino|Heróis de Arton|Mestre Envenenador": {
+    "desc": "Quando afeta uma criatura com um veneno, você pode gastar +2 PM para: • Aumentar quaisquer efeitos do veneno em mais um dado do mesmo tipo. • Aumentar a CD para resistir ao veneno em +5. • Ignorar a imunidade a venenos da criatura. Você pode usar quantos desses modificadores quiser. Pré-requisitos: treinado em Cura, Veneno Persistente, 11º nível de ladino.",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Papo Furado": {
+    "desc": "Quando você passa em um teste de Diplomacia contra uma criatura, se passar também em um teste de Enganação contra ela até o fim do seu próximo turno, a atitude da criatura em relação a você melhora em uma categoria. Pré-requisitos: treinado em Diplomacia e Enganação.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Precisão Furtiva": {
+    "desc": "O alcance do seu Ataque Furtivo aumenta em uma categoria (de curto para médio e de médio para longo). Além disso, quando você ataca uma criatura desprevenida ou que você esteja flanqueando, sua margem de ameaça aumenta em +2. Pré-requisitos: treinado em Pontaria, Ataque Furtivo.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Rei do Crime": {
+    "desc": "Você é uma lenda dos becos e das tavernas, e todos querem lhe servir para ter uma chance de progredir no submundo. Uma vez por cena, você pode gastar 6 PM para invocar 2d4+2 assassinos capangas em espaços desocupados em alcance curto. Os assassinos possuem deslocamento 9m, Defesa 17, dano 1d6+5 de corte cada e Ataque Furtivo +4d6. Uma vez por rodada, quando você é alvo de um efeito, pode sacrificar um capanga adjacente para ignorar o efeito. Veja “Capangas”, p. 240. Pré-requisitos: Chefe de Gangue, Contatos no Submundo, Mente Criminosa, 17º nível de ladino.",
+    "cost": "6 PM",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Sabotagem Corrosiva": {
+    "desc": "Quando faz um teste de Ladinagem para abrir fechaduras ou sabotar, você pode gastar um ácido para receber um bônus de +5 nesse teste. Além disso, pode gastar uma ação de movimento e um ácido para fazer um teste de Ladinagem oposto ao teste de Reflexos de uma criatura em alcance curto. Se você vencer o teste oposto, a criatura fica desprevenida e sofre –5 em testes de ataque por 1 rodada.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "ladino|Heróis de Arton|Senhor do Submundo": {
+    "desc": "Você é uma figura sombria e sua mera presença incita medo e respeito. Você recebe +5 em Intimidação e imunidade a medo. Além disso, quando você fica adjacente a outra criatura (independente de quem tenha se movido), você pode deixá-la apavorada e desprevenida por 1 rodada. Uma mesma criatura só pode ser afetada por este poder uma vez por cena. Prérequisitos: treinado em Intimidação, 17º nível de ladino.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Truque de Palco": {
+    "desc": "Escolha três magias arcanas de 1º círculo que possuam o aprimoramento truque. Você aprende e pode lançar essas magias (atributo-chave Inteligência), mas apenas com esse aprimoramento. Esta não é uma habilidade mágica — os efeitos provêm de prestidigitação (veja “Magias Simuladas”, p. 44). Pré-requisito: treinado em Atuação.",
+    "cost": "",
+    "action": ""
+  },
+  "ladino|Heróis de Arton|Truque do Chapéu": {
+    "desc": "Uma vez por rodada, você pode gastar uma ação de movimento para tirar e arremessar um item que esteja vestindo em uma criatura em alcance curto. Se fizer isso, você pode fazer um ataque com uma arma de arremesso, ou arremessar um preparado alquímico ou poção contra ela como parte dessa ação. Pré-requisito: treinado em Enganação.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "ladino|Heróis de Arton|Vestido Para a Ocasião": {
+    "desc": "Se estiver usando um traje da corte ou de viajante, você pode gastar uma ação completa e 1 PM para transformar esse item em outro item de vestuário mundano até o fim da cena. Isso fornece +5 em testes de Enganação para disfarce, além dos benefícios do novo item. Pré-requisito: treinado em Enganação.",
+    "cost": "1 PM",
+    "action": "Ação completa"
+  },
+  "lutador|Heróis de Arton|Aquecimento": {
+    "desc": "Em seu primeiro turno de um combate, você pode gastar uma ação completa para aquecer seus músculos. Você soma sua Constituição em seus testes de ataque desarmado (limitada pelo seu nível) e recebe uma quantidade de PV temporários igual a sua Constituição + seu nível. Ambos os bônus duram até o fim da cena.",
+    "cost": "",
+    "action": "Ação completa"
+  },
+  "lutador|Heróis de Arton|Caminhar pelas Paredes": {
+    "desc": "Você recebe +10 em testes de Atletismo para saltar e pode se deslocar por paredes e tetos. Contudo, se terminar seu movimento enquanto se desloca em uma parede, você cai (e sofre os efeitos normais de uma queda). Pré-requisito: treinado em Atletismo.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Caminho Suave": {
+    "desc": "Quando faz um teste de manobra com um ataque desarmado, você pode gastar uma quantidade de PM a sua escolha (limitada pela sua Sabedoria). Para cada PM que gastar, você recebe +2 no teste. Pré-requisito: Sab 1.",
+    "cost": "Variável",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Combinação: Boca do Estômago": {
+    "desc": "Quando faz um ataque, você pode gastar 1 PM para que seu golpe seja debilitante. Se acertar, você recebe um bônus na rolagem de dano igual à sua contagem de combinações e o oponente fica enjoado até o fim do seu próximo turno.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Combinação: Chute Circular": {
+    "desc": "Quando faz um ataque, você pode gastar 2 PM para que seu golpe seja giratório. Se acertar, para cada ponto em sua contagem de combinações você causa +1d6 pontos de dano. Além disso, você pode fazer uma manobra empurrar contra o mesmo oponente como uma ação livre (use o resultado do ataque como o teste de manobra). Pré-requisito: outro poder de Combinação.",
+    "cost": "2 PM",
+    "action": "Ação livre"
+  },
+  "lutador|Heróis de Arton|Combinação: Chute no Joelho": {
+    "desc": "Quando faz um ataque, você pode gastar 1 PM para que seu golpe seja um chute baixo cruel. Se acertar, até o fim do seu próximo turno o oponente fica lento e sofre uma penalidade em testes de ataque e rolagens de dano igual à sua contagem de combinações.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Combinação: Esquiva Técnica": {
+    "desc": "Uma vez por rodada, quando sofre um ataque corpo a corpo, você pode gastar 2 PM para fazer um teste de Reflexos oposto ao teste de Percepção do atacante. Você recebe um bônus nesse teste igual à sua contagem de combinações. Se vencer o teste oposto, você evita o ataque e recebe +5 em seu próximo teste de ataque desarmado contra o atacante nessa rodada. Pré-requisito: um poder de Combinação.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Combinação: Quebra-guarda": {
+    "desc": "Quando faz um ataque, você pode gastar 1 PM para que seu golpe supere defesas. Se fizer isso, recebe um bônus no teste de ataque igual à sua contagem de combinações. Se acertar, o oponente não pode usar habilidades para reduzir o dano do ataque ou receber RD adicional contra ele. Além disso, o oponente fica vulnerável até o fim do seu próximo turno. C.H.O.O. e sua C.H.O.O. e sua cabeleira maneira!cabeleira maneira!",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Combinação: Um-Dois": {
+    "desc": "Quando faz um ataque, você pode gastar 1 PM para atacar de vários lados. Se fizer isso, você não precisa de um aliado para flanquear o oponente (faz isso sozinho). Além disso, se acertar, recebe um bônus na Defesa igual à sua contagem de combinações até o fim do seu próximo turno. Pré-requisito: Jogo de Pernas.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Combinação: Técnica de Sacrifício": {
+    "desc": "Quando faz um ataque, você pode gastar 1 PM para que ele seja um movimento de projeção. Para isso, faça uma manobra agarrar com um bônus igual à sua contagem de combinações. Se vencer o teste de manobra, além de agarrar o oponente, você se joga no chão com ele. Ambos ficam caídos, mas ele sofre dano como se você tivesse acertado um ataque desarmado.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Corpo Fechado": {
+    "desc": "Quando faz um teste de resistência, você pode gastar 1 PM para somar sua Constituição no teste.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Dança Marcial": {
+    "desc": "Você pode gastar uma ação de movimento e 2 PM para receber +2 na Defesa, em Acrobacia e em testes de Enganação para fintar. A partir do 6º nível, e a cada cinco níveis seguintes (11º e 16º), você pode gastar +1 PM para aumentar esses bônus em +1. Os bônus duram até o fim da cena ou até você ficar atordoado ou sob alguma condição de movimento. Pré-requisitos: treinado em Acrobacia e Atuação.",
+    "cost": "+1 PM",
+    "action": "Ação de movimento"
+  },
+  "lutador|Heróis de Arton|Gingado Elusivo": {
+    "desc": "Se estiver sob efeito de sua Dança Marcial, uma vez por rodada, quando sofre um efeito hostil, você pode gastar 2 PM para receber +5 na Defesa e em testes de Reflexos contra ele. Após a resolução do efeito, você salta para um espaço adjacente desocupado. Pré-requisitos: Dança Marcial, 7º nível de lutador.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Invencível": {
+    "desc": "Você é um campeão de incontáveis embates, famoso e endurecido por isso. Quando faz um teste de perícia baseada em Carisma, você pode gastar 2 PM para somar a sua Força no teste. Além disso, sempre que é reduzido a 0 ou menos pontos de vida, pode gastar 5 PM para recuperar PV igual à metade dos seus PV máximos. Pré-requisitos: Nome na Arena, 17º nível de lutador.",
+    "cost": "2 PM, 5 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Jogo de Pernas": {
+    "desc": "Uma vez por rodada, quando faz um ataque corpo a corpo, você pode se mover 1,5m em qualquer direção, antes ou depois do ataque. Esse movimento não ativa reações de seus inimigos (como de Ataque Reflexo). Pré-requisito: Des 1.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Mestre das Combinações": {
+    "desc": "Sua contagem de combinações aumenta em +2 (em vez de +1) para cada ataque de Combinação diferente com o qual você acertar o oponente. Prérequisitos: dois poderes de Combinação.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Rilhar os Dentes": {
+    "desc": "Quando sofre dano de um ataque corpo a corpo, você pode gastar 1 PM para receber RD igual a 5 + sua Constituição contra esse dano.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Rolamento Escapatório": {
+    "desc": "Quando falha em um teste para evitar uma condição de movimento (como o teste oposto para evitar ser agarrado), você pode gastar 2 PM para rolá-lo novamente usando Acrobacia. Pré-requisito: treinado em Acrobacia.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Ruas Furiosas": {
+    "desc": "Quando destrói um objeto empunhado por um inimigo com a manobra quebrar, você recebe uma quantidade de PV temporários igual a 1d6 x sua Constituição.",
+    "cost": "",
+    "action": ""
+  },
+  "lutador|Heróis de Arton|Sequência Defensiva": {
+    "desc": "Quando acerta um ataque desarmado em uma criatura, você recebe um bônus cumulativo de +2 na Defesa contra essa criatura até o início do seu próximo turno.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Agente de Elite": {
+    "desc": "Você recebe um agente especial, um parceiro veterano que fornece os benefícios de um parceiro a sua escolha (Tormenta20, p. 260) ou um poder de outra classe, cujos pré-requisitos você cumpra (para efeitos de nível na classe desse poder, considere seu nível de nobre −4). No início de cada aventura, você pode trocar seu agente. Pré-requisitos: Título, 11º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Comandante de Campo": {
+    "desc": "Seus capangas recebem +2 nas rolagens de dano e um bônus na Defesa igual ao seu Carisma. Além disso, quando contrata ou recebe capangas por qualquer motivo, você recebe um capanga adicional do mesmo tipo. Pré-requisito: 5º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Comitiva": {
+    "desc": "Seu limite de parceiros aumenta em +1. A partir do 11º nível, esse limite aumenta em +1 adicional. Pré-requisito: 5º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Discurso de Batalha": {
+    "desc": "Em seu primeiro turno de um combate, você pode gastar uma ação completa e fazer um teste de Diplomacia ou Intimidação. Se fizer isso, para cada 10 pontos no resultado do teste, você e seus aliados em alcance curto recebem 2 PM temporários. Esses PM temporários desaparecem no fim da cena.",
+    "cost": "2 PM",
+    "action": "Ação completa"
+  },
+  "nobre|Heróis de Arton|Fofocas da Corte": {
+    "desc": "Quando chega em um ambiente social (taverna, acampamento militar, praça de vila, salão de castelo etc.), você pode gastar 1 hora para se inteirar das “novidades”. A critério do mestre, você recebe uma informação útil sobre os habitantes ou acontecimentos locais. Além disso, recebe 4d6 dados de auxílio. Sempre que faz um teste de perícia baseada em Carisma nesse ambiente, você pode gastar um desses dados e adicionar como um bônus no teste. Pré-requisitos: treinado em Intuição e Investigação.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Guarda Pessoal": {
+    "desc": "Você recebe um pelotão de infantaria (p. 241) veterano que atua como seu guarda-costas. No 11º nível, o pelotão se torna um parceiro mestre. Se perder seu pelotão de infantaria, você pode arregimentar outro após uma semana. Pré-requisito: 5º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Hedonismo Aristocrático": {
+    "desc": "Uma vez por dia, você pode gastar 1 hora e um valor a sua escolha entre T$ 100, T$ 500 e T$ 2.000 em luxos como comida, bebida e apresentações artísticas. Se tiver gastado T$ 100, você recebe 4 PM temporários por patamar, que duram até o fim do dia. Se tiver gastado T$ 500, o ganho aumenta para 5 PM por patamar e, se tiver gastado T$ 2.000, para 6 PM por patamar.",
+    "cost": "4 PM, 5 PM por patamar e",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Instigar Violência": {
+    "desc": "Uma vez por rodada por aliado, quando um aliado em alcance curto faz um acerto crítico em um inimigo, você pode gastar 3 PM para que esse aliado faça mais um ataque contra o mesmo inimigo. Pré-requisitos: treinado em Guerra, 11º nível de nobre.",
+    "cost": "3 PM",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Insuflar Investida": {
+    "desc": "Quando faz uma investida, você pode gastar 1 PM por aliado a sua escolha em alcance curto. Se fizer isso, a próxima investida que cada um desses aliados fizer até o início do seu próximo turno causa +2d8 pontos de dano. Pré-requisito: Estrategista.",
+    "cost": "1 PM por aliado a sua escolha em alcance curto",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Legado Mágico": {
+    "desc": "Você recebe um item mágico menor a sua escolha, como um presente ou uma herança de família. No início de cada aventura, você pode substituir esse item por outro. A partir do 14º nível, quando substitui o item pode escolher um item mágico médio e, a partir do 17º nível, um item mágico maior. Pré-requisito: 11º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Líder Enérgico": {
+    "desc": "Você soma seu Carisma em Iniciativa. Além disso, se for o primeiro na iniciativa, em seu primeiro turno você pode usar uma habilidade de nobre com execução de ação de movimento ou padrão como ação livre. Pré-requisito: treinado em Iniciativa.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "nobre|Heróis de Arton|Líder Impiedoso": {
+    "desc": "Sempre que um aliado sob efeito da sua habilidade Gritar Ordens fizer um acerto crítico ou reduzir um inimigo para 0 PV ou menos, você recupera 1 PM. Pré-requisito: 5º nível de nobre.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Linhagem Distinta": {
+    "desc": "Você descende de uma família ilustre — ou, por suas ações, tornou sua família ilustre. Seja como for, o nome de sua família o inspira a grandes feitos. Quando você usa Orgulho, o custo da habilidade diminui em –1 PM. Além disso, uma vez por cena, quando usa",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Ordens Agressivas": {
+    "desc": "Quando você usa Gritar Ordens, a habilidade também soma seu bônus na primeira rolagem de dano dos aliados até o início do seu próximo turno. Pré-requisito: 5º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Ordens Encorajadoras": {
+    "desc": "Quando você usa Gritar Ordens, a habilidade também fornece 10 PV temporários cumulativos. Esses pontos desaparecem no fim da cena. Pré-requisito: 5º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Palavras de Efeito": {
+    "desc": "Você soma seu Carisma no dano de sua habilidade Palavras Afiadas e a ação necessária para usá-la diminui em um passo (de completa para padrão, de padrão para movimento). Pré-requisito: 5º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Palavras Ressonantes": {
+    "desc": "Quando você usa Palavras Afiadas, sempre que rolar o resultado máximo ou um ponto abaixo do máximo em um dado da habilidade (por exemplo, um 5 ou 6 ao rolar 1d6), role um dado extra. Pré-requisito: 5º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Protocolo Impecável": {
+    "desc": "Quando chega em um ambiente social (veja Fofocas da Corte), você pode gastar 2 PM e fazer um teste de Nobreza (CD 20). Se passar, porta-se da maneira ideal para a situação, o que melhora a atitude de todas as criaturas em relação a você em uma categoria. Se passar por 10 ou mais, a critério do mestre você pode receber possibilidades de interação que normalmente não teria — por exemplo, ao chegar em um acampamento militar ou castelo, pode ser convidado para falar com o general ou o nobre comandante. Pré-requisitos: treinado em Nobreza, Jogo da Corte.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Senescal": {
+    "desc": "Você recebe +1 por patamar em testes de perícia para resolver ações de base, domínio ou negócio e, uma vez por turno dessas estruturas, pode executar uma ação de estrutura adicional. Pré-requisito: 5º nível de nobre.",
+    "cost": "",
+    "action": ""
+  },
+  "nobre|Heróis de Arton|Voz Límpida": {
+    "desc": "Quando você usa uma habilidade de nobre que afete um ou mais aliados, o custo dessa habilidade diminui em –1 PM (isso não reduz efeitos baseados no custo em PM pago).",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Arma Juramentada": {
+    "desc": "Se você estiver empunhando a arma preferida de sua divindade, ela recebe uma fração do poder divino. Em suas mãos, ela é considerada mágica e recebe os benefícios de uma melhoria (escolhido ao receber este poder, exceto material especial), cujos pré-requisitos ela cumpra. Essa melhoria não conta no limite da arma. Se você descumprir as Obrigações & Restrições da divindade, este efeito deixa de funcionar até você recuperar seus PM. Pré-requisito: devoto de uma divindade. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Arma Sacramentada": {
+    "desc": "A conexão de sua arma com sua divindade se torna mais forte. Em suas mãos, a arma também recebe os benefícios de um encanto (escolhido ao receber este poder) cujos pré-requisitos ela cumpra. Esse encanto não conta no limite da arma e também deixa de funcionar se você descumprir suas Obrigações & Restrições. Pré-requisitos: Arma Juramentada, 11º nível de paladino.",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Aura Vingadora": {
+    "desc": "Enquanto sua aura estiver ativa, você e cada aliado dentro dela recebem +1d6 de luz em uma rolagem de dano corpo a corpo uma vez por rodada. Pré-requisito: 8º nível de paladino. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Bloqueio Divino": {
+    "desc": "Quando sofre um ataque, se estiver empunhando um escudo, você pode gastar 2 PM para receber +5 na Defesa contra esse ataque. Pré-requisito: proficiência com escudos. e",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Convicção Heroica": {
+    "desc": "Uma vez por cena, quando seus pontos de vida forem reduzidos a 0 ou menos, você pode gastar 5 PM para curar 50 PV . Pré-requisito: 11º nível de paladino. e",
+    "cost": "5 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Expurgo Sagrado": {
+    "desc": "Quando você usa Golpe Divino contra um abissal ou um morto-vivo, seu custo diminui em –1 PM (cumulativo com outras reduções) e o bônus de dano da habilidade aumenta em mais um dado.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Escudo Fraterno": {
+    "desc": "Se você estiver empunhando um escudo, sua Égide Sagrada afeta aliados até 9m (em vez de apenas adjacentes). Pré-requisito: Égide Sagrada.",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Escudo Sagrado": {
+    "desc": "Se estiver empunhando um escudo, você pode gastar uma ação de movimento e 1 PM para criar uma barreira sagrada com duração sustentada a partir dele. Você recebe redução de dano igual ao seu Carisma. Pré-requisitos: Bloqueio Divino, 7º nível de paladino. e",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "paladino|Heróis de Arton|Fulgor Ardente": {
+    "desc": "Quando usa Golpe Divino, você pode gastar +1 PM. Se fizer isso e acertar o ataque, todos os inimigos a até 6m do alvo do ataque sofrem dano de luz igual ao dano extra causado por essa habilidade. Pré-requisito: Fulgor Divino. e",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Hoste Celestial": {
+    "desc": "Você pode gastar uma ação padrão e 10 PM para convocar guerreiros espirituais para lutar ao seu lado. Eles flutuam ao seu redor, são incorpóreos e imunes a dano e possuem 100 pontos de luz. Uma vez por rodada, quando você sofre dano, pode fazer os espíritos absorverem esse dano; nesse caso, eles perdem pontos de luz igual ao dano que você sofreria. Além disso, uma vez por rodada, você pode gastar 2 PM para fazê-los atacar uma criatura em alcance curto (ataque igual a sua Religião com um bônus de +10, dano de luz igual a 4d8 + seu Carisma, crítico 18/x3). Os espíritos desaparecem se os pontos de luz deles forem reduzidos a 0 ou no fim da cena. Pré-requisitos: treinado em Religião, Orar, 17º nível de paladino. e",
+    "cost": "2 PM",
+    "action": "Ação padrão"
+  },
+  "paladino|Heróis de Arton|Investida Sagrada": {
+    "desc": "Quando faz uma investida montada, você pode pagar 1 PM para receber deslocamento de voo igual ao seu deslocamento base até o fim do seu turno e causar +1d8 pontos de dano. Pré-requisitos: Montaria Sagrada, 10º nível de paladino.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Julgamento Divino: Desafio": {
+    "desc": "Você pode gastar 2 PM para marcar um inimigo em alcance curto. Sempre que esse inimigo ataca um de seus aliados, ele recebe uma penalidade cumulativa de –1 em testes de ataque (limitado pelo seu Carisma). Essa penalidade acaba se ele atacar você ou se você terminar seu turno além do alcance corpo a corpo dele.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Julgamento Divino: Proteção": {
+    "desc": "Você pode gastar 2 PM para conceder 10 PV temporários e +2 na Defesa para uma criatura em alcance curto.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Julgamento Divino: Redenção": {
+    "desc": "Você é capaz de criar um vínculo espiritual com um aliado. Você pode lançar Escudo da Fé, mas apenas com o aprimoramento que divide o dano entre o alvo e você (mas não precisa cumprir seu requisito de círculo). e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Julgamento Divino: Retribuição": {
+    "desc": "Você pode marcar um inimigo em alcance curto. Na próxima vez em que esse inimigo causar dano em você, você pode gastar 2 PM para fazer um ataque corpo a corpo contra ele (desde que ele esteja em seu alcance).",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Luz Purificadora": {
+    "desc": "Quando usa Golpe Divino, você pode gastar +1 PM para converter todo o dano causado para luz e ignorar 10 pontos de redução de dano do alvo. e",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Manto de Batalha": {
+    "desc": "Você aprende e pode lançar Vestimenta da Fé, e pode usar seus aprimoramentos como se tivesse acesso aos mesmos círculos de magia que um clérigo de seu nível. Pré-requisito: 5º nível de paladino. e",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Paladino do Reino": {
+    "desc": "Você recebe um poder de cavaleiro cujos pré-requisitos cumpra, usando seu nível como nível de cavaleiro. Pré-requisito: treinado em Nobreza.",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Rajada Divina": {
+    "desc": "Quando faz um Golpe Divino com Luz Purificadora, você pode gastar +1 PM para aumentar o alcance desse ataque para curto (ele ainda conta como um ataque corpo a corpo). Pré-requisito: Luz Purificadora.",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Sacrifício": {
+    "desc": "Uma vez por rodada, quando faz um ataque corpo a corpo, você pode sacrificar 5 PV por patamar para aumentar o dano desse ataque em +1d10 por patamar. Por exemplo, se você for um personagem de 5º nível, pode perder 10 PV para causar +2d10 pontos de dano.",
+    "cost": "",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Sentença Dobrada": {
+    "desc": "Quando profere um julgamento, você pode gastar +1 PM para proferir um segundo julgamento com a mesma ação (pagando o custo de ambos).",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "paladino|Heróis de Arton|Virtude Paladinesca: Paciência": {
+    "desc": "Em combate, você pode ficar uma rodada inteira em meditação, sem fazer ações (exceto reações), para receber +2 em testes de perícia e na Defesa até o fim da cena.",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Amigo Divino": {
+    "desc": "Seu melhor amigo vive em um mundo divino, mas você pode gastar uma ação de movimento e 2 PM para invocá-lo a Arton. Ele surge em um espaço desocupado em alcance curto e permanece até o fim da cena ou até você enviá-lo de volta (uma ação livre). Enquanto estiver no mundo divino e com menos da metade de seus PV , o melhor amigo tem Cura Acelerada 10. e",
+    "cost": "2 PM",
+    "action": "Ação de movimento"
+  },
+  "treinador|Heróis de Arton|Asas Aliadas": {
+    "desc": "Uma vez por rodada, se você estiver em alcance curto de seu melhor amigo e ele usar deslocamento de voo, você pode pagar 1 PM para ser alçado aos céus. Se fizer isso, você se desloca para um quadrado desocupado no trajeto do amigo. Além disso, seu próximo ataque nesse turno conta como uma investida.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Bom Garoto": {
+    "desc": "Uma vez por rodada, quando seu melhor amigo faz um acerto crítico em combate ou reduz um inimigo a 0 PV em seu turno, você recebe uma ação padrão que só pode usar consigo mesmo. Pré-requisito: 11º nível de treinador.",
+    "cost": "",
+    "action": "Ação padrão"
+  },
+  "treinador|Heróis de Arton|Comando Defensivo": {
+    "desc": "Quando seu melhor amigo sofre dano, você pode gastar 2 PM para fazer um teste de Adestramento e reduzir o resultado do teste desse dano. Você pode usar esta habilidade uma vez por rodada para cada melhor amigo.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Comandos Distantes": {
+    "desc": "O alcance de suas habili dades de treinador aumenta em uma categoria (de curto para médio, de médio para longo).",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Convocar Enxame": {
+    "desc": "Você aprende e pode lançar Enxame de Pestes (atributo-chave Carisma) e pode usar seus aprimoramentos como se tivesse acesso aos mesmos círculos de magia que um clérigo de seu nível. Esta não é uma habilidade mágica e provém de sua capacidade de atrair criaturas (veja “Magias Simuladas”, p. 44). Pré-requisito: 5º nível de treinador.",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Coração Grande": {
+    "desc": "Seu limite de parceiros aumenta em +1. No 11º nível, esse limite aumenta em +1.",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Direcionamento Marcial": {
+    "desc": "Quando usa Direcionar em um teste de ataque, você também soma seu Carisma na rolagem de dano desse ataque.",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Domador Cativante": {
+    "desc": "Você soma seu Carisma no dano de Domar Criatura, e os dados de dano dessa habilidade aumentam para d10.",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Domador Lendário": {
+    "desc": "Quando usa Domar Criatura, você pode gastar +2 PM para mudar os dados de dano para d12 e atingir todos os alvos dentro do alcance. Prérequisitos: Domador Cativante, 17º nível de treinador.",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Ensinar Truque": {
+    "desc": "Um de seus melhores amigos aprende um truque adicional. Você pode escolher este poder uma vez por patamar por amigo.",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Investida Conjunta": {
+    "desc": "Uma vez por rodada, quando um melhor amigo no qual você está montado faz uma investida, você pode gastar 2 PM para fazer um ataque corpo a corpo (que também conta como uma investida). Pré-requisito: melhor amigo montaria.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Líder da Matilha": {
+    "desc": "Quando usa Direcionar, você pode aplicar o bônus ao próximo teste de perícia de outros melhores amigos com a mesma ação ao custo de +1 PM por amigo adicional. O bônus só afeta o teste se ele for feito até o fim do seu turno. Pré-requisito: Conquistar pelos Números.",
+    "cost": "+1 PM por amigo adicional",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Língua das Criaturas": {
+    "desc": "Você pode se comunicar com criaturas não inteligentes (Int –4 ou –5) por meio de linguagem corporal e vocalizações. Você pode usar Adestramento com essas criaturas para mudar atitude e persuasão (Tormenta20, p. 118).",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Mascote": {
+    "desc": "Você tem um mascote (veja o quadro). Você pode escolher este poder várias vezes para",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Petisco Merecido": {
+    "desc": "Você pode gastar 2 PM para conceder +2 em Força e Destreza a um melhor amigo em alcance curto até o fim da cena.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Proteção Fraterna": {
+    "desc": "Quando você e/ou seu melhor amigo sofre um efeito que permite um teste de resistência, se ele estiver em alcance curto, você pode gastar 2 PM para coordenar seus esforços. Os dois fazem o teste de resistência, mas ambos usam o melhor resultado. Se um de vocês tiver uma habilidade que modifica o efeito por passar no teste de resistência (como Evasão), ambos são afetados por ela.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Trabalho em Equipe": {
+    "desc": "Uma vez por rodada, quando você faz uma ação de movimento, seus melhores amigos recebem uma ação de movimento. Pré-requisito: 5º nível de treinador.",
+    "cost": "",
+    "action": "Ação de movimento"
+  },
+  "treinador|Heróis de Arton|Treinador Eclético": {
+    "desc": "Seus melhores amigos usam seu nível de personagem, em vez de seu nível de treinador, para calcular seus PV , modificadores de perícias e Defesa. Pré-requisito: 6º nível de treinador.",
+    "cost": "",
+    "action": ""
+  },
+  "treinador|Heróis de Arton|Veterinário de Campo": {
+    "desc": "Você pode gastar uma ação completa para fazer um teste de Adestramento em um melhor amigo adjacente. Ele recupera uma quantidade de PV igual ao resultado do teste. Você só pode usar este poder uma vez por dia num mesmo alvo.",
+    "cost": "",
+    "action": "Ação completa"
+  },
+  "frade|Deuses de Arton|Acelerar Sacrário": {
+    "desc": "Quando cria um sacrário, você pode gastar +2 PM para criá-lo como uma ação de movimento (em vez de uma ação padrão). Pré-requisito: 5º nível de frade.",
+    "cost": "+2 PM",
+    "action": "Ação padrão"
+  },
+  "frade|Deuses de Arton|Ampliar Sacrário": {
+    "desc": "Você pode criar sacrários em alcance médio e eles passam a ocupar uma esfera de 6m de raio. Pré-requisito: 10º nível de frade.",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Aumento de Atributo": {
+    "desc": "Você recebe +1 em um atributo. Você pode escolher este poder várias vezes, mas apenas uma vez por patamar para um mesmo atributo.",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Autoridade Eclesiástica": {
+    "desc": "Você possui uma posição formal em uma igreja reconhecida pelos outros membros de sua fé. Os efeitos deste poder variam de acordo com sua divindade (veja a p. 22). Pré-requisitos: 5º nível de frade, devoto de um deus maior.",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Bênção Fortalecedora": {
+    "desc": "Quando você lança Bênção, os aliados abençoados recebem uma quantidade de PV temporários igual a 5 vezes o bônus em testes de ataque fornecido pela magia. Esses PV temporários duram enquanto a magia durar. Pré-requisito: Bênção.",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Canto Monástico": {
+    "desc": "Você pode gastar uma ação padrão e 1 PM para entoar um cântico religioso. Faça um teste de Atuação para ajudar (Tormenta20, p. 221). Seus aliados em alcance curto recebem um bônus igual ao bônus de ajuda em um teste de perícia feito até o fim da cena ou na CD para resistir a uma de suas habilidades usada até o fim da cena. Pré-requisito: treinado em Atuação.",
+    "cost": "1 PM",
+    "action": "Ação padrão"
+  },
+  "frade|Deuses de Arton|Comunhão Vital": {
+    "desc": "Quando lança uma magia que cure uma criatura, você pode pagar +2 PM para que outra criatura em alcance curto (incluindo você mesmo) recupere uma quantidade de pontos de vida igual à metade dos PV da cura original. e",
+    "cost": "+2 PM",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Copista": {
+    "desc": "Você pode criar pergaminhos, como se tivesse o poder Escrever Pergaminho. Se tiver ambos, pode fabricar o dobro de pergaminhos ao mesmo tempo (pagando o custo de matéria-prima de ambos). Pré-requisito: treinado em Ofício (escriba).",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Conhecimento Mágico": {
+    "desc": "Você aprende duas magias de qualquer círculo que possa lançar. Você pode escolher este poder quantas vezes quiser.",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Cozinheiro da Abadia": {
+    "desc": "Quando prepara um prato especial, você pode combinar os efeitos de dois pratos. Você faz apenas um teste de Ofício, mas paga o custo de ambos. Pré-requisito: treinado em Ofício (cozinheiro).",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Estudante Diligente": {
+    "desc": "No começo do dia você pode escolher uma perícia em que não seja treinado. Se fizer isso, até o fim do dia você sofre uma penalidade de –2 PM, mas pode fazer testes da perícia escolhida como se fosse treinado nela.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Fé e Razão": {
+    "desc": "Quando usa uma habilidade de frade, você pode gastar uma quantidade de PM limitada por sua Inteligência. Se fizer isso, a CD dessa habilidade aumenta em +1 por PM gasto.",
+    "cost": "Variável",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Mago Branco": {
+    "desc": "Suas magias de cura de luz custam –1 PM e curam +1 PV por dado de cura. Pré-requisito: 3º nível de frade.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Memorizar Liturgia": {
+    "desc": "Uma vez por dia, você pode gastar 1 hora de estudo e um número de pergaminhos que contenham magias divinas igual ou menor que sua Inteligência. Até o fim do dia, você pode lançar as magias contidas nesses pergaminhos como se as conhecesse ou, se já conhecia a magia, você soma sua Inteligência no limite de PM para lançá-la. Pré-requisitos: Copista, 8º nível de frade.",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Ofício do Mosteiro": {
+    "desc": "Você pode fabricar itens de vestuário com Ofício (artesão) e pode usar essa perícia para fabricar itens com uma melhoria. Pré-requisito: treinado em Ofício (artesão).",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Psicografia": {
+    "desc": "Seus textos recebem inspiração divina. Você pode fabricar pergaminhos de qualquer magia divina (mesmo uma que não conheça) de quaisquer círculos a que tenha acesso. A CD para fabricar um desses pergaminhos aumenta em +5. Pré-requisitos: Copista, 5º nível de frade.",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sacrário da Erudição": {
+    "desc": "Quando lançam magias a partir de pergaminhos, você e seus aliados dentro do sacrário recebem +1 PM para gastar em aprimoramentos (mesmo que não conheçam a magia). e",
+    "cost": "+1 PM",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sacrário da Misericórdia": {
+    "desc": "No início dos seus turnos, cada criatura a sua escolha dentro do sacrário recupera uma quantidade de PV igual a 5 + sua Sabedoria. Este sacrário tem duração sustentada. Pré-requisito: 5º nível de frade. e",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sacrário da Resiliência": {
+    "desc": "Você e seus aliados dentro do sacrário recebem +2 em testes de resistência e na Defesa. Quando cria este sacrário, você pode gastar mais PM para fortalecer seu efeito; para cada 2 PM adicionais gastos, o bônus concedido pelo sacrário aumenta em +1 (bônus máximo limitado pelo círculo máximo de magias que você pode lançar). Pré-requisito: 5º nível de frade. e",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sacrário da Solenidade": {
+    "desc": "Criaturas dentro da área ficam sob condição terrível para lançar magias e sofrem –2 na Defesa. Quando cria este sacrário você pode gastar mais PM para fortalecer seu efeito; para cada 2 PM adicionais gastos, a penalidade causada pelo sacrário aumenta em 1 (penalidade máxima limitada pelo círculo máximo de magias que você pode lançar). e",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sacrário da Verdade": {
+    "desc": "Sempre que uma criatura na área passa em um teste de Acrobacia, Enganação, Furtividade ou Ladinagem, ou acerta um ataque contra uma criatura sob efeito de uma ou mais condições, ela sofre 2d6 pontos de dano psíquico por círculo de magia a que você tem acesso. e",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sacrário das Sombras": {
+    "desc": "A área do sacrário é coberta por sombras; criaturas dentro dela recebem camuflagem leve e, se forem mortos-vivos, também recebem +2 na Defesa e em testes de perícia. e",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sacrário do Compartilhamento": {
+    "desc": "Este sacrário tem duração sustentada. Quando lança uma magia de 1º ou 2º círculo que tenha apenas você como alvo, se estiver em alcance curto deste sacrário você pode gastar 2 PM para que um aliado dentro dele receba o efeito básico dessa magia. Pré-requisito: 7º nível de frade.",
+    "cost": "2 PM",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sacrário do Ocaso": {
+    "desc": "Este sacrário é criado com 60 pontos de ocaso. No início de seus turnos, o sacrário perde 1d10 pontos de ocaso, e cada criatura dentro dele perde esse valor em PV . A perda de PV aumenta em +1d10 para cada círculo de magia que você possa lançar além do 1º. Quando cria o sacrário, você pode gastar mais PM para fortalecer seu efeito; para cada PM adicional gasto, o sacrário é criado com +20 pontos de ocaso. O sacrário desaparece quando seus pontos de ocaso terminam. e",
+    "cost": "",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Sermão da Celeridade": {
+    "desc": "Uma vez por rodada, você pode gastar 5 PM para fazer um aliado em alcance curto ganhar uma ação padrão adicional no próximo turno dele. Você só pode usar esta habilidade uma vez por cena em cada aliado. Pré-requisito: 8º nível de frade. e",
+    "cost": "5 PM",
+    "action": "Ação padrão"
+  },
+  "frade|Deuses de Arton|Sermão da Égide": {
+    "desc": "Você pode gastar uma ação padrão e 3 PM para orar por proteção para uma criatura em alcance curto. Até o seu próximo turno, quando essa criatura sofrer dano, ela pode gastar essa proteção para reduzir esse dano à metade. e",
+    "cost": "3 PM",
+    "action": "Ação padrão"
+  },
+  "frade|Deuses de Arton|Teologia Aplicada": {
+    "desc": "Escolha duas perícias. Quando faz um teste de uma dessas perícias (exceto testes de ataque), você pode gastar 1 PM para rolar novamente esse teste, usando Religião. Você pode escolher este poder outras vezes para perícias diferentes.",
+    "cost": "1 PM",
+    "action": ""
+  },
+  "frade|Deuses de Arton|Transferir Sacrário": {
+    "desc": "Você pode gastar uma ação de movimento e 1 PM para transferir um de seus sacrários no alcance em que você pode criá-lo para outro ponto no mesmo alcance.",
+    "cost": "1 PM",
+    "action": "Ação de movimento"
+  },
+  "frade|Deuses de Arton|Zelador dos Vinhedos": {
+    "desc": "Você pode usar Ofício (cozinheiro) para preparar poções de magias que você conheça e cujo alvo seja 1 criatura. As poções tomam a forma de bebidas e seguem as regras desses itens (Heróis de Arton, Capítulo 3), exceto que ingeri-las é uma ação padrão. A bebida pode ser comum ou especial. No segundo caso, a CD para fabricá-la aumenta em +5 e o custo aumenta conforme a bebida especial, mas consumi-la gera ambos os efeitos (da poção e da bebida especial). Pré-requisito: treinado em Ofício (cozinheiro).",
+    "cost": "",
+    "action": "Ação padrão"
+  }
+};

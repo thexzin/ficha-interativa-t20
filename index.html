@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ficha Tormenta20</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbarMain">
+    <div class="brand"><img src="tormenta20-logo.png" alt="Tormenta20"><small>Ficha Interativa</small></div>
+    <div class="actions">
+      <button id="saveBtn">Salvar</button>
+      <button id="exportBtn">Exportar</button>
+      <label class="fileBtn">Importar<input id="importInput" type="file" accept=".json" hidden></label>
+      <button id="resetBtn" class="danger">Limpar</button>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Seções da ficha">
+    <button data-tab="resumo" class="active">Stats</button>
+    <button data-tab="origem">Origem</button>
+    <button data-tab="pericias">Perícias</button>
+    <button data-tab="poderes">Poderes</button>
+    <button data-tab="combate">Combate</button>
+    <button data-tab="grimorio">Grimório</button>
+    <button data-tab="inventario">Inventário</button>
+    <span class="tabSpacer" aria-hidden="true"></span>
+    <button data-tab="notas" class="tabUtility">Notas</button>
+    <button data-tab="condicoes" class="tabUtility">Condições</button>
+    <button data-tab="magias" class="tabUtility">Magias</button>
+  </nav>
+</header>
+
+<main class="wrap">
+<section class="panel identity">
+  <label>Nome<input id="nome" data-save></label>
+  <label>Jogador<input id="jogador" data-save></label>
+  <label>Raça<select id="raca" data-save></select></label>
+  <label>Classe<select id="classe" data-save></select></label>
+  <label>Nível<input id="nivel" data-save type="number" min="1" max="20" value="1"></label>
+  <select id="origem" data-save hidden></select>
+  <input id="deslocamento" data-save type="number" hidden>
+  <label>Origem<input id="originSummary" readonly></label>
+  <label>Divindade<input id="divindade" data-save></label>
+</section>
+
+<section id="tab-resumo" class="tab active">
+  <article class="panel">
+    <h2>Atributos</h2>
+    <div class="attrs">
+      <label>FOR<input id="FOR" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="FORTemp" data-save type="number" value="0"></span></label>
+      <label>DES<input id="DES" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="DESTemp" data-save type="number" value="0"></span></label>
+      <label>CON<input id="CON" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="CONTemp" data-save type="number" value="0"></span></label>
+      <label>INT<input id="INT" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="INTTemp" data-save type="number" value="0"></span></label>
+      <label>SAB<input id="SAB" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="SABTemp" data-save type="number" value="0"></span></label>
+      <label>CAR<input id="CAR" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="CARTemp" data-save type="number" value="0"></span></label>
+    </div>
+    <div id="summaryText" class="summaryCards"></div><div id="conditionPenaltySummary" class="penaltySummary"></div>
+    <div class="conditionMini standalone">
+        <h3>Condições ativas</h3>
+        <div id="activeConditionsMini" class="conditionChips"></div>
+      </div>
+  </article>
+
+  <div class="resources">
+    <article class="panel resource">
+      <h2>PV</h2>
+      <div class="resourceNumbers"><span id="pvAtualView">0</span>/<span id="pvMaxView">0</span><span id="pvTempView" class="tempResource pvTempText"></span></div><div class="bar"><div id="pvBar" class="barFill pv"></div><div id="pvTempBar" class="barFill temp pvTemp"></div></div><small id="pvDeathStatus" class="deathStatus"></small>
+      <div class="resourceGrid">
+        <label>Atual<input id="pvAtual" data-save type="number" value="0"></label>
+        <label>Base calculada<input id="pvBase" readonly></label>
+        <label>Temporários<input id="pvBonus" data-save type="number" min="0" value="0"></label>
+        <label>Ajuste livre<input id="pvAjuste" data-save type="number" value="0"></label>
+      </div>
+      <div class="quick"><button data-change="pvAtual:-5">−5</button><button data-change="pvAtual:-1">−1</button><button data-change="pvAtual:1">+1</button><button data-change="pvAtual:5">+5</button></div>
+    </article>
+
+    <article class="panel resource">
+      <h2>PM</h2>
+      <div class="resourceNumbers"><span id="pmAtualView">0</span>/<span id="pmMaxView">0</span><span id="pmTempView" class="tempResource pmTempText"></span></div><div class="bar"><div id="pmBar" class="barFill pm"></div><div id="pmTempBar" class="barFill temp pmTemp"></div></div>
+      <div class="resourceGrid">
+        <label>Atual<input id="pmAtual" data-save type="number" value="0"></label>
+        <label>Base calculada<input id="pmBase" readonly></label>
+        <label>Temporários<input id="pmBonus" data-save type="number" min="0" value="0"></label>
+        <label>Ajuste livre<input id="pmAjuste" data-save type="number" value="0"></label>
+      </div>
+      <div class="quick"><button data-change="pmAtual:-5">−5</button><button data-change="pmAtual:-1">−1</button><button data-change="pmAtual:1">+1</button><button data-change="pmAtual:5">+5</button></div>
+    </article>
+
+    <article class="panel resource">
+      <h2>Defesa</h2>
+      <div class="big" id="defView">10</div>
+      <div class="resourceGrid">
+        <label>Armadura<input id="armadura" data-save type="number" value="0"></label>
+        <label>Escudo<input id="escudo" data-save type="number" value="0"></label>
+        <label>Penalidade de armadura<input id="armorPenalty" data-save type="number" min="0" value="0"></label>
+        <label>RD<input id="rd" data-save type="number" min="0" value="0"></label>
+        <label>Outros bônus<input id="defBonus" data-save type="number" value="0"></label>
+        <label>Ajuste livre<input id="defAjuste" data-save type="number" value="0"></label>
+      </div>
+    </article>
+  </div>
+
+  
+</section>
+
+
+<section id="tab-origem" class="tab">
+  <article class="panel">
+    <div class="sectionHead">
+      <div>
+        <h2>Origem</h2>
+        <p class="muted">Escolha a origem, consulte sua fonte e registre todos os benefícios recebidos.</p>
+      </div>
+    </div>
+    <div class="originTop">
+      <label>Origem<select id="origemTab"></select></label>
+      <div class="originSource"><small>Livro</small><strong id="originBook">—</strong></div>
+      <div class="originSource"><small>Tipo</small><strong id="originType">—</strong></div>
+    </div>
+    <div class="originDetailCard">
+      <h3 id="originName">Origem</h3>
+      <p id="originInfo" class="muted"></p>
+    </div>
+    <div class="originBenefitHead">
+      <strong>Benefícios registrados</strong>
+      <button id="addOriginBenefit" type="button">+ Benefício</button>
+    </div>
+    <div id="originBenefitsList" class="originBenefits"></div>
+    <div class="smallActions"><button id="applyOriginBtn">Aplicar perícias sugeridas</button></div>
+  </article>
+</section>
+
+<section id="tab-pericias" class="tab">
+  <article class="panel">
+    <div class="sectionHead">
+      <div>
+        <h2>Perícias</h2>
+        <p class="muted">Metade do nível + atributo + treinamento + ajuste. Você pode cadastrar mais de um Ofício e nomear cada especialização.</p>
+      </div>
+    </div>
+    <div id="skillsList" class="skills"></div>
+  </article>
+</section>
+
+<section id="tab-poderes" class="tab">
+  <article class="panel">
+    <div class="sectionHead"><div><h2>Poderes e habilidades</h2><p class="muted">Registre poderes de classe, raça, origem, concedidos e distinções.</p></div><button id="addPower">+ Adicionar</button></div>
+    <details class="progressAccordion">
+      <summary><span id="progressSummaryTitle">Progressão da classe</span><small id="progressSummaryMeta">Níveis, escolhas e avanços</small></summary>
+      <div id="progressList" class="timeline"></div>
+    </details>
+    <div id="powerPicker" class="powerPicker hidden">
+      <div class="powerPickerHead">
+        <div><strong>Adicionar poder</strong><small id="powerPickerMeta">Escolha um poder da classe atual ou crie um manualmente.</small></div>
+        <button id="closePowerPicker" type="button">Fechar</button>
+      </div>
+      <div class="powerPickerControls">
+        <label>Tipo<select id="powerCatalogType"><option>Classe</option><option>Geral</option><option>Raça</option><option>Origem</option><option>Concedido</option></select></label>
+        <label id="powerCatalogSubtypeWrap">Categoria<select id="powerCatalogSubtype"><option value="">Todas</option><option>Combate</option><option>Magia</option><option>Destino</option></select></label>
+        <label>Poder<select id="classPowerSelect"></select></label>
+        <button id="addSelectedPower" type="button">Adicionar selecionado</button>
+        <button id="addBlankPower" type="button">Adicionar manual</button>
+      </div>
+    </div>
+    <div id="powersList" class="cards"></div>
+  </article>
+</section>
+
+
+<section id="tab-magias" class="tab">
+  <article class="panel">
+    <div class="sectionHead"><div><h2>Magias</h2><p class="muted">Catálogo baseado no Grimório T20. Pesquise, veja a descrição e clique para adicionar uma magia ao Grimório do personagem.</p></div></div>
+    <div class="catalogFilters">
+      <label>Buscar magia<input id="spellSearchCatalog" placeholder="Ex.: Bola de Fogo"></label>
+      <label>Círculo<select id="spellCircleFilter"><option value="">Todos</option><option value="1">1º círculo</option><option value="2">2º círculo</option><option value="3">3º círculo</option><option value="4">4º círculo</option><option value="5">5º círculo</option></select></label>
+      <label>Tipo<select id="spellTypeFilter"><option value="">Todas</option><option value="Arcana">Arcanas</option><option value="Divina">Divinas</option><option value="Universal">Universais</option></select></label>
+      <div class="catalogInfo"><small>Magias exibidas</small><strong id="spellCatalogCount">0</strong></div>
+    </div>
+    <div id="spellCatalogList" class="spellCatalogList"></div>
+  </article>
+</section>
+
+<section id="tab-grimorio" class="tab">
+  <article class="panel">
+    <div class="sectionHead"><div><h2>Grimório</h2><p class="muted">Estas são as magias aprendidas pelo personagem. Você pode adicionar manualmente ou puxar do catálogo da aba Magias.</p></div><button id="addSpell">+ Adicionar</button></div>
+    <div class="spellSummary">
+      <label>Atributo-chave<select id="spellAttr" data-save><option>INT</option><option>SAB</option><option>CAR</option></select></label>
+      <label>Bônus na CD<input id="spellCdBonus" data-save type="number" value="0"></label>
+      <div><small>CD estimada</small><strong id="spellCd">10</strong></div>
+      <div><small>Limite de PM final</small><strong id="pmLimit">1</strong></div>
+      <label>Bônus no limite<input id="pmLimitBonus" data-save type="number" value="0"></label>
+      <label>Ajuste livre do limite<input id="pmLimitAdjust" data-save type="number" value="0"></label>
+    </div>
+    <div id="spellsList" class="cards"></div>
+  </article>
+</section>
+
+<section id="tab-inventario" class="tab">
+  <article class="panel">
+    <div class="sectionHead"><div><h2>Inventário</h2><p class="muted">Controle de quantidade, espaços, preço e itens equipados.</p></div><div class="inventoryActions"><button id="addItem">+ Adicionar</button><button id="addMagicItem">+ Item mágico</button></div></div>
+    <div class="inventorySummary">
+      <div><small>Espaços usados</small><strong id="spacesUsed">0</strong></div>
+      <label>Limite de espaços<input id="spacesLimit" data-save type="number" value="10"></label>
+      <div><small>Dinheiro</small><input id="money" data-save placeholder="T$ 0"></div>
+    </div>
+    <div id="itemPicker" class="itemPicker hidden">
+      <div class="itemPickerHead">
+        <div><strong id="itemPickerTitle">Adicionar item</strong><small id="itemPickerMeta">Escolha um item do livro básico ou crie um manualmente.</small></div>
+        <button id="closeItemPicker" type="button">Fechar</button>
+      </div>
+      <div class="itemPickerControls">
+        <label>Buscar<input id="itemCatalogSearch" placeholder="Ex.: espada longa"></label>
+        <label>Categoria<select id="itemCatalogCategory"><option value="">Todas</option></select></label>
+        <label>Item<select id="itemCatalogSelect"></select></label>
+        <button id="addSelectedItem" type="button">Adicionar selecionado</button>
+        <button id="addBlankItem" type="button">Adicionar manual</button>
+      </div>
+    </div>
+    <div id="itemsList" class="cards"></div>
+  </article>
+</section>
+
+
+<section id="tab-notas" class="tab">
+  <article class="panel">
+    <h2>Notas</h2>
+    <p class="muted">Espaço livre para lembretes da campanha, efeitos em andamento, planos e qualquer detalhe do personagem.</p>
+    <textarea id="notes" class="notesField" data-save placeholder="Anotações gerais..." rows="14"></textarea>
+  </article>
+</section>
+
+<section id="tab-condicoes" class="tab">
+  <article class="panel">
+    <div class="sectionHead">
+      <div><h2>Condições</h2><p class="muted">Marque condições ativas e consulte seus efeitos.</p></div>
+      <button id="addCustomCondition">+ Condição personalizada</button>
+    </div>
+    <div id="conditionsList" class="conditionGrid"></div>
+    <h3>Condições personalizadas</h3>
+    <div id="customConditionsList" class="cards"></div>
+  </article>
+</section>
+
+<section id="tab-combate" class="tab">
+  <article class="panel">
+    <div class="sectionHead"><div><h2>Ataques</h2><p class="muted">Ataque, dano, crítico e observações. O dano aceita expressões como 1d6+1d12+4.</p></div><button id="addAttack">+ Adicionar</button></div>
+    <div id="combatPenaltySummary" class="penaltySummary"></div><div id="attacksList" class="cards"></div>
+  </article>
+</section>
+</main>
+
+
+<div id="spellModal" class="spellModal hidden" role="dialog" aria-modal="true" aria-labelledby="spellModalTitle">
+  <div class="spellModalBackdrop" data-close-spell-modal></div>
+  <article class="spellModalPanel">
+    <button class="spellModalClose" data-close-spell-modal aria-label="Fechar">×</button>
+    <div class="spellModalHeader">
+      <span id="spellModalCircle" class="spellCircleBadge"></span>
+      <div><h2 id="spellModalTitle"></h2><p id="spellModalMeta" class="muted"></p></div>
+    </div>
+    <div id="spellModalDetails" class="spellModalDetails"></div>
+    <div id="spellModalDescription" class="spellModalDescription"></div>
+    <div class="spellModalActions"><button id="spellModalAdd">Adicionar ao Grimório</button></div>
+  </article>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script src="data.js"></script>
+<script src="t20_expansions.js"></script>
+<script src="class_progression_features.js"></script>
+<script src="class_progression_full_texts.js"></script>
+<script src="class_powers.js"></script>
+<script src="class_power_details.js"></script>
+<script src="power_catalog.js"></script>
+<script src="item_catalog.js"></script>
+<script src="magic_item_catalog.js"></script>
+<script src="expansion_item_catalog.js"></script>
+<script src="origins.js"></script>
+<script src="spells_catalog.js"></script>
+<script src="jda_catalog_fixes.js"></script>
+<script src="expansion_race_abilities.js"></script>
+<script src="origin_expansion_fixes.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
