@@ -1,96 +1,129 @@
-# Ficha Tormenta20 v3
+# Ficha Interativa Tormenta20
 
-Abra `index.html` no navegador. Não é necessário instalar nada.
+Ficha virtual local para Tormenta20, com visual escuro clássico, abas organizadas e catálogos integrados para raças, classes, poderes, magias e inventário.
 
-## Principais mudanças
+Abra `index.html` em um navegador moderno. Não é necessário instalar dependências, rodar servidor ou compilar nada.
 
-- Classes básicas, Treinador, Frade e todas as classes variantes de Heróis de Arton.
-- Raças básicas e novas raças de Heróis de Arton.
-- PV e PM com valor calculado, bônus máximo, ajuste livre e valor atual editável.
-- Abas separadas para:
-  - Resumo
-  - Progressão
-  - Perícias
-  - Poderes e habilidades
-  - Magias
-  - Inventário
-  - Combate
-- Magias podem descontar PM ao serem conjuradas.
-- Inventário calcula espaços utilizados.
-- Exportação e importação em JSON.
-- Salvamento local.
+## Atualizações recentes
 
-## Observação
+- Habilidades de raça automáticas: ao selecionar uma raça, a aba Poderes recebe automaticamente as habilidades fixas daquela raça.
+- Progressão de classe automática: habilidades recebidas por nível entram sozinhas na aba Poderes, com descrições completas.
+- Poderes em sanfona, duas entradas por linha, mostrando nome e tipo mesmo recolhidos.
+- Grimório, Poderes e Inventário usam cards recolhidos/expansíveis para manter a ficha mais limpa.
+- PV aceita valores negativos e segue a regra de morte por metade dos PV máximos negativos, morrendo apenas 1 PV abaixo desse limite.
+- PV e PM temporários substituem o antigo campo de bônus máximo e são consumidos antes dos pontos normais.
+- PM máximo de Arcanista, Clérigo, Frade, Druida e Bardo soma o atributo-chave de magia quando aplicável.
+- Atributos têm modificadores temporários; eles entram em perícias e CD de magias, mas não alteram todos os cálculos derivados.
+- Perícias permitem trocar o atributo-chave, destacam treinadas, aplicam penalidade de armadura e indicam limitações de treinamento.
+- Defesa possui campos para penalidade de armadura e resistência a dano.
+- Inventário possui menu de itens mundanos e mágicos, com categorias simplificadas.
+- Magias têm filtros por arcanas, divinas e universais.
+- Aba Condições foi simplificada: foco em descrição e aplicação, sem campos de duração/origem.
+- Nova aba Notas para anotações livres.
 
-As classes variantes usam a estrutura numérica de sua classe básica. Os textos completos dos poderes e magias devem ser cadastrados pelo usuário, evitando reprodução integral dos livros.
+## Como usar
 
-## Novidades da versão 4
+1. Abra `index.html`.
+2. Preencha os dados principais no cabeçalho: raça, classe, nível, origem, divindade e atributos.
+3. Use as abas para completar a ficha.
+4. A ficha salva automaticamente no navegador.
+5. Use `Exportar` para gerar um JSON da ficha e `Importar` para carregar esse JSON depois.
 
-- Seleção de origens por livro.
-- Aplicação automática das perícias sugeridas pela origem.
-- Campos para os dois benefícios de origens comuns.
-- Suporte a origens especiais, regionais e personalizadas.
-- Barras visuais de PV e PM.
-- Limite de PM editável: nível + bônus + ajuste livre.
-- Aba completa de condições oficiais e personalizadas.
-- Resumo das condições ativas na página principal.
+O botão `Salvar` força o salvamento local. O botão `Limpar` apaga a ficha salva no navegador atual.
 
-A base de origens é expansível no arquivo `origins.js`. Algumas origens já possuem benefícios detalhados; as demais continuam aceitando preenchimento manual para não prender a ficha a uma interpretação específica.
+## Abas
 
+### Stats
 
-## Correção v4.1
-- Migração automática de fichas salvas na versão 3.
-- Correção do travamento dos botões ao carregar dados antigos.
+Mostra o resumo principal do personagem: atributos, PV, PM, Defesa, RD, deslocamento, CD de magia, limite de PM e condições ativas.
 
-## Versão 5
+PV e PM têm campos de pontos atuais, base calculada, temporários e ajuste livre. Os botões rápidos descontam primeiro os pontos temporários.
 
-- Atributos movidos para o topo da página de resumo.
-- Condições aplicam automaticamente penalidades numéricas em Defesa, ataques e perícias.
-- Resumo das penalidades ativas no Resumo e no Combate.
-- Lista completa das 30 origens especiais de Heróis de Arton.
-- Lista completa das 66 origens regionais do Atlas de Arton.
-- Benefícios de origem agora são uma lista sem limite fixo.
-- Migração automática das fichas antigas.
+### Origem
 
+Mostra origem, perícias sugeridas, poderes/benefícios, itens e descrição. A ficha possui origens do livro básico, Heróis de Arton e Atlas de Arton, incluindo origens regionais.
 
-## Versão 6
+### Perícias
 
-- Aba de Origem separada do Resumo.
-- Resumo mantém apenas dados principais, atributos, recursos, Defesa e condições.
-- Origens agrupadas por livro e ordenadas alfabeticamente dentro de cada grupo.
-- Ofício aceita múltiplas especializações nomeadas.
-- Dano de ataques aceita múltiplos dados, como `1d6+1d12+4`.
+Lista as perícias com atributo-chave editável, treino, bônus e ajuste. Perícias treinadas ficam destacadas. Penalidade de armadura e exigências de treino são tratadas visualmente e nos cálculos.
 
+### Poderes
 
-## Correção v6.2 estável
+Registra poderes e habilidades do personagem. A aba combina:
 
-- Restaurada a biblioteca de condições que impedia a inicialização do JavaScript.
-- Nova chave de salvamento, com tentativa de migração automática das versões antigas.
-- Inicialização protegida por mensagem de erro visível.
-- Arquivo JavaScript validado antes de gerar o ZIP.
+- habilidades automáticas de progressão de classe;
+- habilidades automáticas de raça;
+- poderes de classe;
+- poderes gerais, incluindo Combate, Magia e Destino;
+- poderes de raça;
+- poderes de origem;
+- poderes concedidos;
+- poderes manuais.
 
+Habilidades automáticas ficam bloqueadas para edição direta e são atualizadas quando raça, classe ou nível mudam. Entradas que exigem escolha, como herança de Moreau, presentes de Duende, talentos de Kobolds ou bênçãos de Kallyanach, aparecem como orientação, mas a escolha específica continua manual.
 
-## Versão 7 — Catálogo de Magias + Grimório
+### Combate
 
-- Nova aba **Magias** com catálogo completo das 275 magias listadas no Grimório T20, separadas por círculo.
-- Nova aba **Grimório** para armazenar apenas as magias aprendidas pelo personagem.
-- Botão **Adicionar ao Grimório** em cada magia do catálogo.
-- Busca por nome e filtro por círculo no catálogo.
-- Estética revisada para ficar mais próxima da paleta e da temática visual de Tormenta20.
+Agrupa ataques e rolagens rápidas. Cada ataque pode ter bônus, dano, crítico, multiplicador e notas. O campo de dano aceita expressões como `1d6+1d12+4`.
 
+### Grimório
 
-## Versão 7.1 — Descrições + visual escuro
+Guarda as magias conhecidas pelo personagem. Magias podem ser adicionadas manualmente ou puxadas da aba Magias. Ao conjurar uma magia, a ficha desconta PM automaticamente, usando PM temporário antes do PM normal.
 
-- O catálogo de Magias agora mostra **descrições** quando disponíveis.
-- Ao adicionar uma magia ao Grimório, sua descrição também é levada junto.
-- Base local enriquecida automaticamente a partir dos livros enviados: **189 de 275 magias** com descrição e/ou metadados preenchidos.
-- Restante das magias continua funcional e pode ser completado depois.
-- Tema visual reformulado para um **modo escuro com acentos vermelhos**, inspirado na ficha de Tormenta20 mostrada como referência.
+### Inventário
 
+Controla itens, quantidade, espaço, preço, equipamento e notas. O botão de adicionar abre catálogo de itens mundanos; o botão de item mágico abre catálogo próprio. Os itens ficam em cards recolhidos, duas entradas por linha.
 
-## Versão 7.2
-- Retorno ao visual original escuro, agora com acentos vermelhos.
-- Logotipo oficial fornecido pelo usuário usado no cabeçalho.
-- Origem selecionada aparece nas informações do personagem.
-- Botão visível **Ver descrição** em cada magia.
-- Descrição aberta em uma janela própria, com metadados e botão para adicionar ao Grimório.
+### Notas
+
+Campo livre para anotações de campanha, efeitos temporários, lembretes e qualquer informação que não tenha lugar específico.
+
+### Condições
+
+Lista condições oficiais e personalizadas. Marcar uma condição aplica seus modificadores automáticos quando houver, como penalidades em Defesa, ataques, atributos e perícias.
+
+### Magias
+
+Catálogo de magias. Permite pesquisar, filtrar por círculo e tipo de magia, ver descrição e adicionar ao Grimório.
+
+## Cálculos e automações
+
+- PV base: usa os valores da classe, Constituição e nível.
+- PM base: usa PM por nível da classe e, para conjuradores compatíveis, soma o atributo-chave de magia.
+- CD de magia: `10 + metade do nível + atributo-chave + bônus`.
+- Limite de PM: nível + bônus + ajuste livre.
+- Defesa: base 10 + Destreza + armadura + escudo + bônus + ajuste + condições.
+- Morte: quando os PV atuais ficam negativos, a barra passa a representar o limite negativo. Um personagem com 30 PV máximos tem limite em -15 e morre em -16.
+- Perícias: usam metade do nível, atributo-chave selecionado, treino, ajustes, penalidade de armadura e condições.
+
+## Catálogos incluídos
+
+A ficha usa dados locais distribuídos em arquivos JavaScript:
+
+- `data.js`: classes, raças básicas e perícias.
+- `t20_expansions.js`: raças de Ameaças de Arton, classes variantes e progressões.
+- `origins.js`: origens base.
+- `origin_expansion_fixes.js`: correções e expansões de origens.
+- `class_progression_features.js`: habilidades automáticas de progressão.
+- `class_progression_full_texts.js`: descrições completas das habilidades de progressão.
+- `class_powers.js`: poderes de classe.
+- `class_power_details.js`: descrições e detalhes dos poderes de classe.
+- `power_catalog.js`: poderes gerais, raciais, de origem e concedidos.
+- `jda_catalog_fixes.js`: correções do catálogo do Jogo do Ano e habilidades raciais básicas.
+- `expansion_race_abilities.js`: habilidades de raça de Heróis de Arton e Ameaças de Arton.
+- `spells_catalog.js`: catálogo de magias.
+- `item_catalog.js`: itens mundanos do livro básico.
+- `magic_item_catalog.js`: itens mágicos.
+- `expansion_item_catalog.js`: itens de suplementos.
+
+## Salvamento
+
+O salvamento usa `localStorage`, então a ficha fica gravada apenas no navegador e perfil atual. Para backup ou troca de computador, use `Exportar` e guarde o arquivo `.json`.
+
+O projeto tenta migrar fichas antigas salvas com chaves anteriores. Ainda assim, exportar um backup antes de mudanças grandes é recomendado.
+
+## Limitações
+
+A ficha é uma ferramenta de apoio, não substitui os livros. Algumas opções que dependem de decisão do jogador ou do mestre aparecem como entradas orientadoras e devem ser preenchidas manualmente.
+
+Exemplos: poder escolhido por Ambição Herdada, herança específica de Moreau, presentes de Duende, talentos de Kobolds, bênçãos de Kallyanach, maravilhas de Mashin e escolhas abertas de origem.
