@@ -11,13 +11,13 @@
 <body>
 <header class="topbar">
   <div class="topbarMain">
-    <div class="brand"><img src="tormenta20-logo.png" alt="Tormenta20"><small>Ficha Interativa</small></div>
+    <div class="brand"><strong>Ficha Interativa</strong><small>Tormenta20</small></div>
     <div class="characterManager" aria-label="Gerenciador de personagens">
       <label>Personagem<select id="characterSelect"></select></label>
       <button id="newCharacterBtn" type="button">Novo</button>
       <button id="duplicateCharacterBtn" type="button">Duplicar</button>
       <button id="renameCharacterBtn" type="button">Renomear</button>
-      <button id="deleteCharacterBtn" type="button" class="danger">Excluir</button>
+      <button id="deleteCharacterBtn" type="button" class="danger iconButton" title="Excluir personagem" aria-label="Excluir personagem">X</button>
     </div>
     <div class="actions">
       <button id="saveBtn">Salvar</button>
@@ -263,6 +263,13 @@
 </section>
 </main>
 
+<footer class="siteFooter">
+  <div class="footerRule" aria-hidden="true"></div>
+  <div class="footerContent">
+    <a href="https://jamboeditora.com.br/produto/tormenta20-edicao-jogo-do-ano/" target="_blank" rel="noopener noreferrer">Compre Tormenta20</a>
+    <span>Tormenta20 &copy; Jamb&ocirc; Editora. Todos os direitos reservados.</span>
+  </div>
+</footer>
 
 <div id="spellModal" class="spellModal hidden" role="dialog" aria-modal="true" aria-labelledby="spellModalTitle">
   <div class="spellModalBackdrop" data-close-spell-modal></div>
