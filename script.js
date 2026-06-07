@@ -18,6 +18,7 @@ function normalizeState(){
   if(!state.attacks.length) state.attacks=defaultState().attacks;
   if(!state.offices.length) state.offices=defaultState().offices;
   state.spells=state.spells.map(spell=>normalizeSpellDetailFields({...spell}));
+  state.items=state.items.map(item=>normalizeInventoryItemDescription(item));
 }
 
 let state=defaultState();
@@ -1126,6 +1127,7 @@ function renderItemCard(it,i){
   const isOpen=expandedItemCards.has(i);
   const rawQty=Number(it.qty??1),rawSpaces=Number(it.spaces||0);
   const qty=Number.isFinite(rawQty)?rawQty:0,spaces=Number.isFinite(rawSpaces)?rawSpaces:0,totalSpaces=qty*spaces;
+  const description=itemDescription(it);
   const summary=[
     qty?`${qty}x`:null,
     it.category,
@@ -1152,7 +1154,7 @@ function renderItemCard(it,i){
         <label>Fonte<input data-i="${i}" data-k="source" value="${escapeHtml(it.source||"")}"></label>
         <label>Equipado<select data-i="${i}" data-k="equipped"><option value="false" ${!it.equipped?"selected":""}>Não</option><option value="true" ${it.equipped?"selected":""}>Sim</option></select></label>
       </div>
-      <label>Descrição, melhorias e efeitos<textarea data-i="${i}" data-k="notes" rows="5" placeholder="Descricao, melhorias e efeitos">${escapeHtml(it.notes||"")}</textarea></label>
+      <label>Descri&ccedil;&atilde;o, melhorias e efeitos<textarea data-i="${i}" data-k="notes" rows="5" placeholder="Descricao, melhorias, encantos e efeitos especiais">${escapeHtml(description)}</textarea></label>
     </div>
   </div>`;
 }
@@ -1184,6 +1186,39 @@ function itemSpaceText(spaces){
   if(!Number.isFinite(value)||!value) return "sem espaço";
   return `${value.toFixed(value%1?1:0)} espaço${value===1?"":"s"}`;
 }
+function itemDescription(item){
+  return String(item?.description??item?.desc??item?.notes??"").trim();
+}
+function itemAllowsCatalogDescription(item){
+  const category=String(item?.category||"").trim().toLowerCase();
+  return category.startsWith("armas ") || category==="armadura leve" || category==="armadura pesada" || category==="escudo";
+}
+function catalogInventoryDescription(item){
+  if(!itemAllowsCatalogDescription(item)) return "";
+  const name=String(item?.name||"").trim().toLowerCase();
+  const category=String(item?.category||"").trim().toLowerCase();
+  if(!name||!category) return "";
+  const source=String(item?.source||"").trim().toLowerCase();
+  const catalogs=[
+    ...(Array.isArray(window.T20_ITEM_CATALOG)?window.T20_ITEM_CATALOG:[])
+  ];
+  const catalogItem=catalogs.find(entry=>
+    String(entry.name||"").trim().toLowerCase()===name &&
+    String(entry.category||"").trim().toLowerCase()===category &&
+    (!source||String(entry.source||"").trim().toLowerCase()===source)
+  );
+  return itemDescription(catalogItem);
+}
+function normalizeInventoryItemDescription(item){
+  const normalized={...(item||{})};
+  const catalogDescription=catalogInventoryDescription(normalized);
+  if(!catalogDescription) return normalized;
+  const current=itemDescription(normalized);
+  if(!current || catalogDescription.startsWith(`${current}\n\n`)){
+    normalized.notes=catalogDescription;
+  }
+  return normalized;
+}
 function fillItemCatalogCategories(){
   const select=$("#itemCatalogCategory");
   if(!select) return;
@@ -1197,7 +1232,7 @@ function currentItemCatalog(){
   const search=(value("itemCatalogSearch")||"").trim().toLowerCase();
   const category=value("itemCatalogCategory");
   return itemCatalogEntries().filter(item=>{
-    const haystack=[item.name,item.category,item.price,item.source,item.notes].filter(Boolean).join(" ").toLowerCase();
+    const haystack=[item.name,item.category,item.price,item.source,itemDescription(item)].filter(Boolean).join(" ").toLowerCase();
     return (!category||item.category===category) && (!search||haystack.includes(search));
   }).sort((a,b)=>a.category.localeCompare(b.category,"pt-BR")||a.name.localeCompare(b.name,"pt-BR"));
 }
@@ -1254,7 +1289,7 @@ function addItemEntry(item={}){
     category:item.category||"",
     price:item.price||"",
     equipped:!!item.equipped,
-    notes:item.notes||"",
+    notes:itemDescription(item),
     source:item.source||""
   });
   expandedItemCards.add(state.items.length-1);

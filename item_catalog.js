@@ -13,16 +13,73 @@
     if(text.includes("fogo")) return "Armas de fogo";
     return "Armas";
   };
+  const weaponDescriptions={
+    "Adaga":"Esta faca afiada é usada por muitos habitantes adultos do Reinado, embora seja favorita de ladrões e assassinos, por ser facilmente escondida (fornece +5 em testes de Ladinagem para ocultá-la). Quando ataca com uma adaga, você pode usar sua Destreza em vez de Força nos testes de ataque. Uma adaga pode ser arremessada.",
+    "Alabarda":"Uma haste de madeira com 2m de comprimento e uma lâmina de machado na ponta. A alabarda é uma arma alongada.",
+    "Alfange":"Uma versão maior da cimitarra, esta espada de lâmina larga e curva é bastante usada por guerreiros do Deserto da Perdição.",
+    "Arco curto":"Uma arma antiga e comum, este arco é usado primariamente como ferramenta de caça, embora seja usado como arma de guerra por milícias, bandidos e exércitos menos equipados. Pode ser usado montado.",
+    "Arco longo":"Este arco reforçado tem a altura de uma pessoa. Ao contrário da versão curta, é primariamente uma arma de guerra. Por ter uma puxada pesada, permite que você aplique sua Força às rolagens de dano (ao contrário de outras armas de disparo). Porém, um arco longo não pode ser usado se você estiver montado.",
+    "Azagaia":"Uma lança leve e flexível, própria para arremesso. Pode ser usada como arma corpo a corpo, mas você sofre uma penalidade de -5 no teste de ataque.",
+    "Besta leve":"Um arco montado sobre uma coronha de madeira com um gatilho, a besta leve é uma arma que dispara virotes com grande potência. Recarregar uma besta leve é uma ação de movimento.",
+    "Besta pesada":"Versão maior e mais potente da besta leve. Recarregar uma besta pesada é uma ação padrão.",
+    "Bordão":"Um cajado apreciado por viajantes e camponeses por sua praticidade e fácil acesso (seu preço é zero). O bordão é uma arma dupla.",
+    "Chicote":"Esta arma pode ser usada para atacar inimigos a até 4,5m e pode se enroscar nas mãos, pernas ou armas de seus adversários. O chicote é uma arma ágil e versátil, fornecendo +2 em testes para derrubar ou desarmar.",
+    "Cimitarra":"Espada com a lâmina curva e muito afiada. A cimitarra é uma arma ágil.",
+    "Clava":"Um pedaço de madeira empunhado como arma, geralmente usado por bárbaros ou criaturas brutais, ou como arma improvisada, como um galho de árvore ou pedaço de mobília. Sendo fácil de conseguir, seu preço é zero.",
+    "Corrente de espinhos":"Esta arma pode ser usada para atacar inimigos a até 4,5m e pode se enroscar nas mãos, pernas ou armas de seus adversários. A corrente de espinhos é uma arma ágil, dupla e versátil, fornecendo +2 em testes para derrubar ou desarmar.",
+    "Espada bastarda":"Maior e mais pesada que a espada longa, esta arma é tradicionalmente usada pelos cavaleiros de Bielefeld. A espada bastarda é uma arma adaptável. É muito grande para ser usada com uma só mão sem treinamento especial; por isso é uma arma exótica. Ela pode ser usada como uma arma marcial de duas mãos.",
+    "Espada curta":"O tipo mais comum de espada, usada por guardas ou como arma secundária de guerreiros mais capazes. Mede entre 40 e 50cm.",
+    "Espada longa":"Arma típica de soldados e guerreiros, esta espada de dois gumes tem lâmina reta medindo entre 80cm e 1m.",
+    "Florete":"A lâmina leve e fina desta espada torna a arma muito precisa. O florete é uma arma ágil.",
+    "Foice":"Originalmente um instrumento agrícola, consiste de uma lâmina curva presa a um cabo de madeira. Uma arma tradicional de druidas.",
+    "Funda":"Uma simples tira de couro usada para arremessar pedras polidas. Na falta de munição adequada, pode disparar pedras comuns, mas o dano é reduzido em um passo. Recarregar uma funda é uma ação de movimento. Ao contrário de outras armas de disparo, você aplica sua Força a rolagens de dano com uma funda.",
+    "Gadanho":"Outra ferramenta agrícola, o gadanho é uma versão maior da foice, para uso com as duas mãos. Foi criada para ceifar cereais, mas também pode ceifar vidas.",
+    "Katana":"A espada tradicional do samurai tem lâmina levemente curva e apenas um gume. A katana é uma arma adaptável e ágil. É muito grande para ser empunhada com uma só mão sem treinamento especial; por isso, é uma arma exótica. Ela pode ser usada como uma arma marcial de duas mãos.",
+    "Lança":"Qualquer arma feita com uma haste de madeira e uma ponta afiada, natural ou metálica. Por sua facilidade de fabricação, é muito comum entre orcs, kobolds, trogloditas e outras raças menos civilizadas. Uma lança pode ser arremessada.",
+    "Lança montada":"A lança montada é uma arma alongada. Se você estiver montado, pode usá-la com apenas uma mão. Além disso, quando usada numa investida montada, causa +2d8 pontos de dano (note que dados extras não são multiplicados em caso de acerto crítico).",
+    "Maça":"Bastão com um peso cheio de protuberâncias na ponta, a maça é usada por clérigos que fazem votos de não derramar sangue. De fato, um golpe de maça nem sempre derrama sangue, mas esmaga ossos.",
+    "Machadinha":"Ferramenta útil para cortar madeira e também inimigos. Uma machadinha pode ser arremessada.",
+    "Machado anão":"A arma preferida de onze entre dez guerreiros anões. Um machado anão é muito grande para ser usado com uma só mão sem treinamento especial; por isso é uma arma exótica. Ele pode ser usado como uma arma marcial de duas mãos.",
+    "Machado de batalha":"Adaptado do machado de lenhador, este não é um instrumento para corte de árvores, mas sim uma arma capaz de causar ferimentos terríveis.",
+    "Machado de guerra":"Este imenso machado de lâmina dupla é uma arma extremamente perigosa.",
+    "Machado táurico":"Uma haste comprida com uma lâmina extremamente grossa na ponta, esta é uma arma ancestral dos minotauros. Um machado táurico é uma arma desbalanceada. Além disso, é muito grande para ser usado sem treinamento especial; por isso, é uma arma exótica.",
+    "Mangual":"Uma haste metálica ligada a uma corrente com uma esfera de aço na ponta, que pode se enroscar na arma do adversário. O mangual é uma arma versátil, fornecendo +2 em testes para desarmar.",
+    "Marreta":"Uma haste de madeira resistente com uma pesada cabeça de metal ou pedra.",
+    "Martelo de guerra":"Outra ferramenta adaptada para combate, esta é a arma favorita de quase todos os anões que não usam machados.",
+    "Montante":"Enorme e pesada, esta espada de 1,5m de comprimento é uma arma poderosa.",
+    "Mosquete":"Uma arma de fogo de uso difícil, mas com poder devastador. Recarregar um mosquete é uma ação padrão.",
+    "Picareta":"Usada por mineradores, esta ferramenta quebra pedras com facilidade. Imagine o que pode fazer com carne e osso!",
+    "Pique":"Essencialmente uma lança muito longa. O pique é uma arma alongada.",
+    "Pistola":"A arma de fogo mais comum. Recarregar uma pistola é uma ação padrão.",
+    "Rede":"A rede tem pequenos dentes em sua trama e uma corda para controlar os inimigos presos. Se você acertar um ataque com a rede, não causa dano. Em vez disso, a vítima fica enredada (deslocamento reduzido à metade, não pode correr nem fazer investidas e sofre -2 na Defesa e em testes de ataque). Enquanto você estiver segurando a corda, sempre que a vítima se mover você pode fazer um teste de Força oposto contra ela como uma reação. Se você vencer, a vítima só pode se mover até o limite da corda (alcance curto). A vítima pode se soltar com uma ação completa e um teste de Força ou Acrobacia (CD 20). A rede tem 5 pontos de vida e, se rasgar, qualquer criatura enredada se solta automaticamente. A rede só pode ser usada contra criaturas no máximo uma categoria de tamanho maior que você.",
+    "Tacape":"Versão maior e/ou com pregos de uma clava. Usado por bárbaros e humanoides bestiais, não é uma arma elegante, mas faz o serviço.",
+    "Tridente":"Uma lança com três pontas, favorita de povos marinhos e gladiadores e própria para prender as pernas do oponente. O tridente é uma arma versátil, fornecendo +2 em testes para derrubar. Um tridente pode ser arremessado."
+  };
+  const armorDescriptions={
+    "Armadura acolchoada":"Uma túnica almofadada feita em linho ou lã. É a armadura mais leve, mas protege todo o corpo, fornecendo +2 em Fortitude.",
+    "Armadura completa":"A mais forte e pesada das armaduras, formada por placas de metal forjadas e encaixadas de modo a cobrir o corpo inteiro. Inclui uma túnica acolchoada para ser usada sob as placas. Correias e fivelas distribuem o peso da armadura pelo corpo inteiro. Esta armadura precisa ser feita sob medida para cada usuário; um ferreiro cobra T$ 200 para adaptar uma armadura completa a um novo usuário.",
+    "Armadura de couro":"O peitoral desta armadura é feito de couro curtido em óleo fervente, para ficar mais rígido, enquanto as demais partes são feitas de couro flexível.",
+    "Brunea":"Colete de couro coberto com plaquetas de metal sobrepostas, como escamas de um peixe. Por ser barata de produzir, é a armadura mais utilizada no Reinado por soldados de infantaria e guardas de castelo.",
+    "Cota de malha":"Longa veste de anéis metálicos interligados, formando uma malha flexível e resistente, que vai até os joelhos.",
+    "Couraça":"A mais robusta das armaduras leves, formada por uma placa metálica que protege o peito e as costas, presa sobre um casaco de couro.",
+    "Couro batido":"Versão mais pesada da armadura de couro, reforçada com rebites de metal.",
+    "Escudo leve":"Tipicamente feito de madeira, este escudo é amarrado no antebraço, deixando a mão livre. Você pode carregar um objeto na mão que empunha o escudo, mas não manusear uma arma.",
+    "Escudo pesado":"Normalmente feito de aço, este escudo é preso ao antebraço e também deve ser empunhado com firmeza, impedindo o usuário de usar aquela mão.",
+    "Gibão de peles":"Usada principalmente por bárbaros e selvagens, esta armadura é formada por várias camadas de peles e couro de animais.",
+    "Loriga segmentada":"Composta por tiras horizontais de metal, esta armadura pesada é muito utilizada por legionários do Império de Tauron.",
+    "Meia armadura":"Uma cota de malha reforçada com placas de metal."
+  };
+  const describedNotes=(rules,description)=>description?`${rules}\n\n${description}`:rules;
   const entry=(name,category,price,spaces,notes="")=>({name,category:normalizeCategory(category),price,spaces,source,notes});
   const weapon=(name,category,price,spaces,damage,critical,range,type,extra="")=>{
     const details=[`Dano ${damage}`,`crítico ${critical}`];
     if(range) details.push(`alcance ${range}`);
     if(type) details.push(`tipo ${type}`);
     if(extra) details.push(extra);
-    return entry(name,weaponCategory(category),price,spaces,details.join("; ")+".");
+    return entry(name,weaponCategory(category),price,spaces,describedNotes(details.join("; ")+".",weaponDescriptions[name]));
   };
   const armor=(name,category,price,defense,penalty,spaces)=>{
-    return entry(name,category,price,spaces,`Defesa ${defense}; penalidade de armadura ${penalty}.`);
+    return entry(name,category,price,spaces,describedNotes(`Defesa ${defense}; penalidade de armadura ${penalty}.`,armorDescriptions[name]));
   };
 
   const catalog=[
