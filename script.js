@@ -6,7 +6,7 @@ const CHARACTER_PREFIX="t20_character_v1_";
 const LEGACY_KEYS=["t20_sheet_v3","t20_sheet_v4","t20_sheet_v5","t20_sheet_v6"];
 
 function defaultState(){
-  return {powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}]};
+  return {powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[]};
 }
 function normalizeState(){
   const defaults=defaultState();
@@ -389,7 +389,9 @@ const AUTO_RACE_ABILITY_FLAG="habilidadeRacial";
 const RACE_POWER_ALIASES={
   qareen:["Qareen da Água","Qareen da Agua","Qareen do Ar","Qareen do Fogo","Qareen da Terra","Qareen da Luz","Qareen das Trevas"],
   sereia:["Sereia","Tritão","Tritao","Sereia/Tritão","Sereia/Tritao"],
-  suraggel:["Aggelus","Sulfure"],
+  suraggel:["Suraggel"],
+  suraggel_aggelus:["Suraggel","Aggelus"],
+  suraggel_sulfure:["Suraggel","Sulfure"],
   meio_elfo:["Meio-Elfo","Meio Elfo"],
   golem_ameacas:["Golem"],
   troganao:["Trog","Troganão"],
@@ -548,8 +550,28 @@ function currentAutoClassFeatures(){
     };
   }).sort((a,b)=>Number(a.autoLevel||0)-Number(b.autoLevel||0)||String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
 }
+function autoPowerSuppressionKey(power){
+  if(power?.autoClassFeature===AUTO_CLASS_FEATURE_FLAG){
+    return `class:${power.autoFeatureKey||[power.autoClassId,power.name,power.source].map(powerCatalogKey).join("|")}`;
+  }
+  if(power?.autoRaceAbility===AUTO_RACE_ABILITY_FLAG){
+    return `race:${power.autoRaceAbilityKey||[power.autoRaceId,power.name,power.source].map(powerCatalogKey).join("|")}`;
+  }
+  return "";
+}
+function isSuppressedAutoPower(power){
+  const key=autoPowerSuppressionKey(power);
+  return !!key && (state.suppressedAutoPowers||[]).includes(key);
+}
+function suppressAutoPower(power){
+  const key=autoPowerSuppressionKey(power);
+  if(!key) return;
+  state.suppressedAutoPowers=Array.isArray(state.suppressedAutoPowers)?state.suppressedAutoPowers:[];
+  if(!state.suppressedAutoPowers.includes(key)) state.suppressedAutoPowers.push(key);
+}
 function syncAutoClassFeatures(){
   state.powers=Array.isArray(state.powers)?state.powers:[];
+  state.suppressedAutoPowers=Array.isArray(state.suppressedAutoPowers)?state.suppressedAutoPowers:[];
   const manual=state.powers.filter(power=>power.autoClassFeature!==AUTO_CLASS_FEATURE_FLAG && power.autoRaceAbility!==AUTO_RACE_ABILITY_FLAG && !isRaceAttributeModifierPower(power));
   const manualClassFeatureKeys=new Set(manual
     .filter(power=>normalizePowerType(power.type)==="Classe")
@@ -559,8 +581,8 @@ function syncAutoClassFeatures(){
     .filter(power=>normalizePowerType(power.type)==="Raça")
     .map(power=>powerCatalogKey(power.name))
     .filter(Boolean));
-  const auto=currentAutoClassFeatures().filter(power=>!manualClassFeatureKeys.has(classFeatureBaseKey(power.name)));
-  const autoRace=currentAutoRaceAbilities().filter(power=>!manualRaceAbilityKeys.has(powerCatalogKey(power.name)));
+  const auto=currentAutoClassFeatures().filter(power=>!manualClassFeatureKeys.has(classFeatureBaseKey(power.name)) && !isSuppressedAutoPower(power));
+  const autoRace=currentAutoRaceAbilities().filter(power=>!manualRaceAbilityKeys.has(powerCatalogKey(power.name)) && !isSuppressedAutoPower(power));
   state.powers=[...auto,...autoRace,...manual];
   expandedPowerCards=new Set([...expandedPowerCards].filter(index=>index<state.powers.length));
 }
@@ -599,6 +621,9 @@ function renderPowerCard(p,i){
   const autoText=isAutoClass?`Automático • nível ${p.autoLevel||"?"}`:isAutoRace?"Automático • raça":escapeHtml(p.type);
   const lockAttr=isAuto?" readonly":"";
   const disabledAttr=isAuto?" disabled":"";
+  const autoActions=isAuto
+    ? `<div class="autoPowerActions"><span class="autoPowerBadge">${isAutoRace?"Raça":"Progressão"}</span><button type="button" class="remove autoRemove" data-pautodel="${i}" title="Remover este poder automático" aria-label="Remover este poder automático">X</button></div>`
+    : `<button type="button" class="remove" data-pdel="${i}">Excluir</button>`;
   return `<div class="card powerAccordionCard ${isOpen?"expanded":""}">
     <button type="button" class="powerAccordionToggle" data-powertoggle="${i}" aria-expanded="${isOpen}">
       <span class="powerAccordionTitle"><strong>${escapeHtml(p.name||"Poder sem nome")}</strong><small>${autoText}</small></span>
@@ -608,7 +633,7 @@ function renderPowerCard(p,i){
       <div class="powerMainFields">
         <label>Nome<input data-p="${i}" data-k="name" value="${escapeHtml(p.name||"")}" placeholder="Nome"${lockAttr}></label>
         <label>Tipo<select data-p="${i}" data-k="type"${disabledAttr}>${powerTypeOptions(p.type||"Classe")}</select></label>
-        ${isAuto?`<span class="autoPowerBadge">${isAutoRace?"Raça":"Progressão"}</span>`:`<button type="button" class="remove" data-pdel="${i}">Excluir</button>`}
+        ${autoActions}
       </div>
       <div class="powerMeta">
         <label>Custo/uso<input data-p="${i}" data-k="cost" value="${escapeHtml(p.cost||"")}" placeholder="Custo/uso"${lockAttr}></label>
@@ -624,6 +649,7 @@ function renderPowers(){
   $("#powersList").innerHTML=state.powers.map((p,i)=>renderPowerCard(p,i)).join("") || '<p class="muted">Nenhum poder registrado ainda.</p>';
   $$("[data-powertoggle]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.powertoggle;if(expandedPowerCards.has(idx))expandedPowerCards.delete(idx);else expandedPowerCards.add(idx);renderPowers()});
   bindCollection("p",state.powers,renderPowers);
+  $$("[data-pautodel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pautodel;suppressAutoPower(state.powers[idx]);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();save(false)});
   $$("[data-pdel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pdel;state.powers.splice(idx,1);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();save(false)});
 }
 function currentClassPowerIds(){
@@ -1322,13 +1348,16 @@ function normalizeLoadedState(saved){
     conditions:saved.conditions&&typeof saved.conditions==="object"?saved.conditions:base.conditions,
     customConditions:Array.isArray(saved.customConditions)?saved.customConditions:base.customConditions,
     originBenefits:Array.isArray(saved.originBenefits)?saved.originBenefits:base.originBenefits,
-    offices:Array.isArray(saved.offices)&&saved.offices.length?saved.offices:base.offices
+    offices:Array.isArray(saved.offices)&&saved.offices.length?saved.offices:base.offices,
+    suppressedAutoPowers:Array.isArray(saved.suppressedAutoPowers)?saved.suppressedAutoPowers:base.suppressedAutoPowers
   };
 }
 function normalizeSheetData(data){
   data=data&&typeof data==="object"?data:{};
+  const fields=data.fields&&typeof data.fields==="object"?{...data.fields}:{};
+  if(fields.raca==="suraggel") fields.raca="suraggel_aggelus";
   return {
-    fields:data.fields&&typeof data.fields==="object"?data.fields:{},
+    fields,
     state:normalizeLoadedState(data.state)
   };
 }

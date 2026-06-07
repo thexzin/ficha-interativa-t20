@@ -1,6 +1,22 @@
 (() => {
   if (!window.T20_DATA) return;
 
+  const racas = window.T20_DATA.racas || {};
+  if (racas.suraggel) {
+    const baseSuraggel = racas.suraggel;
+    racas.suraggel_aggelus = {
+      ...baseSuraggel,
+      nome: "Suraggel (Aggelus)",
+      atributos: "Sab +2, Car +1"
+    };
+    racas.suraggel_sulfure = {
+      ...baseSuraggel,
+      nome: "Suraggel (Sulfure)",
+      atributos: "Des +2, Int +1"
+    };
+    delete racas.suraggel;
+  }
+
   const ameacasRacas = {
     bugbear: { nome: "Bugbear", fonte: "Ameaças de Arton", atributos: "For +2, Des +1, Car -1", pagina: 79 },
     centauro: { nome: "Centauro", fonte: "Ameaças de Arton", atributos: "Sab +2, For +1, Int -1", pagina: 105 },
