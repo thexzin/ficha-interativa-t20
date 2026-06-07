@@ -166,6 +166,36 @@
       action:"-",
       desc:"Você atinge o ápice da prática arcana. Suas magias têm custo reduzido pela metade depois de aprimoramentos e demais reduções."
     },
+    "sentinela|magias":{
+      cost:"Variável",
+      action:"Conforme a magia",
+      desc:"Você lança magias como o arcanista básico, usando Inteligência como atributo-chave e liberando novos círculos pela progressão do sentinela."
+    },
+    "sentinela|caminhodosentinela":{
+      cost:"-",
+      action:"-",
+      desc:"Você mistura combate e feitiçaria. Em combate, precisa empunhar uma arma proficiente ou fazer Misticismo para lançar magias; armadura leve não exige esse teste."
+    },
+    "sentinela|gladiomancia":{
+      cost:"2 PM",
+      action:"Movimento",
+      desc:"Imbui uma arma leve ou ágil com essência arcana. Enquanto a empunhar, usa Inteligência para Defesa, Luta e dano dentro dos limites da habilidade."
+    },
+    "sentinela|magodecombate":{
+      cost:"-",
+      action:"Ao atacar",
+      desc:"Ao atacar com uma arma sob Gladiomancia, soma o círculo máximo de magia ao dano e considera a mão da arma livre para lançar magias."
+    },
+    "sentinela|ataqueextra":{
+      cost:"2 PM",
+      action:"Ao agredir",
+      desc:"Quando usa a ação agredir, pode realizar um ataque adicional uma vez por rodada."
+    },
+    "sentinela|mestrearcanocombatente":{
+      cost:"-",
+      action:"-",
+      desc:"No auge da classe, usa Gladiomancia como ação livre e reduz pela metade o custo de suas habilidades de sentinela enquanto a arma estiver imbuída."
+    },
 
     "barbaro|furia":{
       cost:"2 PM+",

@@ -50,6 +50,19 @@
   };
 
   Object.assign(window.T20_DATA.racas, ameacasRacas);
+  Object.assign(window.T20_DATA.classes, {
+    sentinela: {
+      nome: "Sentinela",
+      pv1: 12,
+      pvNivel: 4,
+      pmNivel: 5,
+      fonte: "Dragão Brasil 222",
+      pericias: ["Luta", "Misticismo"],
+      idBase: "arcanista",
+      variante: true,
+      classeBase: "Arcanista"
+    }
+  });
 
   const classProgressions = {
     arcanista: {
@@ -73,6 +86,28 @@
       18: "Poder de arcanista",
       19: "Poder de arcanista",
       20: "Alta arcana, poder de arcanista"
+    },
+    sentinela: {
+      1: "Caminho do sentinela, gladiomancia, magias (1º círculo)",
+      2: "Poder de arcanista",
+      3: "Mago de combate, poder de arcanista",
+      4: "Poder de arcanista",
+      5: "Magias (2º círculo), poder de arcanista",
+      6: "Poder de arcanista",
+      7: "Poder de arcanista",
+      8: "Ataque extra, poder de arcanista",
+      9: "Magias (3º círculo), poder de arcanista",
+      10: "Poder de arcanista",
+      11: "Poder de arcanista",
+      12: "Poder de arcanista",
+      13: "Magias (4º círculo), poder de arcanista",
+      14: "Poder de arcanista",
+      15: "Poder de arcanista",
+      16: "Poder de arcanista",
+      17: "Magias (5º círculo), poder de arcanista",
+      18: "Poder de arcanista",
+      19: "Poder de arcanista",
+      20: "Mestre arcano-combatente, poder de arcanista"
     },
     barbaro: {
       1: "Fúria +2",

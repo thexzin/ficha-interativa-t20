@@ -192,9 +192,10 @@ function recalc(){
   $("#pvMaxView").textContent=isDying?deathLimit:pvMax;$("#pmMaxView").textContent=pmMax;$("#pvAtualView").textContent=pvAtual;$("#pmAtualView").textContent=num("pmAtual");
   $("#pvTempView").textContent=pvTemp?` +${pvTemp} temp`:"";$("#pmTempView").textContent=pmTemp?` +${pmTemp} temp`:"";
   const conditionFx=activeConditionEffects();
-  const defenseDex=$("#defUseDex")?.checked!==false?num("DES"):0;
+  const defenseAttr=ATTR_KEYS.includes(value("defAttr"))?value("defAttr"):"DES";
+  const defenseAttrBonus=$("#defUseDex")?.checked!==false?num(defenseAttr):0;
   if($("#defUseDexState")) $("#defUseDexState").textContent=$("#defUseDex")?.checked!==false?"Sim":"Não";
-  $("#defView").textContent=10+defenseDex+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+conditionFx.defense;
+  $("#defView").textContent=10+defenseAttrBonus+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+conditionFx.defense;
   const penalties=[];
   if(conditionFx.defense) penalties.push(`Defesa ${conditionFx.defense}`);
   if(conditionFx.attack) penalties.push(`Ataques ${conditionFx.attack}`);
@@ -1356,6 +1357,7 @@ function normalizeSheetData(data){
   data=data&&typeof data==="object"?data:{};
   const fields=data.fields&&typeof data.fields==="object"?{...data.fields}:{};
   if(fields.raca==="suraggel") fields.raca="suraggel_aggelus";
+  if(fields.classe==="sentinela" && fields.defAttr===undefined) fields.defAttr="INT";
   return {
     fields,
     state:normalizeLoadedState(data.state)
@@ -1677,7 +1679,11 @@ $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
   save(false);
 }));
 $("#spellAttr").addEventListener("change",()=>{recalc();save(false)});
-$("#classe").addEventListener("change",()=>{state.skillData={};renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
+$("#defAttr").addEventListener("change",()=>{recalc();save(false)});
+function syncClassDefenseAttr(){
+  if(value("classe")==="sentinela" && (!value("defAttr") || value("defAttr")==="DES")) $("#defAttr").value="INT";
+}
+$("#classe").addEventListener("change",()=>{state.skillData={};syncClassDefenseAttr();renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
 $("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
 $("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc();save(false)});
 $("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc();save(false)});
