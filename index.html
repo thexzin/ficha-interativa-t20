@@ -8,10 +8,33 @@
 <link rel="apple-touch-icon" href="favicon.png">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="auth-gated">
+<section id="authGate" class="authGate" aria-label="Entrada da ficha">
+  <div class="authShell">
+    <div class="authLayout">
+      <div class="authIntro">
+        <div class="authBrand"><strong>Ficha Interativa</strong><small>Tormenta20</small></div>
+        <h1>Entre para continuar</h1>
+        <p class="muted">Acesse suas fichas na nuvem ou use o modo local deste navegador.</p>
+      </div>
+      <div class="authCard">
+        <div class="authFields">
+          <label>Email<input id="cloudEmail" type="email" autocomplete="email" placeholder="email@exemplo.com"></label>
+          <label>Senha<input id="cloudPassword" type="password" autocomplete="current-password" placeholder="senha"></label>
+        </div>
+        <div class="authActions">
+          <button id="cloudSignInBtn" type="button">Entrar</button>
+          <button id="cloudSignUpBtn" type="button">Criar conta</button>
+          <button id="offlineModeBtn" type="button" class="secondary">Continuar offline</button>
+        </div>
+        <small id="authHint">A ficha offline continua salva localmente no seu navegador.</small>
+      </div>
+    </div>
+  </div>
+</section>
 <header class="topbar">
   <div class="topbarMain">
-    <div class="brand"><strong>Ficha Interativa</strong><small>Tormenta20</small></div>
+    <button id="appHomeBtn" class="brand" type="button" aria-label="Voltar ao menu de fichas"><strong>Ficha Interativa</strong><small>Tormenta20</small></button>
     <div class="characterManager" aria-label="Gerenciador de personagens">
       <label>Personagem<select id="characterSelect"></select></label>
       <button id="newCharacterBtn" type="button">Novo</button>
@@ -24,6 +47,48 @@
       <button id="exportBtn">Exportar</button>
       <label class="fileBtn">Importar<input id="importInput" type="file" accept=".json" hidden></label>
       <button id="resetBtn" class="danger">Limpar</button>
+    </div>
+    <div class="profileMenu">
+      <button id="profileMenuBtn" class="profileButton" type="button" aria-expanded="false" aria-label="Abrir perfil">
+        <span id="profileAvatar" class="profileAvatar">?</span>
+        <span class="profileText"><strong id="profileName">Offline</strong><small id="profileStatus">Local</small></span>
+      </button>
+      <div id="profileDropdown" class="profileDropdown hidden">
+        <button id="profileHubBtn" type="button">Menu de fichas</button>
+        <button id="profileCloudBtn" type="button">Entrar na nuvem</button>
+        <button id="profileLogoutBtn" type="button" class="danger">Sair</button>
+      </div>
+    </div>
+    <div class="sheetActionMenu">
+      <button id="sheetActionMenuBtn" class="sheetActionButton" type="button" aria-expanded="false" aria-label="Abrir opcoes da ficha">...</button>
+      <div id="sheetActionDropdown" class="profileDropdown sheetActionDropdown hidden">
+        <button id="actionSaveLocalBtn" type="button">Salvar localmente</button>
+        <button id="actionSaveCloudBtn" type="button">Salvar na nuvem</button>
+        <button id="actionLinkCampaignBtn" type="button">Vincular a campanha</button>
+        <button id="actionExportBtn" type="button">Exportar JSON</button>
+        <button id="actionImportBtn" type="button">Importar JSON</button>
+        <button id="actionResetBtn" type="button" class="danger">Limpar ficha</button>
+      </div>
+    </div>
+  </div>
+  <nav class="appModeNav" aria-label="Areas da conta">
+    <button id="hubFichasTab" type="button" class="active" data-hub-section="fichas">Fichas</button>
+    <button id="hubCampanhasTab" type="button" data-hub-section="campanhas">Campanhas</button>
+  </nav>
+  <div class="cloudPanel" aria-label="Sincronizacao na nuvem">
+    <div class="cloudTitle"><strong>Nuvem</strong><span id="cloudStatus">Desconectado</span></div>
+    <div id="cloudSignedOut" class="cloudControls cloudOfflineControls">
+      <button id="cloudOpenLoginBtn" type="button">Entrar na nuvem</button>
+      <span>Modo local ativo</span>
+    </div>
+    <div id="cloudSignedIn" class="cloudControls cloudSignedIn hidden">
+      <label>Ficha na nuvem<select id="cloudCharacterSelect"></select></label>
+      <button id="cloudSaveCharacterBtn" type="button">Salvar nuvem</button>
+      <button id="cloudLoadCharacterBtn" type="button">Carregar</button>
+      <label>Campanha<select id="cloudCampaignSelect"></select></label>
+      <button id="cloudCreateCampaignBtn" type="button">Nova campanha</button>
+      <button id="cloudLinkCampaignBtn" type="button">Vincular</button>
+      <button id="cloudSignOutBtn" type="button">Sair</button>
     </div>
   </div>
   <nav class="tabs" aria-label="Seções da ficha">
@@ -40,6 +105,56 @@
     <button data-tab="magias" class="tabUtility">Magias</button>
   </nav>
 </header>
+
+<section id="appHub" class="appHub" aria-label="Painel de fichas e campanhas">
+  <div class="hubShell">
+    <section id="hubFichas" class="hubSection">
+      <div class="hubSectionHead">
+        <div>
+          <strong id="hubCharacterCount">Fichas: 0</strong>
+          <span id="hubCharacterHint">Personagens salvos neste navegador e na nuvem.</span>
+        </div>
+        <button id="hubNewCharacterBtn" class="hubIconButton" type="button" title="Nova ficha" aria-label="Nova ficha">+</button>
+      </div>
+      <label class="hubSearch">Buscar ficha<input id="hubCharacterSearch" type="search" placeholder="Nome, jogador, raca ou classe"></label>
+      <div id="hubCharacterList" class="hubGrid"></div>
+    </section>
+    <section id="hubCampanhas" class="hubSection hidden">
+      <div class="hubSectionHead">
+        <div>
+          <strong id="hubCampaignCount">Campanhas: 0</strong>
+          <span id="hubCampaignHint">Campanhas vinculadas a sua conta na nuvem.</span>
+        </div>
+        <div class="hubHeaderActions">
+          <button id="hubJoinCampaignBtn" type="button">Entrar com codigo</button>
+          <button id="hubNewCampaignBtn" type="button">Nova campanha</button>
+        </div>
+      </div>
+      <div id="hubCampaignList" class="hubGrid hubCampaignGrid"></div>
+    </section>
+    <section id="hubCampaignDashboard" class="hubSection campaignDashboard hidden">
+      <div class="campaignDashboardTop">
+        <button id="hubBackCampaignsBtn" class="subtleButton" type="button">Voltar</button>
+        <div class="campaignDashboardTitle">
+          <small>Campanha</small>
+          <h2 id="campaignDashboardName">Campanha</h2>
+          <span id="campaignDashboardMeta">Sem convite</span>
+        </div>
+        <div class="campaignDashboardActions">
+          <button id="campaignInviteBtn" type="button">Convidar jogadores</button>
+          <button id="campaignLinkCurrentBtn" type="button">Vincular ficha atual</button>
+          <button id="campaignShieldBtn" type="button">Escudo do Mestre</button>
+        </div>
+      </div>
+      <nav class="campaignDashboardTabs" aria-label="Areas da campanha">
+        <button type="button" class="active" data-campaign-panel="fichas">Fichas</button>
+        <button type="button" data-campaign-panel="jogadores">Jogadores</button>
+        <button type="button" data-campaign-panel="escudo">Escudo</button>
+      </nav>
+      <div id="campaignDashboardContent" class="campaignDashboardContent"></div>
+    </section>
+  </div>
+</section>
 
 <main class="wrap">
 <section class="panel identity">
@@ -258,7 +373,7 @@
 
 <section id="tab-combate" class="tab">
   <article class="panel">
-    <div class="sectionHead"><div><h2>Ataques</h2><p class="muted">Ataque, dano, crítico e observações. O dano aceita expressões como 1d6+1d12+4.</p></div><button id="addAttack">+ Adicionar</button></div>
+    <div class="sectionHead"><div><h2>Ataques</h2><p class="muted">Role ataque e dano em um clique. O dano aceita express&otilde;es como 1d6+1d12+4.</p></div><button id="addAttack">+ Adicionar</button></div>
     <div id="combatPenaltySummary" class="penaltySummary"></div><div id="attacksList" class="cards"></div>
   </article>
 </section>
@@ -302,6 +417,7 @@
 <script src="jda_catalog_fixes.js"></script>
 <script src="expansion_race_abilities.js"></script>
 <script src="origin_expansion_fixes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="script.js"></script>
 </body>
 </html>
