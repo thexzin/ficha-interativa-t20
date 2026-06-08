@@ -50,6 +50,8 @@ const rawNum=id=>Number($("#"+id)?.value||0);
 const num=id=>rawNum(id);
 const attrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+rawNum(`${id}Temp`):rawNum(id);
 const value=id=>$("#"+id)?.value||"";
+const DELETE_ICON_HTML='<span class="deleteIconGlyph" aria-hidden="true"></span>';
+const ROLL_ICON_HTML='<img src="attack-roll-icon.png" alt="" draggable="false" aria-hidden="true">';
 function notify(html){const t=$("#toast");t.innerHTML=html;t.classList.remove("hidden");clearTimeout(window.__to);window.__to=setTimeout(()=>t.classList.add("hidden"),3500)}
 function rollD20(bonus,title){
   const d=Math.floor(Math.random()*20)+1,total=d+Number(bonus||0);
@@ -400,7 +402,7 @@ function renderSkillsLegacy(){
           <label><input type="checkbox" data-officetrain="${idx}" ${office.trained?"checked":""}> Treino</label>
           <input type="number" data-officeadj="${idx}" value="${office.adjust||0}">
           <span class="total">${total>=0?"+":""}${total}</span>
-          <span><button data-officeroll="${idx}" data-bonus="${total}">Rolar</button> <button data-officedel="${idx}">×</button></span>
+          <span class="skillActions"><button type="button" class="skillRollButton iconImageButton" data-officeroll="${idx}" data-bonus="${total}" title="Rolar Ofício" aria-label="Rolar Ofício">${ROLL_ICON_HTML}</button> <button type="button" class="remove deleteIconButton" data-officedel="${idx}" title="Excluir Ofício" aria-label="Excluir Ofício">${DELETE_ICON_HTML}</button></span>
         </div>`);
       });
       rows.push(`<div><button id="addOffice">+ Adicionar Ofício</button></div>`);
@@ -408,7 +410,7 @@ function renderSkillsLegacy(){
     }
     const d=state.skillData[name]||{trained:cls.pericias.includes(name),adjust:0};state.skillData[name]=d;
     const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
-    rows.push(`<div class="skill"><span>${name} <small>(${attr})</small></span><label><input type="checkbox" data-sktrain="${name}" ${d.trained?"checked":""}> Treino</label><input type="number" data-skadj="${name}" value="${d.adjust||0}"><span class="total">${total>=0?"+":""}${total}</span><button data-skroll="${name}" data-bonus="${total}">Rolar</button></div>`);
+    rows.push(`<div class="skill"><span>${name} <small>(${attr})</small></span><label><input type="checkbox" data-sktrain="${name}" ${d.trained?"checked":""}> Treino</label><input type="number" data-skadj="${name}" value="${d.adjust||0}"><span class="total">${total>=0?"+":""}${total}</span><button type="button" class="skillRollButton iconImageButton" data-skroll="${name}" data-bonus="${total}" title="Rolar ${name}" aria-label="Rolar ${name}">${ROLL_ICON_HTML}</button></div>`);
   }
   $("#skillsList").innerHTML=rows.join("");
   $$("[data-sktrain]").forEach(e=>e.onchange=()=>{state.skillData[e.dataset.sktrain].trained=e.checked;renderSkills();save(false)});
@@ -455,7 +457,7 @@ function renderSkills(){
           <label><input type="checkbox" data-officetrain="${idx}" ${office.trained?"checked":""}> Treino</label>
           <input type="number" data-officeadj="${idx}" value="${office.adjust||0}">
           <span class="total">${skillTotalText(total,locked)}</span>
-          <span><button data-officeroll="${idx}" data-bonus="${total}" ${locked?"disabled":""}>Rolar</button> <button data-officedel="${idx}">x</button></span>
+          <span class="skillActions"><button type="button" class="skillRollButton iconImageButton" data-officeroll="${idx}" data-bonus="${total}" title="Rolar Ofício" aria-label="Rolar Ofício" ${locked?"disabled":""}>${ROLL_ICON_HTML}</button> <button type="button" class="remove deleteIconButton" data-officedel="${idx}" title="Excluir Ofício" aria-label="Excluir Ofício">${DELETE_ICON_HTML}</button></span>
         </div>`);
       });
       rows.push(`<div><button id="addOffice">+ Adicionar Ofício</button></div>`);
@@ -473,7 +475,7 @@ function renderSkills(){
       <label><input type="checkbox" data-sktrain="${escapeHtml(name)}" ${d.trained?"checked":""}> Treino</label>
       <input type="number" data-skadj="${escapeHtml(name)}" value="${d.adjust||0}">
       <span class="total">${skillTotalText(total,locked)}</span>
-      <button data-skroll="${escapeHtml(name)}" data-bonus="${total}" ${locked?"disabled":""}>Rolar</button>
+      <button type="button" class="skillRollButton iconImageButton" data-skroll="${escapeHtml(name)}" data-bonus="${total}" title="Rolar ${escapeHtml(name)}" aria-label="Rolar ${escapeHtml(name)}" ${locked?"disabled":""}>${ROLL_ICON_HTML}</button>
     </div>`);
   }
   $("#skillsList").innerHTML=rows.join("");
@@ -490,7 +492,7 @@ function renderSkills(){
   if($("#addOffice"))$("#addOffice").onclick=()=>{state.offices.push({name:"",trained:false,adjust:0,attr:T20_DATA.pericias["Ofício"]});renderSkills();save(false)};
 }
 function renderPowersLegacy(){
-  $("#powersList").innerHTML=state.powers.map((p,i)=>`<div class="card"><div class="cardHead"><input data-p="${i}" data-k="name" value="${p.name||""}" placeholder="Nome"><select data-p="${i}" data-k="type"><option ${p.type==="Classe"?"selected":""}>Classe</option><option ${p.type==="Raça"?"selected":""}>Raça</option><option ${p.type==="Origem"?"selected":""}>Origem</option><option ${p.type==="Concedido"?"selected":""}>Concedido</option><option ${p.type==="Distinção"?"selected":""}>Distinção</option><option ${p.type==="Outro"?"selected":""}>Outro</option></select><button class="remove" data-pdel="${i}">Excluir</button></div><div class="powerMeta"><input data-p="${i}" data-k="cost" value="${p.cost||""}" placeholder="Custo/uso"><input data-p="${i}" data-k="action" value="${p.action||""}" placeholder="Ação"><input data-p="${i}" data-k="source" value="${p.source||""}" placeholder="Fonte/página"></div><textarea data-p="${i}" data-k="desc" rows="4" placeholder="Descrição">${p.desc||""}</textarea></div>`).join("");
+  $("#powersList").innerHTML=state.powers.map((p,i)=>`<div class="card"><div class="cardHead"><input data-p="${i}" data-k="name" value="${p.name||""}" placeholder="Nome"><select data-p="${i}" data-k="type"><option ${p.type==="Classe"?"selected":""}>Classe</option><option ${p.type==="Raça"?"selected":""}>Raça</option><option ${p.type==="Origem"?"selected":""}>Origem</option><option ${p.type==="Concedido"?"selected":""}>Concedido</option><option ${p.type==="Distinção"?"selected":""}>Distinção</option><option ${p.type==="Outro"?"selected":""}>Outro</option></select><button type="button" class="remove deleteIconButton" data-pdel="${i}" title="Excluir poder" aria-label="Excluir poder">${DELETE_ICON_HTML}</button></div><div class="powerMeta"><input data-p="${i}" data-k="cost" value="${p.cost||""}" placeholder="Custo/uso"><input data-p="${i}" data-k="action" value="${p.action||""}" placeholder="Ação"><input data-p="${i}" data-k="source" value="${p.source||""}" placeholder="Fonte/página"></div><textarea data-p="${i}" data-k="desc" rows="4" placeholder="Descrição">${p.desc||""}</textarea></div>`).join("");
   bindCollection("p",state.powers,renderPowers);$$("[data-pdel]").forEach(e=>e.onclick=()=>{state.powers.splice(+e.dataset.pdel,1);renderPowers();save(false)});
 }
 
@@ -736,8 +738,8 @@ function renderPowerCard(p,i){
   const lockAttr=isAuto?" readonly":"";
   const disabledAttr=isAuto?" disabled":"";
   const autoActions=isAuto
-    ? `<div class="autoPowerActions"><span class="autoPowerBadge">${isAutoRace?"Raça":"Progressão"}</span><button type="button" class="remove autoRemove" data-pautodel="${i}" title="Remover este poder automático" aria-label="Remover este poder automático">X</button></div>`
-    : `<button type="button" class="remove" data-pdel="${i}">Excluir</button>`;
+    ? `<div class="autoPowerActions"><span class="autoPowerBadge">${isAutoRace?"Raça":"Progressão"}</span><button type="button" class="remove autoRemove deleteIconButton" data-pautodel="${i}" title="Remover este poder automático" aria-label="Remover este poder automático">${DELETE_ICON_HTML}</button></div>`
+    : `<button type="button" class="remove deleteIconButton" data-pdel="${i}" title="Excluir poder" aria-label="Excluir poder">${DELETE_ICON_HTML}</button>`;
   return `<div class="card powerAccordionCard ${isOpen?"expanded":""}">
     <button type="button" class="powerAccordionToggle" data-powertoggle="${i}" aria-expanded="${isOpen}">
       <span class="powerAccordionTitle"><strong>${escapeHtml(p.name||"Poder sem nome")}</strong><small>${autoText}</small></span>
@@ -1174,7 +1176,7 @@ function renderSpellsLegacy(){
   $('#spellsList').innerHTML=[1,2,3,4,5].map(circle=>{
     const list=groups[circle];
     if(!list.length) return '';
-    return `<div class="grimoireGroup"><div class="grimoireDivider">${circle}º círculo</div>${list.map(({spell:s,index:i})=>`<div class="card"><div class="cardHead"><input data-s="${i}" data-k="name" value="${s.name||''}" placeholder="Nome da magia"><input data-s="${i}" data-k="school" value="${s.school||''}" placeholder="Escola"><button class="remove" data-sdel="${i}">Excluir</button></div><div class="spellMeta"><input data-s="${i}" data-k="circle" type="number" min="1" max="5" value="${s.circle||1}" title="Círculo"><input data-s="${i}" data-k="cost" type="number" min="0" value="${s.cost||1}" title="PM"><input data-s="${i}" data-k="execution" value="${s.execution||''}" placeholder="Execução"><input data-s="${i}" data-k="range" value="${s.range||''}" placeholder="Alcance/alvo"><input data-s="${i}" data-k="resistance" value="${s.resistance||''}" placeholder="Resistência"></div><textarea data-s="${i}" data-k="desc" rows="4" placeholder="Descrição e aprimoramentos">${s.desc||''}</textarea><div class="smallActions"><button class="cast" data-cast="${i}">Conjurar (−${s.cost||1} PM)</button></div></div>`).join('')}</div>`;
+    return `<div class="grimoireGroup"><div class="grimoireDivider">${circle}º círculo</div>${list.map(({spell:s,index:i})=>`<div class="card"><div class="cardHead"><input data-s="${i}" data-k="name" value="${s.name||''}" placeholder="Nome da magia"><input data-s="${i}" data-k="school" value="${s.school||''}" placeholder="Escola"><button type="button" class="remove deleteIconButton" data-sdel="${i}" title="Excluir magia" aria-label="Excluir magia">${DELETE_ICON_HTML}</button></div><div class="spellMeta"><input data-s="${i}" data-k="circle" type="number" min="1" max="5" value="${s.circle||1}" title="Círculo"><input data-s="${i}" data-k="cost" type="number" min="0" value="${s.cost||1}" title="PM"><input data-s="${i}" data-k="execution" value="${s.execution||''}" placeholder="Execução"><input data-s="${i}" data-k="range" value="${s.range||''}" placeholder="Alcance/alvo"><input data-s="${i}" data-k="resistance" value="${s.resistance||''}" placeholder="Resistência"></div><textarea data-s="${i}" data-k="desc" rows="4" placeholder="Descrição e aprimoramentos">${s.desc||''}</textarea><div class="smallActions"><button class="cast" data-cast="${i}">Conjurar (−${s.cost||1} PM)</button></div></div>`).join('')}</div>`;
   }).join('') || '<p class="muted">Nenhuma magia no Grimório ainda. Vá até a aba Magias para adicionar.</p>';
   bindCollection('s',state.spells,renderSpells);
   $$('[data-sdel]').forEach(e=>e.onclick=()=>{state.spells.splice(+e.dataset.sdel,1);renderSpells();save(false)});
@@ -1207,7 +1209,7 @@ function renderGrimoireSpellCard(s,i){
         <label>Resistência<input data-s="${i}" data-k="resistance" value="${escapeHtml(s.resistance||"")}" placeholder="Vontade anula"></label>
       </div>
       <label>Descrição e aprimoramentos<textarea data-s="${i}" data-k="desc" rows="7" placeholder="Descricao e aprimoramentos">${escapeHtml(s.desc||"")}</textarea></label>
-      <div class="smallActions grimoireSpellActions"><button type="button" class="cast" data-cast="${i}">Conjurar (-${cost} PM)</button><button type="button" class="remove iconRemove" data-sdel="${i}" aria-label="Excluir magia ${escapeHtml(s.name||"")}" title="Excluir">&times;</button></div>
+      <div class="smallActions grimoireSpellActions"><button type="button" class="cast" data-cast="${i}">Conjurar (-${cost} PM)</button><button type="button" class="remove iconRemove deleteIconButton" data-sdel="${i}" aria-label="Excluir magia ${escapeHtml(s.name||"")}" title="Excluir">${DELETE_ICON_HTML}</button></div>
     </div>
   </div>`;
 }
@@ -1250,7 +1252,7 @@ function renderItemCard(it,i){
       <div class="itemMainFields">
         <label>Item<input data-i="${i}" data-k="name" value="${escapeHtml(it.name||"")}"></label>
         <label>Categoria<input data-i="${i}" data-k="category" value="${escapeHtml(it.category||"")}"></label>
-        <button type="button" class="remove" data-idel="${i}">Excluir</button>
+        <button type="button" class="remove deleteIconButton" data-idel="${i}" title="Excluir item" aria-label="Excluir item">${DELETE_ICON_HTML}</button>
       </div>
       <div class="itemDetailFields">
         <label>Qtd.<input data-i="${i}" data-k="qty" type="number" min="0" value="${qty}"></label>
@@ -1437,7 +1439,7 @@ function renderAttackCard(a,i){
       <label>Dano<input data-a="${i}" data-k="damage" value="${damage}" placeholder="1d6+1d12+4"></label>
       <label>Crítico<input data-a="${i}" data-k="crit" value="${crit}"></label>
       <label>Mult.<input data-a="${i}" data-k="mult" value="${mult}"></label>
-      <button type="button" class="remove combatRemove" data-adel="${i}">Excluir</button>
+      <button type="button" class="remove combatRemove deleteIconButton" data-adel="${i}" title="Excluir ataque" aria-label="Excluir ataque">${DELETE_ICON_HTML}</button>
     </div>
     <label class="attackNotes">Notas<textarea data-a="${i}" data-k="notes" rows="2" placeholder="Alcance, munição, melhorias, efeitos especiais...">${notes}</textarea></label>
   </div>`;
@@ -1591,7 +1593,14 @@ function cloudFirstMode(){
   return !!(supabaseClient&&cloudUser);
 }
 function currentLinkedCampaignId(){
-  return currentCloudCharacterMeta()?.campaign_id||value("cloudCampaignSelect")||"";
+  return value("cloudCampaignSelect")||currentCloudCharacterMeta()?.campaign_id||"";
+}
+function cloudCampaignIdForSave(remoteId=""){
+  const selected=value("cloudCampaignSelect");
+  if(selected) return selected;
+  const id=remoteId||mappedCloudCharacterId()||value("cloudCharacterSelect");
+  const meta=id?cloudCharacters.find(character=>character.id===id):currentCloudCharacterMeta();
+  return meta?.campaign_id||"";
 }
 function renderSheetCampaignShortcut(){
   const button=$("#actionOpenCampaignBtn");
@@ -1607,8 +1616,9 @@ function queueCloudAutosave(){
     localId:currentCharacterId,
     remoteId:mappedCloudCharacterId()||value("cloudCharacterSelect"),
     data:sheetDataFromCurrent(),
-    campaignId:value("cloudCampaignSelect")||null
+    campaignId:null
   };
+  snapshot.campaignId=cloudCampaignIdForSave(snapshot.remoteId)||null;
   if(!snapshot.remoteId) return;
   clearTimeout(cloudAutosaveTimers.get(snapshot.remoteId));
   const timer=setTimeout(()=>{
@@ -1778,7 +1788,7 @@ function renderHubCharacters(){
         </div>
         <div class="hubCardActions characterHubActions">
           <button class="hubOpenButton" type="button" data-open-${record.kind}-character="${escapeHtml(record.id)}">Acessar ficha</button>
-          <button class="hubDeleteButton" type="button" ${deleteAttrs} title="Excluir ficha" aria-label="Excluir ficha">X</button>
+          <button class="hubDeleteButton deleteIconButton" type="button" ${deleteAttrs} title="Excluir ficha" aria-label="Excluir ficha">${DELETE_ICON_HTML}</button>
         </div>
       </article>`;
   }).join(""):`<div class="hubEmpty">Nenhuma ficha encontrada.</div>`;
@@ -2218,7 +2228,7 @@ function renderCampaignDashboard(){
       <div class="hubCardActions characterHubActions${canRemoveFromCampaign?" hasRemove":""}${canDeletePrivate?" hasDelete":""}">
         <button class="hubOpenButton" type="button" data-dashboard-open-character="${escapeHtml(character.id)}">Acessar ficha</button>
         ${canRemoveFromCampaign?`<button class="hubRemoveButton" type="button" data-remove-campaign-character="${escapeHtml(character.id)}">Remover</button>`:""}
-        ${canDeletePrivate?`<button class="hubDeleteButton" type="button" data-delete-private-campaign-character="${escapeHtml(character.id)}" title="Excluir ficha oculta" aria-label="Excluir ficha oculta">X</button>`:""}
+        ${canDeletePrivate?`<button class="hubDeleteButton deleteIconButton" type="button" data-delete-private-campaign-character="${escapeHtml(character.id)}" title="Excluir ficha oculta" aria-label="Excluir ficha oculta">${DELETE_ICON_HTML}</button>`:""}
       </div>
     </article>`;
   }).join(""):`<div class="hubEmpty">Nenhuma ficha vinculada a esta campanha ainda.</div>`;
@@ -2884,11 +2894,11 @@ function cloudRequireLogin(){
   notify("Entre na nuvem antes de usar este recurso.");
   return false;
 }
-function cloudPayloadFromCurrent(){
+function cloudPayloadFromCurrent(remoteId=""){
   const data=sheetDataFromCurrent();
   return {
     owner_id:cloudUser.id,
-    campaign_id:value("cloudCampaignSelect")||null,
+    campaign_id:cloudCampaignIdForSave(remoteId)||null,
     name:characterNameFromData(data),
     player_name:value("jogador")||null,
     sheet_data:data,
@@ -2913,7 +2923,7 @@ async function saveCloudCharacter(show=true){
     notify("Ficha em modo somente leitura. Apenas o dono pode salvar alteracoes na nuvem.");
     return;
   }
-  const payload=cloudPayloadFromCurrent();
+  const payload=cloudPayloadFromCurrent(selected);
   const request=selected
     ? supabaseClient.from("characters").update(payload).eq("id",selected).select("id,name,campaign_id,updated_at").single()
     : supabaseClient.from("characters").insert(payload).select("id,name,campaign_id,updated_at").single();
@@ -3109,6 +3119,12 @@ function promptCampaignCode(){
   if(code===null) return "";
   return code.trim();
 }
+function campaignIdFromRpcData(data){
+  const result=Array.isArray(data)?data[0]:data;
+  if(!result) return "";
+  if(typeof result==="string") return result;
+  return result.id||result.campaign_id||"";
+}
 async function joinCloudCampaignByCode(){
   if(!cloudRequireLogin()) return;
   const code=promptCampaignCode();
@@ -3117,7 +3133,8 @@ async function joinCloudCampaignByCode(){
   if(error) throw error;
   await loadCloudData();
   const campaign=Array.isArray(data)?data[0]:data;
-  if(campaign?.id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaign.id;
+  const campaignId=campaignIdFromRpcData(data);
+  if(campaignId && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
   setHubSection("campanhas");
   renderHub();
   notify(`Campanha adicionada: <b>${escapeHtml(campaign?.name||"campanha")}</b>`);
@@ -3184,8 +3201,28 @@ async function linkCurrentCharacterToCampaignByCode(){
   if(!remoteId){notify("Salve a ficha na nuvem antes de vincular.");return}
   const {data,error}=await supabaseClient.rpc("link_character_to_campaign",{character_uuid:remoteId,code});
   if(error) throw error;
-  await loadCloudData();
-  const campaignId=Array.isArray(data)?data[0]:data;
+  let campaignId=campaignIdFromRpcData(data);
+  if(!campaignId){
+    const joined=await supabaseClient.rpc("join_campaign_by_code",{code});
+    if(joined.error) throw joined.error;
+    campaignId=campaignIdFromRpcData(joined.data);
+  }
+  if(!campaignId){
+    await loadCloudData();
+    const normalizedCode=String(code).trim().toUpperCase();
+    campaignId=cloudCampaigns.find(campaign=>String(campaign.invite_code||"").toUpperCase()===normalizedCode)?.id||"";
+  }
+  if(campaignId){
+    if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
+    const {error:updateError}=await supabaseClient
+      .from("characters")
+      .update({campaign_id:campaignId,updated_at:new Date().toISOString()})
+      .eq("id",remoteId);
+    if(updateError) throw updateError;
+  }else{
+    throw new Error("Nao foi possivel localizar a campanha pelo codigo informado.");
+  }
+  await loadCloudData({syncCurrent:true});
   if(campaignId && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
   notify("Ficha vinculada a campanha.");
 }
@@ -3285,7 +3322,7 @@ function renderCustomConditions(){
     const name=escapeHtml(c.name||"");
     const effect=escapeHtml(c.effect||"");
     return `<div class="card customConditionCard">
-      <div class="cardHead"><input data-cc="${i}" data-k="name" value="${name}" placeholder="Nome"><label>Ativa<input data-ccactive="${i}" type="checkbox" ${c.active?"checked":""}></label><button class="remove" data-ccdel="${i}">Excluir</button></div>
+      <div class="cardHead"><input data-cc="${i}" data-k="name" value="${name}" placeholder="Nome"><label>Ativa<input data-ccactive="${i}" type="checkbox" ${c.active?"checked":""}></label><button type="button" class="remove deleteIconButton" data-ccdel="${i}" title="Excluir condição" aria-label="Excluir condição">${DELETE_ICON_HTML}</button></div>
       <textarea class="conditionDescription" data-cc="${i}" data-k="effect" placeholder="Descrição da condição">${effect}</textarea>
     </div>`;
   }).join("");
@@ -3329,7 +3366,7 @@ function renderOriginBenefits(){
   $("#originBenefitsList").innerHTML=state.originBenefits.map((b,i)=>`
     <div class="originBenefitRow">
       <input data-ob="${i}" value="${String(b||"").replace(/"/g,"&quot;")}" placeholder="Perícia, poder, item ou outro benefício">
-      <button class="remove" data-obdel="${i}">Excluir</button>
+      <button type="button" class="remove deleteIconButton" data-obdel="${i}" title="Excluir benefício" aria-label="Excluir benefício">${DELETE_ICON_HTML}</button>
     </div>`).join("");
   $$("[data-ob]").forEach(e=>e.oninput=()=>{state.originBenefits[+e.dataset.ob]=e.value;save(false)});
   $$("[data-obdel]").forEach(e=>e.onclick=()=>{state.originBenefits.splice(+e.dataset.obdel,1);renderOriginBenefits();save(false)});

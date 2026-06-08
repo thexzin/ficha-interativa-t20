@@ -239,3 +239,63 @@ input,select,textarea{border-color:#694038}.attrs label{position:relative;paddin
 .spellModalDescription p{margin:.65rem 0;overflow-wrap:anywhere}
 .spellModalDescription .spellEnhancement{border-left:3px solid var(--gold);padding-left:.65rem;color:#f5dfbd}
 @media(max-width:800px){.spellModalDetails{grid-template-columns:1fr}}
+
+.deleteIconButton{
+  width:2.35rem;
+  min-width:2.35rem;
+  height:2.35rem;
+  display:inline-grid;
+  place-items:center;
+  padding:0;
+  border-radius:10px;
+  font-size:0;
+  line-height:1;
+}
+.deleteIconGlyph{
+  width:1.12rem;
+  height:1.12rem;
+  display:block;
+  background:#ffe0c2;
+  -webkit-mask:url("delete-icon.png") center/contain no-repeat;
+  mask:url("delete-icon.png") center/contain no-repeat;
+  pointer-events:none;
+}
+.deleteIconButton:hover .deleteIconGlyph{background:#fff4dc}
+.iconRemove.deleteIconButton,.autoRemove.deleteIconButton,.combatRemove.deleteIconButton,.characterManager .iconButton.deleteIconButton,.hubCard .hubDeleteButton.deleteIconButton{
+  width:2.35rem;
+  min-width:2.35rem;
+  height:2.35rem;
+  padding:0;
+}
+.characterManager .iconButton.deleteIconButton{width:42px;min-width:42px;height:40px}
+#campaignDeleteBtn.deleteIconButton{align-self:end}
+.skillActions{
+  display:flex;
+  gap:.35rem;
+  align-items:center;
+  justify-content:flex-end;
+}
+.iconImageButton,.skillRollButton{
+  width:2.35rem;
+  min-width:2.35rem;
+  height:2.35rem;
+  display:inline-grid;
+  place-items:center;
+  padding:.35rem;
+  border-color:#8b6a42;
+  background:linear-gradient(180deg,#4b3824,#221810);
+}
+.skillRollButton img{
+  width:1.28rem;
+  height:1.28rem;
+  object-fit:contain;
+  filter:invert(93%) sepia(18%) saturate(924%) hue-rotate(328deg) brightness(104%) contrast(98%);
+  opacity:.95;
+  pointer-events:none;
+}
+.skillRollButton:hover img{opacity:1;transform:scale(1.05)}
+.skillRollButton:disabled img{opacity:.48;transform:none}
+@media(max-width:620px){
+  .hubCard .hubDeleteButton.deleteIconButton{width:42px;min-width:42px}
+  .skillActions{justify-content:flex-start}
+}
