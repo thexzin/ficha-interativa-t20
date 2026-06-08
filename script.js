@@ -1302,8 +1302,7 @@ function itemDescription(item){
   return String(item?.description??item?.desc??item?.notes??"").trim();
 }
 function itemAllowsCatalogDescription(item){
-  const category=String(item?.category||"").trim().toLowerCase();
-  return category.startsWith("armas ") || category==="armadura leve" || category==="armadura pesada" || category==="escudo";
+  return !!String(item?.name||"").trim() && !!String(item?.category||"").trim();
 }
 function catalogInventoryDescription(item){
   if(!itemAllowsCatalogDescription(item)) return "";
@@ -1312,7 +1311,10 @@ function catalogInventoryDescription(item){
   if(!name||!category) return "";
   const source=String(item?.source||"").trim().toLowerCase();
   const catalogs=[
-    ...(Array.isArray(window.T20_ITEM_CATALOG)?window.T20_ITEM_CATALOG:[])
+    ...(Array.isArray(window.T20_ITEM_CATALOG)?window.T20_ITEM_CATALOG:[]),
+    ...(Array.isArray(window.T20_EXPANSION_ITEM_CATALOG)?window.T20_EXPANSION_ITEM_CATALOG:[]),
+    ...(Array.isArray(window.T20_MAGIC_ITEM_CATALOG)?window.T20_MAGIC_ITEM_CATALOG:[]),
+    ...(Array.isArray(window.T20_EXPANSION_MAGIC_ITEM_CATALOG)?window.T20_EXPANSION_MAGIC_ITEM_CATALOG:[])
   ];
   const catalogItem=catalogs.find(entry=>
     String(entry.name||"").trim().toLowerCase()===name &&
@@ -1570,6 +1572,28 @@ function writeCharacterIndex(index){
 function characterNameFromData(data,fallback="Personagem sem nome"){
   return String(data?.fields?.nome||"").trim()||fallback;
 }
+function characterImageUrlFromFields(fields){
+  const raw=String(fields?.portraitUrl||fields?.imageUrl||"").trim();
+  if(!raw) return "";
+  try{
+    const url=new URL(raw);
+    return ["http:","https:"].includes(url.protocol)?raw:"";
+  }catch{
+    return "";
+  }
+}
+function characterImageUrlFromData(data){
+  return characterImageUrlFromFields(data?.fields||{});
+}
+function renderCharacterPortrait(){
+  const imageUrl=characterImageUrlFromData(sheetDataFromCurrent());
+  const preview=$("#characterPortraitPreview");
+  const image=$("#characterPortraitImage");
+  if(!preview||!image) return;
+  preview.classList.toggle("hidden",!imageUrl);
+  if(imageUrl) image.src=imageUrl;
+  else image.removeAttribute("src");
+}
 function cloudFirstMode(){
   return !!(supabaseClient&&cloudUser);
 }
@@ -1688,19 +1712,22 @@ function renderHubCharacters(){
       id:character.id,
       cloudId:cloudMap[character.id]||"",
       name:cloudMeta?.name||name,
+      imageUrl:characterImageUrlFromData(data),
       summary:characterSummaryFromData(data),
       meta:`${cloudMeta?"Local + nuvem":"Local"}${cloudMeta&&isPrivateCloudCharacter(cloudMeta)?" &bull; oculta":""}${character.updatedAt?` &bull; atualizado em ${formattedDate(character.updatedAt)}`:""}`,
       campaignId:cloudMeta?.campaign_id||"",
       campaignOnly:!!(cloudMeta&&isCampaignOnlyCharacter(cloudMeta)),
+      orphanCloud:!!(cloudMap[character.id]&&cloudUser&&!cloudMeta),
       foreignCloud:!!(cloudMeta&&!isOwnCloudCharacter(cloudMeta)),
       search:[name,fields.jogador,race,cls,fields.nivel].filter(Boolean).join(" ").toLowerCase()
     };
-  }).filter(record=>!record.foreignCloud&&!record.campaignOnly);
+  }).filter(record=>!record.foreignCloud&&!record.campaignOnly&&!record.orphanCloud);
   const cloudRecords=ownCloudList.filter(character=>!mappedCloudIds.has(character.id)&&!isCampaignOnlyCharacter(character)).map(character=>({
     kind:"cloud",
     id:character.id,
     cloudId:character.id,
     name:character.name||"Personagem sem nome",
+    imageUrl:characterImageUrlFromData(character.sheet_data),
     summary:[character.player_name,"Nuvem"].filter(Boolean).map(escapeHtml).join(" &bull; "),
     meta:`Nuvem${isPrivateCloudCharacter(character)?" &bull; oculta":""}${character.updated_at?` &bull; atualizado em ${formattedDate(character.updated_at)}`:""}`,
     campaignId:character.campaign_id||"",
@@ -1715,7 +1742,8 @@ function renderHubCharacters(){
       ? `data-delete-local-character="${escapeHtml(record.id)}"${record.cloudId?` data-delete-cloud-character="${escapeHtml(record.cloudId)}"`:""}`
       : `data-delete-cloud-character="${escapeHtml(record.id)}"`;
     return `
-      <article class="hubCard ${record.kind==="cloud"?"cloudHubCard":""}">
+      <article class="hubCard ${record.kind==="cloud"?"cloudHubCard":""} ${record.imageUrl?"hasPortrait":""}">
+        ${record.imageUrl?`<img class="hubPortrait" src="${escapeHtml(record.imageUrl)}" alt="Retrato de ${escapeHtml(record.name)}">`:""}
         <div class="hubCardBody">
           <small>${record.meta}</small>
           <strong>${escapeHtml(record.name)}</strong>
@@ -1883,6 +1911,7 @@ function sheetSummaryFromCloudCharacter(character){
   return {
     id:character.id,
     name:character.name||fields.nome||"Personagem sem nome",
+    imageUrl:characterImageUrlFromFields(fields),
     player:character.player_name||fields.jogador||"",
     className:cls.nome||"Classe nao definida",
     raceName:race.nome||fields.raca||"Raca nao definida",
@@ -2038,7 +2067,8 @@ function renderMasterShieldCard(summary){
   const attrs=ATTR_KEYS.map(key=>`<div><small>${key}</small><strong>${summary.attrs[key]}</strong></div>`).join("");
   const conditionText=summary.conditions.length?summary.conditions.map(escapeHtml).join(" &bull; "):"Sem condicoes";
   return `<article class="masterShieldCard ${summary.status}">
-    <div class="shieldCardHeader">
+    <div class="shieldCardHeader ${summary.imageUrl?"hasPortrait":""}">
+      ${summary.imageUrl?`<img class="shieldPortrait" src="${escapeHtml(summary.imageUrl)}" alt="Retrato de ${escapeHtml(summary.name)}">`:""}
       <div>
         <strong>${escapeHtml(summary.name)}</strong>
         <span>${escapeHtml(summary.raceName)} &bull; ${escapeHtml(summary.className)} nivel ${summary.level}</span>
@@ -2144,19 +2174,24 @@ function renderCampaignDashboard(){
   content.className="campaignDashboardContent hubGrid";
   content.innerHTML=characters.length?characters.map(character=>{
     const canDeletePrivate=campaignOwner&&isCampaignOnlyCharacter(character);
-    return `<article class="hubCard cloudHubCard">
+    const canRemoveFromCampaign=campaignOwner&&!isCampaignOnlyCharacter(character);
+    const imageUrl=characterImageUrlFromData(character.sheet_data);
+    return `<article class="hubCard cloudHubCard ${imageUrl?"hasPortrait":""}">
+      ${imageUrl?`<img class="hubPortrait" src="${escapeHtml(imageUrl)}" alt="Retrato de ${escapeHtml(character.name||"Personagem sem nome")}">`:""}
       <div class="hubCardBody">
         <small>Nuvem${isPrivateCloudCharacter(character)?` &bull; oculta para jogadores`:""}${character.updated_at?` &bull; atualizado em ${formattedDate(character.updated_at)}`:""}</small>
         <strong>${escapeHtml(character.name||"Personagem sem nome")}</strong>
         <span>${[character.player_name,"Ficha da campanha"].filter(Boolean).map(escapeHtml).join(" &bull; ")}</span>
       </div>
-      <div class="hubCardActions characterHubActions">
+      <div class="hubCardActions characterHubActions${canRemoveFromCampaign?" hasRemove":""}${canDeletePrivate?" hasDelete":""}">
         <button class="hubOpenButton" type="button" data-dashboard-open-character="${escapeHtml(character.id)}">Acessar ficha</button>
+        ${canRemoveFromCampaign?`<button class="hubRemoveButton" type="button" data-remove-campaign-character="${escapeHtml(character.id)}">Remover</button>`:""}
         ${canDeletePrivate?`<button class="hubDeleteButton" type="button" data-delete-private-campaign-character="${escapeHtml(character.id)}" title="Excluir ficha oculta" aria-label="Excluir ficha oculta">X</button>`:""}
       </div>
     </article>`;
   }).join(""):`<div class="hubEmpty">Nenhuma ficha vinculada a esta campanha ainda.</div>`;
   $$("[data-dashboard-open-character]").forEach(button=>button.onclick=()=>runCloudAction(()=>openCloudCharacter(button.dataset.dashboardOpenCharacter)));
+  $$("[data-remove-campaign-character]").forEach(button=>button.onclick=()=>runCloudAction(()=>removeCampaignCharacter(button.dataset.removeCampaignCharacter)));
   $$("[data-delete-private-campaign-character]").forEach(button=>button.onclick=()=>runCloudAction(()=>deleteCampaignPrivateCharacter(button.dataset.deletePrivateCampaignCharacter)));
 }
 function renderHub(){
@@ -2181,6 +2216,15 @@ function removeCloudMappingForRemote(remoteId){
     if(map[localId]===remoteId) delete map[localId];
   });
   writeCloudCharacterMap(map);
+}
+function removeLocalCopiesForRemoteCharacters(characters,{keepOwn=false}={}){
+  (characters||[]).forEach(character=>{
+    if(!character?.id) return;
+    if(keepOwn&&isOwnCloudCharacter(character)) return;
+    const localId=localIdForCloudCharacter(character.id);
+    if(localId) removeLocalCharacterOnly(localId);
+    else removeCloudMappingForRemote(character.id);
+  });
 }
 function removeLocalCharacterOnly(localId){
   if(!localId) return;
@@ -2237,6 +2281,48 @@ async function deleteCampaignPrivateCharacter(remoteId){
   renderHub();
   notify("Ficha oculta excluida.");
 }
+async function removeCampaignCharacter(remoteId){
+  if(!cloudRequireLogin()||!remoteId) return;
+  const character=cloudCharacters.find(entry=>entry.id===remoteId);
+  const campaign=cloudCampaigns.find(item=>item.id===character?.campaign_id);
+  if(!character||!campaign){
+    notify("Ficha da campanha nao encontrada.");
+    return;
+  }
+  if(!isCampaignOwner(campaign)){
+    notify("Apenas o mestre pode remover fichas da campanha.");
+    return;
+  }
+  if(isCampaignOnlyCharacter(character)){
+    await deleteCampaignPrivateCharacter(remoteId);
+    return;
+  }
+  const label=character.name||"esta ficha";
+  if(!confirm(`Remover ${label} da campanha? A ficha nao sera apagada.`)) return;
+  if(isOwnCloudCharacter(character)){
+    const {error}=await supabaseClient
+      .from("characters")
+      .update({campaign_id:null,updated_at:new Date().toISOString()})
+      .eq("id",remoteId);
+    if(error) throw error;
+    if(mappedCloudCharacterId()===remoteId && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value="";
+  }else{
+    const {error}=await supabaseClient.rpc("remove_character_from_campaign",{character_uuid:remoteId});
+    if(error&&/remove_character_from_campaign|function/i.test(String(error.message||""))){
+      notify("Rode o SQL supabase_campaign_character_management.sql para habilitar remover fichas de jogadores.");
+      return;
+    }
+    if(error) throw error;
+    const localId=localIdForCloudCharacter(remoteId);
+    if(localId) removeLocalCharacterOnly(localId);
+    else removeCloudMappingForRemote(remoteId);
+  }
+  await loadCloudData();
+  activeHubCampaignId=campaign.id;
+  setHubSection("campanha");
+  renderHub();
+  notify("Ficha removida da campanha.");
+}
 async function deleteHubCloudCharacter(remoteId){
   if(!cloudRequireLogin()) return;
   const character=cloudCharacters.find(entry=>entry.id===remoteId);
@@ -2287,7 +2373,7 @@ async function deleteHubLocalCharacter(localId,remoteId=""){
 }
 async function openCloudCharacter(remoteId){
   if(!cloudRequireLogin()) return;
-  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   save(false);
   const localId=localIdForCloudCharacter(remoteId);
@@ -2301,6 +2387,7 @@ async function openCloudCharacter(remoteId){
   }
   applySheetData(data.sheet_data);
   setMappedCloudCharacterId(data.id);
+  cacheLocalCharacterData(currentCharacterId,data.sheet_data,data.name,data.updated_at);
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
   renderAll();
   save(false);
@@ -2384,6 +2471,20 @@ function saveLocalSnapshot(show=true){
   localStorage.setItem(KEY,JSON.stringify(data));
   updateActiveCharacterMeta(data);
   if(show) notify("Personagem salvo neste navegador.");
+}
+function cacheLocalCharacterData(localId,data,name="",updatedAt=""){
+  if(!localId||!data) return;
+  const normalized=normalizeSheetData(data);
+  localStorage.setItem(characterKey(localId),JSON.stringify(normalized));
+  const index=readCharacterIndex();
+  let meta=index.characters.find(character=>character.id===localId);
+  if(!meta){
+    meta={id:localId,name:name||characterNameFromData(normalized),updatedAt:updatedAt||new Date().toISOString()};
+    index.characters.push(meta);
+  }
+  meta.name=name||characterNameFromData(normalized,meta.name);
+  meta.updatedAt=updatedAt||new Date().toISOString();
+  writeCharacterIndex({...index,activeId:currentCharacterId||localId});
 }
 function save(show=true){
   if(cloudFirstMode()){
@@ -2693,7 +2794,23 @@ function renderCloudPanel(){
     actionSaveCloudButton.title=currentCloudReadOnly?"Somente o dono pode salvar esta ficha na nuvem":"";
   }
 }
-async function loadCloudData(){
+function syncCurrentCharacterFromCloud(){
+  const remoteId=mappedCloudCharacterId();
+  if(!remoteId||!currentCharacterId) return;
+  const cloudMeta=cloudCharacters.find(character=>character.id===remoteId);
+  if(!cloudMeta){
+    removeLocalCharacterOnly(currentCharacterId);
+    removeCloudMappingForRemote(remoteId);
+    return;
+  }
+  const data=normalizeSheetData(cloudMeta.sheet_data||{});
+  applySheetData(data);
+  cacheLocalCharacterData(currentCharacterId,data,cloudMeta.name||characterNameFromData(data),cloudMeta.updated_at);
+  setCurrentCloudReadOnly(isCloudCharacterReadOnly(cloudMeta));
+  if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=cloudMeta.campaign_id||"";
+  renderAll();
+}
+async function loadCloudData(options={}){
   if(!supabaseClient||!cloudUser){
     cloudCharacters=[];
     cloudCampaigns=[];
@@ -2721,6 +2838,7 @@ async function loadCloudData(){
   cloudCampaigns=campaigns||[];
   cloudCharacters=characters||[];
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(currentCloudCharacterMeta()));
+  if(options.syncCurrent) syncCurrentCharacterFromCloud();
   await loadCampaignRolls();
   renderCloudPanel();
   renderHub();
@@ -2759,6 +2877,7 @@ async function saveCloudCharacter(show=true,options={}){
   const {data,error}=await request;
   if(error) throw error;
   setMappedCloudCharacterId(data.id);
+  cacheLocalCharacterData(currentCharacterId,payload.sheet_data,data.name||payload.name,data.updated_at);
   await loadCloudData();
   if(show) notify(`Ficha salva na nuvem: <b>${escapeHtml(data.name||payload.name)}</b>`);
 }
@@ -2766,12 +2885,13 @@ async function loadSelectedCloudCharacter(){
   if(!cloudRequireLogin()) return;
   const remoteId=value("cloudCharacterSelect");
   if(!remoteId){notify("Escolha uma ficha da nuvem para carregar.");return}
-  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   if(!confirm(`Carregar "${data.name||"personagem"}" da nuvem e substituir a ficha atual neste navegador?`)) return;
   save(false);
   applySheetData(data.sheet_data);
   setMappedCloudCharacterId(data.id);
+  cacheLocalCharacterData(currentCharacterId,data.sheet_data,data.name,data.updated_at);
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
   renderAll();
   save(false);
@@ -2812,9 +2932,23 @@ async function deleteCloudCampaign(campaignId=activeHubCampaignId){
     return;
   }
   const count=cloudCharacters.filter(character=>character.campaign_id===campaignId).length;
+  const hiddenCharacters=cloudCharacters.filter(character=>character.campaign_id===campaignId&&isPrivateCloudCharacter(character));
+  const foreignCharacters=cloudCharacters.filter(character=>character.campaign_id===campaignId&&!isOwnCloudCharacter(character));
   const name=campaign?.name||"esta campanha";
   const detail=count?` As ${count} ficha${count===1?"":"s"} vinculada${count===1?"":"s"} nao serao apagadas.`:"";
-  if(!confirm(`Excluir ${name}?${detail}`)) return;
+  const hiddenDetail=hiddenCharacters.length?` As ${hiddenCharacters.length} ficha${hiddenCharacters.length===1?" oculta sera apagada":"s ocultas serao apagadas"} junto com a campanha.`:"";
+  if(!confirm(`Excluir ${name}?${detail}${hiddenDetail}`)) return;
+  removeLocalCopiesForRemoteCharacters(hiddenCharacters);
+  removeLocalCopiesForRemoteCharacters(foreignCharacters);
+  if(hiddenCharacters.length){
+    const {error:hiddenError}=await supabaseClient
+      .from("characters")
+      .delete()
+      .eq("campaign_id",campaignId)
+      .eq("owner_id",cloudUser.id)
+      .eq("is_private",true);
+    if(hiddenError) throw hiddenError;
+  }
   await supabaseClient.from("campaign_rolls").delete().eq("campaign_id",campaignId);
   await supabaseClient.from("campaign_members").delete().eq("campaign_id",campaignId);
   const {error}=await supabaseClient.from("campaigns").delete().eq("id",campaignId);
@@ -2897,8 +3031,10 @@ async function leaveCloudCampaign(campaignId=activeHubCampaignId){
   }
   const name=campaign?.name||"esta campanha";
   const ownLinked=cloudCharacters.filter(character=>isOwnCloudCharacter(character)&&character.campaign_id===campaignId);
+  const foreignLinked=cloudCharacters.filter(character=>!isOwnCloudCharacter(character)&&character.campaign_id===campaignId);
   const detail=ownLinked.length?` Suas ${ownLinked.length} ficha${ownLinked.length===1?"":"s"} vinculada${ownLinked.length===1?"":"s"} ficarao sem campanha.`:"";
   if(!confirm(`Sair de ${name}?${detail}`)) return;
+  removeLocalCopiesForRemoteCharacters(foreignLinked);
   const {error:characterError}=await supabaseClient
     .from("characters")
     .update({campaign_id:null,updated_at:new Date().toISOString()})
@@ -3027,7 +3163,7 @@ async function cloudSignIn(){
   if(error) throw error;
   cloudUser=data.user||data.session?.user||null;
   enterApp("cloud");
-  await loadCloudData();
+  await loadCloudData({syncCurrent:true});
   notify("Login realizado.");
 }
 async function cloudSignUp(){
@@ -3039,7 +3175,7 @@ async function cloudSignUp(){
   cloudUser=data.user&&data.session?data.user:null;
   if(cloudUser){
     enterApp("cloud");
-    await loadCloudData();
+    await loadCloudData({syncCurrent:true});
     notify("Conta criada e conectada.");
   }else{
     renderCloudPanel();
@@ -3072,11 +3208,11 @@ async function initCloud(){
     if(cloudUser) enterApp("cloud");
     else if(sessionStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
     else showAuthGate();
-    await loadCloudData();
+    await loadCloudData({syncCurrent:true});
     supabaseClient.auth.onAuthStateChange(async(_event,session)=>{
       cloudUser=session?.user||null;
       if(cloudUser) enterApp("cloud");
-      try{await loadCloudData()}catch(err){console.error(err);renderCloudPanel()}
+      try{await loadCloudData({syncCurrent:!!cloudUser})}catch(err){console.error(err);renderCloudPanel()}
     });
   }catch(err){
     console.error("Falha ao iniciar Supabase:",err);
@@ -3162,7 +3298,7 @@ function renderOriginBenefits(){
   $$("[data-ob]").forEach(e=>e.oninput=()=>{state.originBenefits[+e.dataset.ob]=e.value;save(false)});
   $$("[data-obdel]").forEach(e=>e.onclick=()=>{state.originBenefits.splice(+e.dataset.obdel,1);renderOriginBenefits();save(false)});
 }
-function renderAll(){normalizeState();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();recalc();syncCloudReadOnlyControls()}
+function renderAll(){normalizeState();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();recalc();syncCloudReadOnlyControls()}
 function showFatalError(error){
   console.error(error);
   const banner=document.createElement("div");
@@ -3181,6 +3317,7 @@ try{
 
 $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
   if(e.id==="nivel"){renderPowers();refreshPowerPickerIfOpen()}
+  if(e.id==="portraitUrl") renderCharacterPortrait();
   recalc();
   if(e.id==="divindade") refreshPowerPickerIfOpen();
   save(false);

@@ -64,6 +64,7 @@ A ficha pode funcionar so localmente ou conectada ao Supabase. Quando ha login, 
 - `Entrar com codigo` vincula sua conta a uma campanha existente.
 - No dashboard de campanha, o seletor `Ficha para vincular` permite escolher qual ficha da sua conta sera associada a campanha.
 - No dashboard de campanha, o mestre pode criar e excluir `Ficha oculta`; jogadores nao veem essas fichas, e elas aparecem apenas dentro da campanha/escudo do mestre, nao no menu pessoal de `Fichas`.
+- O mestre pode remover fichas de jogadores da campanha sem apagar a ficha do jogador.
 - O jogador pode sair de uma campanha; suas fichas vinculadas ficam sem campanha.
 - `Excluir campanha` remove a campanha apenas para o mestre/criador; as fichas vinculadas nao sao apagadas.
 - O `Escudo do Mestre` aparece apenas para quem criou a campanha.
@@ -76,6 +77,7 @@ Arquivos SQL auxiliares:
 - `supabase_campaign_rolls.sql`: tabela e policies basicas para historico de rolagens do Escudo.
 - `supabase_permissions.sql`: camada principal de RLS/policies para campanhas, membros, fichas e rolagens. Execute este arquivo depois dos outros SQLs.
 - `supabase_private_characters.sql`: migracao curta para bancos ja configurados, adicionando fichas ocultas sem precisar rerodar tudo.
+- `supabase_campaign_character_management.sql`: funcao curta para o mestre remover fichas de jogadores da campanha sem editar/apagar a ficha.
 
 ## Abas
 
