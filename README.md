@@ -8,8 +8,9 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 
 - Tela inicial com login/modo local e hub de `Fichas`/`Campanhas`. Uma conta ou navegador novo nao cria mais uma ficha local automaticamente; use o botao `+` para criar.
 - Integracao opcional com Supabase para salvar fichas na nuvem, criar campanhas, entrar por codigo de convite e vincular fichas a campanhas.
+- Quando conectado, a ficha usa a nuvem como salvamento principal. O salvamento local fica como backup manual ou backup automatico opcional pelo menu `...`.
 - Dashboard de campanha com lista de fichas, jogadores e `Escudo do Mestre`.
-- Escudo do Mestre com resumo das fichas da campanha, alertas de PV/condicoes, historico de rolagens, filtro por personagem, ordenacao por risco/PV e limpeza de rolagens.
+- Escudo do Mestre com resumo das fichas da campanha, alertas de PV/condicoes, historico de rolagens, filtro por personagem, ordenacao por risco/PV e limpeza de rolagens. O painel recarrega dados da nuvem periodicamente para refletir mudancas de PV/PM salvas pelos jogadores.
 - O `Escudo do Mestre` e a exclusao de campanhas ficam disponiveis apenas para o usuario que criou a campanha.
 - Permissoes de nuvem em `supabase_permissions.sql`: dono edita a propria ficha, membros da campanha podem visualizar fichas da campanha, e o criador gerencia campanha/rolagens.
 
@@ -36,10 +37,10 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 2. Preencha os dados principais no cabeçalho: raça, classe, nível, origem, divindade e atributos.
 3. Use o seletor de personagem no cabeçalho para criar novas fichas, duplicar, renomear, excluir ou alternar entre personagens.
 4. Use as abas para completar a ficha.
-5. A ficha salva automaticamente no navegador.
+5. Se estiver conectado, a ficha salva automaticamente na nuvem. No modo offline, ela salva no navegador.
 6. Use o menu `...` no canto superior direito da ficha para salvar localmente, salvar na nuvem, vincular campanha, exportar/importar JSON ou limpar a ficha.
 
-O botão `Salvar`/`Salvar localmente` força o salvamento local do personagem ativo. O botão `Limpar` limpa a ficha do personagem atual, sem apagar os demais personagens salvos.
+O botão `Salvar` usa o destino principal do momento: nuvem quando conectado, navegador quando offline. `Salvar localmente` cria um backup manual no navegador. O botão `Limpar` limpa a ficha do personagem atual, sem apagar os demais personagens salvos.
 
 ## Personagens
 
@@ -55,7 +56,7 @@ Como o salvamento local fica no navegador, GitHub Pages/Netlify nao sincronizam 
 
 ## Nuvem e campanhas
 
-A ficha pode funcionar so localmente ou conectada ao Supabase.
+A ficha pode funcionar so localmente ou conectada ao Supabase. Quando ha login, o fluxo principal e a nuvem; o local fica como backup opcional.
 
 - `Fichas` lista personagens locais e personagens da nuvem aos quais sua conta tem acesso.
 - `Campanhas` lista campanhas criadas ou acessadas pela sua conta.
@@ -65,6 +66,7 @@ A ficha pode funcionar so localmente ou conectada ao Supabase.
 - `Excluir campanha` remove a campanha apenas para o mestre/criador; as fichas vinculadas nao sao apagadas.
 - O `Escudo do Mestre` aparece apenas para quem criou a campanha.
 - Fichas de outros jogadores em uma campanha podem ser abertas em modo somente leitura; apenas o dono salva alteracoes na nuvem.
+- O Escudo atualiza rolagens e dados das fichas periodicamente; alteracoes de PV/PM aparecem depois que o jogador salva na nuvem.
 
 Arquivos SQL auxiliares:
 
@@ -161,7 +163,7 @@ A ficha usa dados locais distribuídos em arquivos JavaScript:
 
 O salvamento local usa `localStorage`, então a ficha fica gravada apenas no navegador e perfil atual. Para backup ou troca de computador, use `Exportar` e guarde o arquivo `.json`.
 
-Quando conectado ao Supabase, a ficha tambem pode ser salva na nuvem. O hub mostra fichas locais, fichas sincronizadas e fichas de campanhas que sua conta pode visualizar. Fichas compartilhadas por campanha abrem em modo somente leitura quando pertencem a outro usuario.
+Quando conectado ao Supabase, a ficha salva na nuvem por padrao. O hub mostra fichas locais, fichas sincronizadas e fichas de campanhas que sua conta pode visualizar. Fichas compartilhadas por campanha abrem em modo somente leitura quando pertencem a outro usuario. O backup local automatico pode ser ligado/desligado no menu `...`; mesmo desligado, `Salvar localmente` continua disponivel para backup manual.
 
 O projeto tenta migrar fichas antigas salvas com chaves anteriores. Navegadores novos nao criam mais uma ficha vazia automaticamente; a lista pode ficar vazia ate voce clicar em `+`. Ainda assim, exportar um backup antes de mudanças grandes é recomendado.
 

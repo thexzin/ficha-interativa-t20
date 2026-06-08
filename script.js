@@ -8,6 +8,7 @@ const SUPABASE_URL="https://kcknkxczcczsyoljugcb.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_2v5KyyfqIEm446I7w8Y83Q_LD-Jv5QK";
 const CLOUD_CHARACTER_MAP_KEY="t20_cloud_character_map_v1";
 const AUTH_MODE_KEY="t20_auth_mode_v1";
+const LOCAL_AUTOSAVE_KEY="t20_local_autosave_v1";
 
 let supabaseClient=null;
 let cloudUser=null;
@@ -43,6 +44,7 @@ let campaignRollPollTimer=null;
 let shieldCharacterFilter="";
 let shieldSortMode="default";
 let currentCloudReadOnly=false;
+let cloudAutosaveTimer=null;
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
 const rawNum=id=>Number($("#"+id)?.value||0);
@@ -1567,6 +1569,31 @@ function writeCharacterIndex(index){
 function characterNameFromData(data,fallback="Personagem sem nome"){
   return String(data?.fields?.nome||"").trim()||fallback;
 }
+function cloudFirstMode(){
+  return !!(supabaseClient&&cloudUser);
+}
+function localAutosaveEnabled(){
+  return !cloudFirstMode()||localStorage.getItem(LOCAL_AUTOSAVE_KEY)==="1";
+}
+function setLocalAutosaveEnabled(enabled){
+  if(enabled) localStorage.setItem(LOCAL_AUTOSAVE_KEY,"1");
+  else localStorage.removeItem(LOCAL_AUTOSAVE_KEY);
+  renderCloudPanel();
+  notify(enabled?"Backup local automatico ligado.":"Backup local automatico desligado.");
+}
+function renderLocalAutosaveToggle(){
+  const button=$("#actionToggleLocalAutosaveBtn");
+  if(!button) return;
+  button.classList.toggle("hidden",!cloudFirstMode());
+  button.textContent=localAutosaveEnabled()?"Backup local automatico: ligado":"Backup local automatico: desligado";
+}
+function queueCloudAutosave(){
+  if(!cloudFirstMode()||currentCloudReadOnly) return;
+  clearTimeout(cloudAutosaveTimer);
+  cloudAutosaveTimer=setTimeout(()=>{
+    runCloudAction(()=>saveCloudCharacter(false,{fromAutosave:true}));
+  },900);
+}
 function renderCharacterManager(){
   const select=$("#characterSelect");
   if(!select) return;
@@ -1646,17 +1673,17 @@ function renderHubCharacters(){
   const hint=$("#hubCharacterHint");
   if(hint) hint.textContent=selectedCampaign?`Fichas da campanha ${selectedCampaign.name||"sem nome"}.`:"Personagens salvos neste navegador e na nuvem.";
   const localRecords=readCharacterIndex().characters.map(character=>{
-    const data=localCharacterData(character.id);
+    const cloudMeta=cloudById.get(cloudMap[character.id]);
+    const data=cloudMeta?.sheet_data?normalizeSheetData(cloudMeta.sheet_data):localCharacterData(character.id);
     const name=character.name||characterNameFromData(data);
     const fields=data?.fields||{};
     const race=T20_DATA.racas[fields.raca]?.nome||fields.raca||"";
     const cls=T20_DATA.classes[fields.classe]?.nome||fields.classe||"";
-    const cloudMeta=cloudById.get(cloudMap[character.id]);
     return {
       kind:"local",
       id:character.id,
       cloudId:cloudMap[character.id]||"",
-      name,
+      name:cloudMeta?.name||name,
       summary:characterSummaryFromData(data),
       meta:`${cloudMeta?"Local + nuvem":"Local"}${character.updatedAt?` &bull; atualizado em ${formattedDate(character.updatedAt)}`:""}`,
       campaignId:cloudMeta?.campaign_id||"",
@@ -2000,10 +2027,9 @@ function syncCampaignRollPolling(){
       return;
     }
     try{
-      await loadCampaignRolls();
-      renderCampaignDashboard();
+      await loadCloudData();
     }catch(error){
-      console.warn("Falha ao atualizar rolagens:",error);
+      console.warn("Falha ao atualizar escudo:",error);
     }
   },4000);
 }
@@ -2231,7 +2257,7 @@ function load(){
   }
   renderCharacterManager();
 }
-function save(show=true){
+function saveLocalSnapshot(show=true){
   if(!currentCharacterId){
     if(!show) return;
     createCharacter(sheetDataFromCurrent(),characterNameFromData(sheetDataFromCurrent()));
@@ -2241,6 +2267,15 @@ function save(show=true){
   localStorage.setItem(KEY,JSON.stringify(data));
   updateActiveCharacterMeta(data);
   if(show) notify("Personagem salvo neste navegador.");
+}
+function save(show=true){
+  if(cloudFirstMode()){
+    if(localAutosaveEnabled()) saveLocalSnapshot(false);
+    if(show) return runCloudAction(()=>saveCloudCharacter(true));
+    queueCloudAutosave();
+    return;
+  }
+  return saveLocalSnapshot(show);
 }
 function switchCharacter(id){
   if(!id||id===currentCharacterId) return;
@@ -2477,8 +2512,13 @@ function renderProfileMenu(){
 }
 function enterApp(mode="offline"){
   const wasGated=document.body.classList.contains("auth-gated");
-  if(mode==="cloud") localStorage.removeItem(AUTH_MODE_KEY);
-  else localStorage.setItem(AUTH_MODE_KEY,"offline");
+  if(mode==="cloud"){
+    localStorage.removeItem(AUTH_MODE_KEY);
+    sessionStorage.removeItem(AUTH_MODE_KEY);
+  }else{
+    localStorage.removeItem(AUTH_MODE_KEY);
+    sessionStorage.setItem(AUTH_MODE_KEY,"offline");
+  }
   document.body.classList.remove("auth-gated");
   if(wasGated) openHub("fichas");
   else{renderCloudPanel();renderHub()}
@@ -2492,6 +2532,7 @@ function showAuthGate(){
 function renderCloudPanel(){
   const signedIn=!!cloudUser;
   renderProfileMenu();
+  renderLocalAutosaveToggle();
   $("#cloudSignedOut")?.classList.toggle("hidden",signedIn);
   $("#cloudSignedIn")?.classList.toggle("hidden",!signedIn);
   setCloudStatus(signedIn?(cloudUser.email||"Conectado"):(document.body.classList.contains("auth-gated")?"Desconectado":"Offline"));
@@ -2561,9 +2602,10 @@ function cloudPayloadFromCurrent(){
     updated_at:new Date().toISOString()
   };
 }
-async function saveCloudCharacter(show=true){
+async function saveCloudCharacter(show=true,options={}){
   if(!cloudRequireLogin()) return;
-  save(false);
+  clearTimeout(cloudAutosaveTimer);
+  if(!options.fromAutosave&&localAutosaveEnabled()) saveLocalSnapshot(false);
   const selected=value("cloudCharacterSelect")||mappedCloudCharacterId();
   const selectedMeta=selected?cloudCharacters.find(character=>character.id===selected):null;
   if(currentCloudReadOnly||isCloudCharacterReadOnly(selectedMeta)){
@@ -2729,13 +2771,14 @@ async function cloudSignOut(){
   cloudCampaigns=[];
   setCurrentCloudReadOnly(false);
   localStorage.removeItem(AUTH_MODE_KEY);
+  sessionStorage.removeItem(AUTH_MODE_KEY);
   showAuthGate();
   notify("Saiu da nuvem.");
 }
 async function initCloud(){
   if(!SUPABASE_URL||!SUPABASE_PUBLISHABLE_KEY||!window.supabase?.createClient){
     setCloudStatus("Indisponivel");
-    if(localStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
+    if(sessionStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
     return;
   }
   supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -2744,7 +2787,7 @@ async function initCloud(){
     if(error) throw error;
     cloudUser=data.session?.user||null;
     if(cloudUser) enterApp("cloud");
-    else if(localStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
+    else if(sessionStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
     else showAuthGate();
     await loadCloudData();
     supabaseClient.auth.onAuthStateChange(async(_event,session)=>{
@@ -2755,7 +2798,7 @@ async function initCloud(){
   }catch(err){
     console.error("Falha ao iniciar Supabase:",err);
     setCloudStatus("Erro na conexao");
-    if(localStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
+    if(sessionStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
     else showAuthGate();
   }
   renderCloudPanel();
@@ -2902,6 +2945,7 @@ $("#cloudSignUpBtn")?.addEventListener("click",()=>runCloudAction(cloudSignUp));
 $("#offlineModeBtn")?.addEventListener("click",()=>enterApp("offline"));
 $("#cloudOpenLoginBtn")?.addEventListener("click",()=>{
   localStorage.removeItem(AUTH_MODE_KEY);
+  sessionStorage.removeItem(AUTH_MODE_KEY);
   showAuthGate();
 });
 $("#cloudSignOutBtn")?.addEventListener("click",()=>runCloudAction(cloudSignOut));
@@ -2953,7 +2997,11 @@ $("#profileResetBtn")?.addEventListener("click",()=>{
 });
 $("#actionSaveLocalBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
-  save(true);
+  saveLocalSnapshot(true);
+});
+$("#actionToggleLocalAutosaveBtn")?.addEventListener("click",()=>{
+  closeSheetActionMenu();
+  setLocalAutosaveEnabled(!localAutosaveEnabled());
 });
 $("#actionSaveCloudBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
@@ -2978,6 +3026,7 @@ $("#actionResetBtn")?.addEventListener("click",()=>{
 $("#profileCloudBtn")?.addEventListener("click",()=>{
   closeProfileMenu();
   localStorage.removeItem(AUTH_MODE_KEY);
+  sessionStorage.removeItem(AUTH_MODE_KEY);
   showAuthGate();
 });
 $("#profileLogoutBtn")?.addEventListener("click",()=>{
@@ -2985,6 +3034,7 @@ $("#profileLogoutBtn")?.addEventListener("click",()=>{
   if(cloudUser&&supabaseClient) runCloudAction(cloudSignOut);
   else{
     localStorage.removeItem(AUTH_MODE_KEY);
+    sessionStorage.removeItem(AUTH_MODE_KEY);
     showAuthGate();
     notify("Saiu do modo local.");
   }
