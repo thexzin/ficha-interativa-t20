@@ -55,6 +55,7 @@
       </button>
       <div id="profileDropdown" class="profileDropdown hidden">
         <button id="profileHubBtn" type="button">Menu de fichas</button>
+        <button id="profileCampaignsBtn" type="button">Menu de campanhas</button>
         <button id="profileCloudBtn" type="button">Entrar na nuvem</button>
         <button id="profileLogoutBtn" type="button" class="danger">Sair</button>
       </div>
@@ -62,9 +63,8 @@
     <div class="sheetActionMenu">
       <button id="sheetActionMenuBtn" class="sheetActionButton" type="button" aria-expanded="false" aria-label="Abrir opcoes da ficha">...</button>
       <div id="sheetActionDropdown" class="profileDropdown sheetActionDropdown hidden">
-        <button id="actionSaveLocalBtn" type="button">Salvar localmente</button>
         <button id="actionSaveCloudBtn" type="button">Salvar na nuvem</button>
-        <button id="actionToggleLocalAutosaveBtn" type="button">Backup local autom&aacute;tico: desligado</button>
+        <button id="actionOpenCampaignBtn" type="button">Abrir campanha vinculada</button>
         <button id="actionLinkCampaignBtn" type="button">Vincular a campanha</button>
         <button id="actionExportBtn" type="button">Exportar JSON</button>
         <button id="actionImportBtn" type="button">Importar JSON</button>
@@ -143,7 +143,11 @@
         </div>
         <div class="campaignDashboardActions">
           <button id="campaignInviteBtn" type="button">Convidar jogadores</button>
-          <button id="campaignLinkCurrentBtn" type="button">Vincular ficha atual</button>
+          <button id="campaignRenameBtn" type="button">Renomear</button>
+          <button id="campaignCreatePrivateCharacterBtn" type="button">Ficha oculta</button>
+          <label class="campaignLinkPicker">Ficha para vincular<select id="campaignCharacterLinkSelect"></select></label>
+          <button id="campaignLinkSelectedBtn" type="button">Vincular ficha</button>
+          <button id="campaignLeaveBtn" type="button">Sair da campanha</button>
           <button id="campaignShieldBtn" type="button">Escudo do Mestre</button>
           <button id="campaignDeleteBtn" type="button" class="danger">Excluir campanha</button>
         </div>

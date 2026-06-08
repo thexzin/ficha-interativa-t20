@@ -69,6 +69,8 @@ grant execute on function public.can_manage_campaign(uuid) to authenticated;
 
 alter table public.campaigns enable row level security;
 alter table public.campaign_members enable row level security;
+alter table public.characters
+  add column if not exists is_private boolean not null default false;
 alter table public.characters enable row level security;
 alter table public.campaign_rolls enable row level security;
 
@@ -119,7 +121,11 @@ on public.characters
 for select
 using (
   auth.uid() = owner_id
-  or public.can_read_campaign(campaign_id)
+  or public.can_manage_campaign(campaign_id)
+  or (
+    coalesce(is_private, false) = false
+    and public.can_read_campaign(campaign_id)
+  )
 );
 
 create policy "characters_insert_by_owner"
@@ -130,6 +136,11 @@ with check (
   and (
     campaign_id is null
     or public.can_read_campaign(campaign_id)
+  )
+  and (
+    coalesce(is_private, false) = false
+    or campaign_id is null
+    or public.can_manage_campaign(campaign_id)
   )
 );
 
@@ -142,6 +153,11 @@ with check (
   and (
     campaign_id is null
     or public.can_read_campaign(campaign_id)
+  )
+  and (
+    coalesce(is_private, false) = false
+    or campaign_id is null
+    or public.can_manage_campaign(campaign_id)
   )
 );
 
