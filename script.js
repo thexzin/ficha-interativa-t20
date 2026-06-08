@@ -43,7 +43,7 @@ let campaignRollPollTimer=null;
 let shieldCharacterFilter="";
 let shieldSortMode="default";
 let currentCloudReadOnly=false;
-let cloudAutosaveTimer=null;
+let cloudAutosaveTimers=new Map();
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
 const rawNum=id=>Number($("#"+id)?.value||0);
@@ -371,7 +371,7 @@ function recalc(){
   if(sizeInput) sizeInput.onchange=()=>{const sizeField=$("#tamanho");if(sizeField) sizeField.value=sizeInput.value===baseSize?"":sizeInput.value;save(false)};
   const moveInput=$("#summaryMoveInput");
   if(moveInput) moveInput.oninput=()=>{const moveField=$("#deslocamento");if(moveField) moveField.value=moveInput.value;save(false)};
-  renderProgress();renderSkills();renderInventorySummary();save(false);
+  renderProgress();renderSkills();renderInventorySummary();
 }
 function renderProgress(){
   const cls=T20_DATA.classes[value("classe")],lvl=num("nivel"),rows=[];
@@ -811,10 +811,6 @@ function currentGeneralPowers(){
     power.type==="Geral" && (!subtype || power.subtype===subtype)
   ));
 }
-function currentRaceAliases(){
-  const raceId=value("raca"), race=T20_DATA.racas[raceId];
-  return raceAliasesFor(raceId,race);
-}
 function powerMatchesCurrentRace(power){
   const raceId=value("raca"), race=T20_DATA.racas[raceId];
   return racePowerMatchesRace(power,raceId,race);
@@ -1080,9 +1076,6 @@ function splitSpellDescriptionParagraphs(desc){
       .replace(/\s+(?=(?:Truque|Custo adicional|Componente Material|\+\d+\s*PM(?:\s*\([^)]*\))?):)/g,"\n");
     return line.split("\n").map(part=>part.trim()).filter(Boolean);
   });
-}
-function formatSpellDescriptionText(desc){
-  return splitSpellDescriptionParagraphs(desc).join("\n\n");
 }
 function renderSpellDescription(desc){
   const paragraphs=splitSpellDescriptionParagraphs(desc);
@@ -1609,11 +1602,38 @@ function renderSheetCampaignShortcut(){
   button.textContent=campaignId?"Abrir campanha vinculada":"Sem campanha vinculada";
 }
 function queueCloudAutosave(){
-  if(!cloudFirstMode()||currentCloudReadOnly) return;
-  clearTimeout(cloudAutosaveTimer);
-  cloudAutosaveTimer=setTimeout(()=>{
-    runCloudAction(()=>saveCloudCharacter(false,{fromAutosave:true}));
+  if(!cloudFirstMode()||currentCloudReadOnly||!currentCharacterId) return;
+  const snapshot={
+    localId:currentCharacterId,
+    remoteId:mappedCloudCharacterId()||value("cloudCharacterSelect"),
+    data:sheetDataFromCurrent(),
+    campaignId:value("cloudCampaignSelect")||null
+  };
+  if(!snapshot.remoteId) return;
+  clearTimeout(cloudAutosaveTimers.get(snapshot.remoteId));
+  const timer=setTimeout(()=>{
+    cloudAutosaveTimers.delete(snapshot.remoteId);
+    runCloudAction(()=>saveCloudCharacterSnapshot(snapshot));
   },900);
+  cloudAutosaveTimers.set(snapshot.remoteId,timer);
+}
+async function saveCloudCharacterSnapshot(snapshot){
+  if(!supabaseClient||!cloudUser||!snapshot?.remoteId||!snapshot?.data) return;
+  const selectedMeta=cloudCharacters.find(character=>character.id===snapshot.remoteId);
+  if(isCloudCharacterReadOnly(selectedMeta)) return;
+  const payload=cloudPayloadFromSheetData(snapshot.data,snapshot.campaignId);
+  const {data,error}=await supabaseClient
+    .from("characters")
+    .update(payload)
+    .eq("id",snapshot.remoteId)
+    .select("id,name,campaign_id,updated_at")
+    .single();
+  if(error) throw error;
+  if(snapshot.localId){
+    setCloudMappingForLocal(snapshot.localId,data.id);
+    cacheLocalCharacterData(snapshot.localId,payload.sheet_data,data.name||payload.name,data.updated_at);
+  }
+  await loadCloudData();
 }
 function renderCharacterManager(){
   const select=$("#characterSelect");
@@ -1670,7 +1690,14 @@ function openSheetView(){
   closeProfileMenu();
   closeSheetActionMenu();
   stopCampaignRollPolling();
-  if(!currentCharacterId) newCharacter();
+  if(!currentCharacterId){
+    document.body.classList.add("hub-open");
+    setHubSection("fichas");
+    renderCloudPanel();
+    renderHub();
+    notify("Crie ou abra uma ficha para editar.");
+    return;
+  }
   document.body.classList.remove("hub-open");
   renderCloudPanel();
 }
@@ -2394,9 +2421,9 @@ async function openCloudCharacter(remoteId){
   setMappedCloudCharacterId(data.id);
   cacheLocalCharacterData(currentCharacterId,data.sheet_data,data.name,data.updated_at);
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
+  if(data.campaign_id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id;
   renderAll();
   save(false);
-  if(data.campaign_id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id;
   openSheetView();
   notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
 }
@@ -2523,10 +2550,12 @@ function newCharacter(){
   save(false);
   const data=blankSheetData("Novo personagem");
   createCharacter(data,"Novo personagem");
+  if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value="";
   setCurrentCloudReadOnly(false);
   applySheetData(data);
   renderAll();
-  save(false);
+  if(cloudFirstMode()) runCloudAction(()=>saveCloudCharacter(false));
+  else save(false);
   notify("Novo personagem criado.");
 }
 function duplicateCharacter(){
@@ -2537,7 +2566,8 @@ function duplicateCharacter(){
   createCharacter(data,name);
   applySheetData(data);
   renderAll();
-  save(false);
+  if(cloudFirstMode()) runCloudAction(()=>saveCloudCharacter(false));
+  else save(false);
   notify("Personagem duplicado.");
 }
 function renameCharacter(){
@@ -2594,7 +2624,8 @@ function importSheetData(data){
   }
   applySheetData(normalized);
   renderAll();
-  save(false);
+  if(cloudFirstMode()&&(asNew||!mappedCloudCharacterId())) runCloudAction(()=>saveCloudCharacter(false));
+  else save(false);
   notify(asNew?"Personagem importado.":"Personagem atual substituído pelo JSON importado.");
 }
 function exportSheet(){
@@ -2864,10 +2895,17 @@ function cloudPayloadFromCurrent(){
     updated_at:new Date().toISOString()
   };
 }
-async function saveCloudCharacter(show=true,options={}){
+async function saveCloudCharacter(show=true){
   if(!cloudRequireLogin()) return;
-  clearTimeout(cloudAutosaveTimer);
+  if(!currentCharacterId){
+    if(show) notify("Crie ou abra uma ficha antes de salvar na nuvem.");
+    return;
+  }
   const selected=value("cloudCharacterSelect")||mappedCloudCharacterId();
+  if(selected&&cloudAutosaveTimers.has(selected)){
+    clearTimeout(cloudAutosaveTimers.get(selected));
+    cloudAutosaveTimers.delete(selected);
+  }
   const selectedMeta=selected?cloudCharacters.find(character=>character.id===selected):null;
   if(currentCloudReadOnly||isCloudCharacterReadOnly(selectedMeta)){
     setCurrentCloudReadOnly(true);
@@ -2898,9 +2936,9 @@ async function loadSelectedCloudCharacter(){
   setMappedCloudCharacterId(data.id);
   cacheLocalCharacterData(currentCharacterId,data.sheet_data,data.name,data.updated_at);
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
+  if(data.campaign_id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id;
   renderAll();
   save(false);
-  if(data.campaign_id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id;
   notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
 }
 async function createCloudCampaign(){
@@ -3084,15 +3122,6 @@ async function joinCloudCampaignByCode(){
   renderHub();
   notify(`Campanha adicionada: <b>${escapeHtml(campaign?.name||"campanha")}</b>`);
 }
-async function linkCurrentCharacterToCampaignId(campaignId){
-  if(!cloudRequireLogin()) return;
-  if(!campaignId){notify("Escolha uma campanha para vincular.");return}
-  if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
-  await saveCloudCharacter(false);
-  await loadCloudData();
-  const campaign=cloudCampaigns.find(item=>item.id===campaignId);
-  notify(`Ficha vinculada a campanha: <b>${escapeHtml(campaign?.name||"campanha")}</b>`);
-}
 function cloudPayloadFromSheetData(data,campaignId){
   const normalized=normalizeSheetData(data);
   return {
@@ -3189,6 +3218,8 @@ async function cloudSignUp(){
 }
 async function cloudSignOut(){
   if(!supabaseClient) return;
+  cloudAutosaveTimers.forEach(timer=>clearTimeout(timer));
+  cloudAutosaveTimers.clear();
   await supabaseClient.auth.signOut();
   cloudUser=null;
   cloudCharacters=[];
