@@ -6,6 +6,13 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 
 ## Atualizações recentes
 
+- Tela inicial com login/modo local e hub de `Fichas`/`Campanhas`. Uma conta ou navegador novo nao cria mais uma ficha local automaticamente; use o botao `+` para criar.
+- Integracao opcional com Supabase para salvar fichas na nuvem, criar campanhas, entrar por codigo de convite e vincular fichas a campanhas.
+- Dashboard de campanha com lista de fichas, jogadores e `Escudo do Mestre`.
+- Escudo do Mestre com resumo das fichas da campanha, alertas de PV/condicoes, historico de rolagens, filtro por personagem, ordenacao por risco/PV e limpeza de rolagens.
+- O `Escudo do Mestre` e a exclusao de campanhas ficam disponiveis apenas para o usuario que criou a campanha.
+- Permissoes de nuvem em `supabase_permissions.sql`: dono edita a propria ficha, membros da campanha podem visualizar fichas da campanha, e o criador gerencia campanha/rolagens.
+
 - Habilidades de raça automáticas: ao selecionar uma raça, a aba Poderes recebe automaticamente as habilidades fixas daquela raça.
 - Gerenciador de personagens no cabeçalho: permite criar, trocar, duplicar, renomear e excluir várias fichas salvas no mesmo navegador.
 - O resumo da raça mostra modificadores de atributos; tamanho e deslocamento base aparecem em campos editáveis logo abaixo. Quando a raça não informa esses dados, a ficha assume tamanho Médio e deslocamento 9m.
@@ -30,9 +37,9 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 3. Use o seletor de personagem no cabeçalho para criar novas fichas, duplicar, renomear, excluir ou alternar entre personagens.
 4. Use as abas para completar a ficha.
 5. A ficha salva automaticamente no navegador.
-6. Use `Exportar` para gerar um JSON da ficha atual e `Importar` para carregar esse JSON depois.
+6. Use o menu `...` no canto superior direito da ficha para salvar localmente, salvar na nuvem, vincular campanha, exportar/importar JSON ou limpar a ficha.
 
-O botão `Salvar` força o salvamento local do personagem ativo. O botão `Limpar` limpa a ficha do personagem atual, sem apagar os demais personagens salvos.
+O botão `Salvar`/`Salvar localmente` força o salvamento local do personagem ativo. O botão `Limpar` limpa a ficha do personagem atual, sem apagar os demais personagens salvos.
 
 ## Personagens
 
@@ -41,10 +48,29 @@ O gerenciador de personagens salva várias fichas no `localStorage` do navegador
 - `Novo` cria uma ficha limpa.
 - `Duplicar` copia a ficha atual.
 - `Renomear` muda o nome do personagem ativo.
-- `Excluir` remove o personagem ativo; se for o único, a ficha é apenas limpa.
+- `Excluir` remove o personagem ativo. Se era a ultima ficha local, o hub fica vazio ate voce criar outra com `+`.
 - `Exportar` e `Importar` continuam úteis para backup, transferência entre navegadores/dispositivos ou envio para outra pessoa.
 
-Como o salvamento é local do navegador, GitHub Pages não sincroniza automaticamente entre computadores ou celulares. Para isso seria necessário usar uma solução externa de nuvem/database.
+Como o salvamento local fica no navegador, GitHub Pages/Netlify nao sincronizam automaticamente entre computadores ou celulares. Para sincronizar, entre na nuvem e use o salvamento via Supabase.
+
+## Nuvem e campanhas
+
+A ficha pode funcionar so localmente ou conectada ao Supabase.
+
+- `Fichas` lista personagens locais e personagens da nuvem aos quais sua conta tem acesso.
+- `Campanhas` lista campanhas criadas ou acessadas pela sua conta.
+- `Nova campanha` cria uma campanha e gera um codigo de convite.
+- `Entrar com codigo` vincula sua conta a uma campanha existente.
+- `Vincular ficha atual` salva a ficha na nuvem e associa essa ficha a campanha selecionada.
+- `Excluir campanha` remove a campanha apenas para o mestre/criador; as fichas vinculadas nao sao apagadas.
+- O `Escudo do Mestre` aparece apenas para quem criou a campanha.
+- Fichas de outros jogadores em uma campanha podem ser abertas em modo somente leitura; apenas o dono salva alteracoes na nuvem.
+
+Arquivos SQL auxiliares:
+
+- `supabase_campaign_create.sql`: funcao segura para criar campanha e registrar o mestre como membro.
+- `supabase_campaign_rolls.sql`: tabela e policies basicas para historico de rolagens do Escudo.
+- `supabase_permissions.sql`: camada principal de RLS/policies para campanhas, membros, fichas e rolagens. Execute este arquivo depois dos outros SQLs.
 
 ## Abas
 
@@ -133,9 +159,11 @@ A ficha usa dados locais distribuídos em arquivos JavaScript:
 
 ## Salvamento
 
-O salvamento usa `localStorage`, então a ficha fica gravada apenas no navegador e perfil atual. Para backup ou troca de computador, use `Exportar` e guarde o arquivo `.json`.
+O salvamento local usa `localStorage`, então a ficha fica gravada apenas no navegador e perfil atual. Para backup ou troca de computador, use `Exportar` e guarde o arquivo `.json`.
 
-O projeto tenta migrar fichas antigas salvas com chaves anteriores. Ainda assim, exportar um backup antes de mudanças grandes é recomendado.
+Quando conectado ao Supabase, a ficha tambem pode ser salva na nuvem. O hub mostra fichas locais, fichas sincronizadas e fichas de campanhas que sua conta pode visualizar. Fichas compartilhadas por campanha abrem em modo somente leitura quando pertencem a outro usuario.
+
+O projeto tenta migrar fichas antigas salvas com chaves anteriores. Navegadores novos nao criam mais uma ficha vazia automaticamente; a lista pode ficar vazia ate voce clicar em `+`. Ainda assim, exportar um backup antes de mudanças grandes é recomendado.
 
 ## Limitações
 

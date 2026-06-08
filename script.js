@@ -40,6 +40,9 @@ let activeHubSection="fichas";
 let activeHubCampaignId="";
 let activeCampaignDashboardTab="fichas";
 let campaignRollPollTimer=null;
+let shieldCharacterFilter="";
+let shieldSortMode="default";
+let currentCloudReadOnly=false;
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
 const rawNum=id=>Number($("#"+id)?.value||0);
@@ -1613,6 +1616,7 @@ function openSheetView(){
   closeProfileMenu();
   closeSheetActionMenu();
   stopCampaignRollPolling();
+  if(!currentCharacterId) newCharacter();
   document.body.classList.remove("hub-open");
   renderCloudPanel();
 }
@@ -1726,10 +1730,15 @@ function renderHubCampaigns(){
   $$("[data-open-campaign-dashboard]").forEach(button=>button.onclick=()=>openCampaignDashboard(button.dataset.openCampaignDashboard));
   $$("[data-link-campaign]").forEach(button=>button.onclick=()=>runCloudAction(()=>linkCurrentCharacterToCampaignId(button.dataset.linkCampaign)));
 }
+function isCampaignOwner(campaign){
+  return !!(campaign?.owner_id&&cloudUser&&campaign.owner_id===cloudUser.id);
+}
 function openCampaignDashboard(campaignId){
   if(!campaignId) return;
   activeHubCampaignId=campaignId;
   activeCampaignDashboardTab="fichas";
+  shieldCharacterFilter="";
+  shieldSortMode="default";
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
   setHubSection("campanha");
   renderHub();
@@ -1819,8 +1828,11 @@ function formatRollDate(value){
   if(Number.isNaN(date.getTime())) return "";
   return date.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
 }
-function renderCampaignRollHistory(campaignId){
-  const rolls=cloudCampaignRolls.filter(roll=>roll.campaign_id===campaignId).slice(0,12);
+function renderCampaignRollHistory(campaignId,characterId=""){
+  const rolls=cloudCampaignRolls
+    .filter(roll=>roll.campaign_id===campaignId)
+    .filter(roll=>!characterId||roll.character_id===characterId)
+    .slice(0,12);
   if(!rolls.length) return `<p class="muted">Nenhuma rolagem registrada ainda.</p>`;
   return rolls.map(roll=>{
     const stateClass=roll.is_fumble?"fumble":(roll.is_critical?"critical":"");
@@ -1842,8 +1854,37 @@ function renderCampaignRollHistory(campaignId){
     </article>`;
   }).join("");
 }
+function shieldStatusRank(status){
+  return ({morto:0,morrendo:1,ferido:2,ok:3})[status]??4;
+}
+function sortShieldSummaries(summaries){
+  const list=[...summaries];
+  if(shieldSortMode==="pv"){
+    return list.sort((a,b)=>(a.pvAtual-a.pvMax)-(b.pvAtual-b.pvMax)||a.pvAtual-b.pvAtual||a.name.localeCompare(b.name));
+  }
+  if(shieldSortMode==="risco"){
+    return list.sort((a,b)=>shieldStatusRank(a.status)-shieldStatusRank(b.status)||a.pvAtual-b.pvAtual||a.name.localeCompare(b.name));
+  }
+  return list.sort((a,b)=>a.name.localeCompare(b.name));
+}
+function renderShieldControls(summaries){
+  const options=summaries.map(summary=>
+    `<option value="${escapeHtml(summary.id)}" ${shieldCharacterFilter===summary.id?"selected":""}>${escapeHtml(summary.name)}</option>`
+  ).join("");
+  return `<div class="shieldControls">
+    <label>Personagem<select id="shieldCharacterFilter"><option value="">Todos</option>${options}</select></label>
+    <label>Ordem<select id="shieldSortMode">
+      <option value="default" ${shieldSortMode==="default"?"selected":""}>Nome</option>
+      <option value="risco" ${shieldSortMode==="risco"?"selected":""}>Risco</option>
+      <option value="pv" ${shieldSortMode==="pv"?"selected":""}>PV baixo</option>
+    </select></label>
+    <button id="clearCampaignRollsBtn" type="button">Limpar rolagens</button>
+  </div>`;
+}
 function renderMasterShield(characters){
-  const summaries=characters.map(sheetSummaryFromCloudCharacter);
+  const allSummaries=characters.map(sheetSummaryFromCloudCharacter);
+  if(shieldCharacterFilter&&!allSummaries.some(summary=>summary.id===shieldCharacterFilter)) shieldCharacterFilter="";
+  const summaries=sortShieldSummaries(allSummaries.filter(summary=>!shieldCharacterFilter||summary.id===shieldCharacterFilter));
   const alerts=summaries.flatMap(summary=>{
     const items=[];
     if(summary.status==="morto") items.push({type:"danger",name:summary.name,text:`Morto ou alem do limite (${summary.pvAtual}/${summary.deathLimit} PV).`});
@@ -1854,6 +1895,7 @@ function renderMasterShield(characters){
   });
   return `<div class="masterShieldLayout">
     <aside class="masterShieldFeed">
+      ${renderShieldControls(allSummaries)}
       <div class="shieldFeedHead">
         <strong>Alertas</strong>
         <span>${alerts.length||"sem"} destaque${alerts.length===1?"":"s"}</span>
@@ -1868,12 +1910,42 @@ function renderMasterShield(characters){
         <strong>Rolagens</strong>
         <span>ultimas</span>
       </div>
-      <div class="shieldRollList">${renderCampaignRollHistory(activeHubCampaignId)}</div>
+      <div class="shieldRollList">${renderCampaignRollHistory(activeHubCampaignId,shieldCharacterFilter)}</div>
     </aside>
     <div class="masterShieldRoster">
       ${summaries.length?summaries.map(summary=>renderMasterShieldCard(summary)).join(""):`<div class="hubEmpty">Nenhuma ficha vinculada a esta campanha ainda.</div>`}
     </div>
   </div>`;
+}
+function bindMasterShieldControls(){
+  const filter=$("#shieldCharacterFilter");
+  if(filter) filter.onchange=()=>{
+    shieldCharacterFilter=filter.value;
+    renderCampaignDashboard();
+  };
+  const sort=$("#shieldSortMode");
+  if(sort) sort.onchange=()=>{
+    shieldSortMode=sort.value||"default";
+    renderCampaignDashboard();
+  };
+  const clear=$("#clearCampaignRollsBtn");
+  if(clear) clear.onclick=()=>runCloudAction(clearCampaignRollHistory);
+}
+async function clearCampaignRollHistory(){
+  if(!cloudRequireLogin()||!activeHubCampaignId) return;
+  const target=shieldCharacterFilter
+    ? cloudCharacters.find(character=>character.id===shieldCharacterFilter)?.name||"este personagem"
+    : "esta campanha";
+  if(!confirm(`Limpar rolagens de ${target}?`)) return;
+  let request=supabaseClient.from("campaign_rolls").delete().eq("campaign_id",activeHubCampaignId);
+  if(shieldCharacterFilter) request=request.eq("character_id",shieldCharacterFilter);
+  const {error}=await request;
+  if(error) throw error;
+  cloudCampaignRolls=cloudCampaignRolls.filter(roll=>
+    roll.campaign_id!==activeHubCampaignId||(shieldCharacterFilter&&roll.character_id!==shieldCharacterFilter)
+  );
+  renderCampaignDashboard();
+  notify("Historico de rolagens limpo.");
 }
 function renderMasterShieldCard(summary){
   const pvPct=resourceBarPercent(summary.pvAtual,summary.pvMax);
@@ -1945,13 +2017,19 @@ function renderCampaignDashboard(){
     syncCampaignRollPolling();
     return;
   }
+  const campaignOwner=isCampaignOwner(campaign);
+  if(activeCampaignDashboardTab==="escudo"&&!campaignOwner) activeCampaignDashboardTab="fichas";
   const characters=cloudCharacters.filter(character=>character.campaign_id===campaign.id);
   $("#campaignDashboardName").textContent=campaign.name||"Campanha sem nome";
   $("#campaignDashboardMeta").textContent=`${characters.length} ficha${characters.length===1?"":"s"}${campaign.invite_code?` - convite ${campaign.invite_code}`:""}`;
+  $("#campaignShieldBtn")?.classList.toggle("hidden",!campaignOwner);
+  $("#campaignDeleteBtn")?.classList.toggle("hidden",!campaignOwner);
+  $$("[data-campaign-panel='escudo']").forEach(button=>button.classList.toggle("hidden",!campaignOwner));
   $$("[data-campaign-panel]").forEach(button=>button.classList.toggle("active",button.dataset.campaignPanel===activeCampaignDashboardTab));
   if(activeCampaignDashboardTab==="escudo"){
     content.className="campaignDashboardContent";
     content.innerHTML=renderMasterShield(characters);
+    bindMasterShieldControls();
     $$("[data-dashboard-open-character]").forEach(button=>button.onclick=()=>runCloudAction(()=>openCloudCharacter(button.dataset.dashboardOpenCharacter)));
     syncCampaignRollPolling();
     return;
@@ -2038,20 +2116,18 @@ async function deleteHubLocalCharacter(localId,remoteId=""){
   if(!confirm(`Excluir ${label}? Esta acao remove a ficha salva neste navegador.${cloudText}`)) return;
   if(remoteId&&cloudUser) await deleteCloudCharacterById(remoteId);
   removeCloudMappingForLocal(localId);
-  if(index.characters.length<=1){
-    const data=blankSheetData("Novo personagem");
-    const now=new Date().toISOString();
-    currentCharacterId=localId;
-    localStorage.setItem(characterKey(localId),JSON.stringify(data));
-    writeCharacterIndex({activeId:localId,characters:[{id:localId,name:"Novo personagem",updatedAt:now}]});
-    applySheetData(data);
-    renderAll();
-    save(false);
-    notify("Ficha limpa.");
-    return;
-  }
   localStorage.removeItem(characterKey(localId));
   const remaining=index.characters.filter(character=>character.id!==localId);
+  if(!remaining.length){
+    setCurrentCloudReadOnly(false);
+    currentCharacterId="";
+    writeCharacterIndex({activeId:"",characters:[]});
+    applySheetData(blankSheetData(""));
+    renderAll();
+    renderHub();
+    notify("Ficha excluida.");
+    return;
+  }
   const nextId=currentCharacterId===localId?remaining[0].id:(index.activeId===localId?remaining[0].id:index.activeId);
   writeCharacterIndex({activeId:nextId,characters:remaining});
   if(currentCharacterId===localId){
@@ -2068,7 +2144,7 @@ async function deleteHubLocalCharacter(localId,remoteId=""){
 }
 async function openCloudCharacter(remoteId){
   if(!cloudRequireLogin()) return;
-  const {data,error}=await supabaseClient.from("characters").select("id,name,sheet_data,campaign_id").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id").eq("id",remoteId).single();
   if(error) throw error;
   save(false);
   const localId=localIdForCloudCharacter(remoteId);
@@ -2082,11 +2158,12 @@ async function openCloudCharacter(remoteId){
   }
   applySheetData(data.sheet_data);
   setMappedCloudCharacterId(data.id);
+  setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
   renderAll();
   save(false);
   if(data.campaign_id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id;
   openSheetView();
-  notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>`);
+  notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
 }
 function createCharacter(data,name){
   const normalized=normalizeSheetData(data);
@@ -2096,6 +2173,7 @@ function createCharacter(data,name){
   index.characters.push({id,name:name||characterNameFromData(normalized),updatedAt:now});
   index.activeId=id;
   currentCharacterId=id;
+  setCurrentCloudReadOnly(false);
   localStorage.setItem(characterKey(id),JSON.stringify(normalized));
   writeCharacterIndex(index);
   renderCharacterManager();
@@ -2129,12 +2207,19 @@ function load(){
   let index=readCharacterIndex();
   if(!index.characters.length){
     const legacy=findLegacySheetData();
-    const first=legacy||blankSheetData("");
-    createCharacter(first,characterNameFromData(first));
-    index=readCharacterIndex();
+    if(legacy){
+      createCharacter(legacy,characterNameFromData(legacy));
+      index=readCharacterIndex();
+    }
   }
   currentCharacterId=index.activeId||index.characters[0]?.id||"";
-  if(!currentCharacterId) return;
+  if(!currentCharacterId){
+    setCurrentCloudReadOnly(false);
+    applySheetData(blankSheetData(""));
+    renderCharacterManager();
+    return;
+  }
+  setCurrentCloudReadOnly(false);
   try{
     const raw=localStorage.getItem(characterKey(currentCharacterId));
     const data=raw?JSON.parse(raw):blankSheetData("");
@@ -2147,7 +2232,10 @@ function load(){
   renderCharacterManager();
 }
 function save(show=true){
-  if(!currentCharacterId) createCharacter(sheetDataFromCurrent(),characterNameFromData(sheetDataFromCurrent()));
+  if(!currentCharacterId){
+    if(!show) return;
+    createCharacter(sheetDataFromCurrent(),characterNameFromData(sheetDataFromCurrent()));
+  }
   const data=sheetDataFromCurrent();
   localStorage.setItem(characterKey(currentCharacterId),JSON.stringify(data));
   localStorage.setItem(KEY,JSON.stringify(data));
@@ -2161,6 +2249,7 @@ function switchCharacter(id){
   if(!raw){alert("Personagem não encontrado neste navegador.");renderCharacterManager();return}
   try{
     currentCharacterId=id;
+    setCurrentCloudReadOnly(isCloudCharacterReadOnly(currentCloudCharacterMeta()));
     const index=readCharacterIndex();
     index.activeId=id;
     writeCharacterIndex(index);
@@ -2177,6 +2266,7 @@ function newCharacter(){
   save(false);
   const data=blankSheetData("Novo personagem");
   createCharacter(data,"Novo personagem");
+  setCurrentCloudReadOnly(false);
   applySheetData(data);
   renderAll();
   save(false);
@@ -2208,17 +2298,19 @@ function deleteCharacter(){
   const current=index.characters.find(character=>character.id===currentCharacterId);
   const label=current?.name||"este personagem";
   if(!confirm(`Excluir ${label}? Esta ação remove o personagem salvo neste navegador.`)) return;
-  if(index.characters.length<=1){
-    const data=blankSheetData("Novo personagem");
-    localStorage.setItem(characterKey(currentCharacterId),JSON.stringify(data));
-    applySheetData(data);
-    renderAll();
-    save(false);
-    notify("Personagem limpo.");
-    return;
-  }
   localStorage.removeItem(characterKey(currentCharacterId));
   const remaining=index.characters.filter(character=>character.id!==currentCharacterId);
+  if(!remaining.length){
+    removeCloudMappingForLocal(currentCharacterId);
+    setCurrentCloudReadOnly(false);
+    currentCharacterId="";
+    writeCharacterIndex({activeId:"",characters:[]});
+    applySheetData(blankSheetData(""));
+    renderAll();
+    openHub("fichas");
+    notify("Personagem excluido.");
+    return;
+  }
   const nextId=remaining[0].id;
   writeCharacterIndex({activeId:nextId,characters:remaining});
   currentCharacterId=nextId;
@@ -2278,6 +2370,13 @@ function syncCloudCharacterSelection(){
   if(remoteId && [...select.options].some(option=>option.value===remoteId)) select.value=remoteId;
   else select.value="";
 }
+function isCloudCharacterReadOnly(character){
+  return !!(character?.owner_id&&cloudUser&&character.owner_id!==cloudUser.id);
+}
+function setCurrentCloudReadOnly(readOnly){
+  currentCloudReadOnly=!!readOnly;
+  document.body.classList.toggle("cloud-readonly",currentCloudReadOnly);
+}
 function currentCloudCharacterMeta(){
   const remoteId=mappedCloudCharacterId()||value("cloudCharacterSelect");
   return remoteId?cloudCharacters.find(character=>character.id===remoteId)||null:null;
@@ -2315,7 +2414,7 @@ async function recordCampaignRoll(roll){
     playerName:value("jogador")||cloudUser.email||"",
     createdAt:new Date().toISOString()
   };
-  const {data,error}=await supabaseClient.from("campaign_rolls").insert({
+  const rollRow={
     campaign_id:campaignId,
     character_id:remoteId,
     user_id:cloudUser.id,
@@ -2329,10 +2428,17 @@ async function recordCampaignRoll(roll){
     is_critical:!!roll.isCritical,
     is_fumble:!!roll.isFumble,
     payload
-  }).select("id,campaign_id,character_id,user_id,actor_name,roll_type,title,total_attack,total_damage,d20,damage_details,is_critical,is_fumble,payload,created_at").single();
+  };
+  const campaign=cloudCampaigns.find(item=>item.id===campaignId);
+  if(isCampaignOwner(campaign)){
+    const {data,error}=await supabaseClient.from("campaign_rolls").insert(rollRow).select("id,campaign_id,character_id,user_id,actor_name,roll_type,title,total_attack,total_damage,d20,damage_details,is_critical,is_fumble,payload,created_at").single();
+    if(error) throw error;
+    cloudCampaignRolls=[data,...cloudCampaignRolls].slice(0,120);
+    if(activeHubCampaignId===campaignId&&activeCampaignDashboardTab==="escudo") renderCampaignDashboard();
+    return;
+  }
+  const {error}=await supabaseClient.from("campaign_rolls").insert(rollRow);
   if(error) throw error;
-  cloudCampaignRolls=[data,...cloudCampaignRolls].slice(0,120);
-  if(activeHubCampaignId===campaignId&&activeCampaignDashboardTab==="escudo") renderCampaignDashboard();
 }
 function setCloudStatus(text){
   const status=$("#cloudStatus");
@@ -2361,7 +2467,7 @@ function toggleSheetActionMenu(){
 function renderProfileMenu(){
   const signedIn=!!cloudUser;
   const label=signedIn?(cloudUser.email||"Conectado"):"Offline";
-  const status=signedIn?"Nuvem conectada":"Modo local";
+  const status=signedIn?(currentCloudReadOnly?"Somente leitura":"Nuvem conectada"):"Modo local";
   const initial=(label.trim()[0]||"?").toUpperCase();
   if($("#profileName")) $("#profileName").textContent=label;
   if($("#profileStatus")) $("#profileStatus").textContent=status;
@@ -2405,24 +2511,36 @@ function renderCloudPanel(){
   syncCloudCharacterSelection();
   const selectedCloud=cloudCharacters.find(character=>character.id===value("cloudCharacterSelect"));
   if(selectedCloud?.campaign_id && campaignSelect) campaignSelect.value=selectedCloud.campaign_id;
+  const cloudSaveButton=$("#cloudSaveCharacterBtn");
+  if(cloudSaveButton){
+    cloudSaveButton.disabled=currentCloudReadOnly;
+    cloudSaveButton.title=currentCloudReadOnly?"Somente o dono pode salvar esta ficha na nuvem":"";
+  }
+  const actionSaveCloudButton=$("#actionSaveCloudBtn");
+  if(actionSaveCloudButton){
+    actionSaveCloudButton.disabled=currentCloudReadOnly;
+    actionSaveCloudButton.title=currentCloudReadOnly?"Somente o dono pode salvar esta ficha na nuvem":"";
+  }
 }
 async function loadCloudData(){
   if(!supabaseClient||!cloudUser){
     cloudCharacters=[];
     cloudCampaigns=[];
     cloudCampaignRolls=[];
+    setCurrentCloudReadOnly(false);
     renderCloudPanel();
     renderHub();
     return;
   }
   const [{data:campaigns,error:campaignError},{data:characters,error:characterError}]=await Promise.all([
-    supabaseClient.from("campaigns").select("id,name,invite_code,updated_at").order("updated_at",{ascending:false}),
-    supabaseClient.from("characters").select("id,name,player_name,campaign_id,updated_at,sheet_data").order("updated_at",{ascending:false})
+    supabaseClient.from("campaigns").select("id,owner_id,name,invite_code,updated_at").order("updated_at",{ascending:false}),
+    supabaseClient.from("characters").select("id,owner_id,name,player_name,campaign_id,updated_at,sheet_data").order("updated_at",{ascending:false})
   ]);
   if(campaignError) throw campaignError;
   if(characterError) throw characterError;
   cloudCampaigns=campaigns||[];
   cloudCharacters=characters||[];
+  setCurrentCloudReadOnly(isCloudCharacterReadOnly(currentCloudCharacterMeta()));
   await loadCampaignRolls();
   renderCloudPanel();
   renderHub();
@@ -2447,6 +2565,13 @@ async function saveCloudCharacter(show=true){
   if(!cloudRequireLogin()) return;
   save(false);
   const selected=value("cloudCharacterSelect")||mappedCloudCharacterId();
+  const selectedMeta=selected?cloudCharacters.find(character=>character.id===selected):null;
+  if(currentCloudReadOnly||isCloudCharacterReadOnly(selectedMeta)){
+    setCurrentCloudReadOnly(true);
+    renderCloudPanel();
+    notify("Ficha em modo somente leitura. Apenas o dono pode salvar alteracoes na nuvem.");
+    return;
+  }
   const payload=cloudPayloadFromCurrent();
   const request=selected
     ? supabaseClient.from("characters").update(payload).eq("id",selected).select("id,name,campaign_id,updated_at").single()
@@ -2461,16 +2586,17 @@ async function loadSelectedCloudCharacter(){
   if(!cloudRequireLogin()) return;
   const remoteId=value("cloudCharacterSelect");
   if(!remoteId){notify("Escolha uma ficha da nuvem para carregar.");return}
-  const {data,error}=await supabaseClient.from("characters").select("id,name,sheet_data,campaign_id").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id").eq("id",remoteId).single();
   if(error) throw error;
   if(!confirm(`Carregar "${data.name||"personagem"}" da nuvem e substituir a ficha atual neste navegador?`)) return;
   save(false);
   applySheetData(data.sheet_data);
   setMappedCloudCharacterId(data.id);
+  setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
   renderAll();
   save(false);
   if(data.campaign_id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id;
-  notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>`);
+  notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
 }
 async function createCloudCampaign(){
   if(!cloudRequireLogin()) return;
@@ -2497,6 +2623,29 @@ async function createCloudCampaign(){
   setHubSection("campanhas");
   renderHub();
   notify(`Campanha criada: <b>${escapeHtml(campaign?.name||campaignName)}</b>`);
+}
+async function deleteCloudCampaign(campaignId=activeHubCampaignId){
+  if(!cloudRequireLogin()||!campaignId) return;
+  const campaign=cloudCampaigns.find(item=>item.id===campaignId);
+  if(!isCampaignOwner(campaign)){
+    notify("Apenas o mestre que criou a campanha pode exclui-la.");
+    return;
+  }
+  const count=cloudCharacters.filter(character=>character.campaign_id===campaignId).length;
+  const name=campaign?.name||"esta campanha";
+  const detail=count?` As ${count} ficha${count===1?"":"s"} vinculada${count===1?"":"s"} nao serao apagadas.`:"";
+  if(!confirm(`Excluir ${name}?${detail}`)) return;
+  await supabaseClient.from("campaign_rolls").delete().eq("campaign_id",campaignId);
+  await supabaseClient.from("campaign_members").delete().eq("campaign_id",campaignId);
+  const {error}=await supabaseClient.from("campaigns").delete().eq("id",campaignId);
+  if(error) throw error;
+  if($("#cloudCampaignSelect")?.value===campaignId) $("#cloudCampaignSelect").value="";
+  activeHubCampaignId="";
+  activeCampaignDashboardTab="fichas";
+  shieldCharacterFilter="";
+  await loadCloudData();
+  openHub("campanhas");
+  notify(`Campanha excluida: <b>${escapeHtml(name)}</b>`);
 }
 async function linkCloudCampaign(){
   if(!cloudRequireLogin()) return;
@@ -2578,6 +2727,7 @@ async function cloudSignOut(){
   cloudUser=null;
   cloudCharacters=[];
   cloudCampaigns=[];
+  setCurrentCloudReadOnly(false);
   localStorage.removeItem(AUTH_MODE_KEY);
   showAuthGate();
   notify("Saiu da nuvem.");
@@ -2859,11 +3009,23 @@ $("#campaignInviteBtn")?.addEventListener("click",()=>{
 });
 $("#campaignLinkCurrentBtn")?.addEventListener("click",()=>runCloudAction(()=>linkCurrentCharacterToCampaignId(activeHubCampaignId)));
 $("#campaignShieldBtn")?.addEventListener("click",()=>{
+  const campaign=cloudCampaigns.find(item=>item.id===activeHubCampaignId);
+  if(!isCampaignOwner(campaign)){
+    notify("O Escudo do Mestre fica disponivel apenas para quem criou a campanha.");
+    return;
+  }
   activeCampaignDashboardTab="escudo";
   renderCampaignDashboard();
 });
+$("#campaignDeleteBtn")?.addEventListener("click",()=>runCloudAction(()=>deleteCloudCampaign(activeHubCampaignId)));
 $$("[data-campaign-panel]").forEach(button=>button.addEventListener("click",()=>{
-  activeCampaignDashboardTab=["fichas","jogadores","escudo"].includes(button.dataset.campaignPanel)?button.dataset.campaignPanel:"fichas";
+  const nextPanel=["fichas","jogadores","escudo"].includes(button.dataset.campaignPanel)?button.dataset.campaignPanel:"fichas";
+  const campaign=cloudCampaigns.find(item=>item.id===activeHubCampaignId);
+  if(nextPanel==="escudo"&&!isCampaignOwner(campaign)){
+    notify("O Escudo do Mestre fica disponivel apenas para quem criou a campanha.");
+    return;
+  }
+  activeCampaignDashboardTab=nextPanel;
   renderCampaignDashboard();
 }));
 $("#exportBtn").onclick=exportSheet;
