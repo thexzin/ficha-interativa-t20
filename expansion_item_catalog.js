@@ -9,6 +9,86 @@
   const item=(source,name,category,price,spaces,notes="")=>({source,name,category,price,spaces,notes});
   const magicItem=(source,name,category,price,spaces,notes="")=>magic.push(item(source,name,category,price,spaces,notes));
   const add=(source,name,category,price,spaces,notes="")=>mundane.push(item(source,name,category,price,spaces,notes));
+  const describedNotes=(rules,description)=>description?`${rules}\n\n${description}`:rules;
+  const weaponDescriptions={
+    "Adaga oposta":"Adaga de guarda elaborada, muito usada por espadachins como arma secundária para bloqueios e aparos.",
+    "Agulha de Ahlen":"Adaga covarde de lâmina oca, típica do Reino da Intriga, feita para guardar veneno e aplicá-lo em golpes precisos.",
+    "Arco de guerra":"Arco robusto de braços grossos, próprio para disparos potentes e exigentes.",
+    "Arco montado":"Arco curto e resistente, pensado para arqueiros que disparam enquanto cavalgam.",
+    "Balestra":"Besta pesada com sistema de catracas reguláveis, permitindo que usuários fortes a armem com mais tensão.",
+    "Bastão lúdico":"Bastão esportivo usado para rebater bolas duras em jogos nobres; tornou-se arma elegante e simples.",
+    "Besta de mão":"Besta pequena e discreta, popular entre assassinos por ser fácil de ocultar e sacar de surpresa.",
+    "Besta de repetição":"Besta exótica com caixa de virotes e recarga automática, capaz de disparos rápidos ou saraivadas.",
+    "Besta dupla":"Besta com dois arcos sobrepostos, cada um preparado para armazenar um virote.",
+    "Bico de corvo":"Haste longa com ponta de lança, gancho afiado e cabeça quadrada, também chamada martelo sambur.",
+    "Boleadeira":"Arma de arremesso típica de Namalkah, feita para se enrolar nas pernas do inimigo.",
+    "Canhão portátil":"Versão reduzida de canhão naval, carregada ao lado do corpo com grossa alça de couro.",
+    "Chakram":"Disco metálico de bordas afiadas, arremessado para retornar à mão ou ricochetear entre alvos.",
+    "Cinquedea":"Meio-termo entre espada curta e adaga, com lâmina triangular feita para estocar e abrir ferimentos graves.",
+    "Clava-grão":"Arma cultivada por druidas a partir de sementes especiais, criando um elo natural com o usuário.",
+    "Desmontador":"Haste longa com ganchos de mola para prender pescoços, puxar cavaleiros e derrubar oponentes.",
+    "Dirk":"Punhal longo e delgado, parte da indumentária de nobres e oficiais apesar da aparência traiçoeira.",
+    "Espada canora":"Espada com frestas na lâmina que produzem som gracioso quando brandida.",
+    "Espada de execução":"Espada pesada e muito afiada, criada para decapitar condenados parados, não para duelos comuns.",
+    "Espada larga":"Arma de bárbaros e mercenários, com lâmina menos afiada, porém mais larga e pesada que a espada longa.",
+    "Espada-gadanho":"Espada de fio invertido, parecida com sabre, feita para surpreender o inimigo pelo ângulo do corte.",
+    "Espadim":"Espada cerimonial de nobres, símbolo de status marcial e comum nos primeiros treinos de esgrima.",
+    "Garrucha":"Arma de fogo minúscula, do tamanho de uma mão espalmada, fácil de esconder em mangas e vestes.",
+    "Kimbata":"Faca de meia-lua com argola no cabo, própria para movimentos rápidos e ataques inesperados.",
+    "Khopesh":"Espada curva antiga, comum entre mercenários do Deserto da Perdição, com lâmina em forma de gancho.",
+    "Lança de falange":"Lança de infantaria usada em formação fechada, longa demais para uso casual com uma mão.",
+    "Lança de justa":"Lança montada esportiva, feita para justas e para se estilhaçar com impacto dramático.",
+    "Machado de haste":"Pequena cabeça de machado em cabo longo, criada por anões para formações fechadas.",
+    "Maça-estrela":"Maça cravejada e pesada, mais perigosa que uma maça comum por suas pontas proeminentes.",
+    "Malho":"Martelo de construção com cabeça de madeira dura, útil para desequilibrar inimigos.",
+    "Marrão":"Versão ainda mais pesada da marreta de guerra, capaz de partir pedra, aço e ossos.",
+    "Martelo leve":"Martelo de metal apreciado por anões como arma secundária e de arremesso.",
+    "Martelo longo":"Haste de 2m com ponta de metal e cabeça pesada, combinando alcance e contundência.",
+    "Montante cinético":"Montante com esferas de adamante dentro da lâmina, poderoso, mas imprevisível para destreinados.",
+    "Rapieira":"Espada de lâmina fina, alongada e de um gume, precisa, mas exigente no manejo.",
+    "Serrilheira":"Facão de gume serrilhado e aparência agressiva, cheio de rebarbas capazes de rasgar o alvo.",
+    "Sifão cáustico":"Engenho com cilindro, mangueira e reservatório nas costas, usado para dispersar ácido em cone.",
+    "Tai-tai":"Catapulta hynne presa ao antebraço, usada para disparar pedras polidas.",
+    "Tan-korak":"Bastão metálico raro de Gorendill, com ganchos, reentrâncias e anel na extremidade.",
+
+    "Açoite finntroll":"Chicote de tiras de couro com farpas de aço, também usado como instrumento de tortura.",
+    "Arcabuz":"Versão mais pesada e potente do mosquete, com grande recuo e manuseio difícil.",
+    "Arpão":"Instrumento de pesca adaptado para combate, com rebarbas na ponta e corda para prender o alvo.",
+    "Bacamarte":"Arma de fogo de boca larga, feita para espalhar munição em cone curto.",
+    "Espada vespa":"Arma de ferrões de vespas gigantes presos a uma estrutura de ossos, alternando corte e perfuração.",
+    "Gládio":"Espada curta e pesada, de ponta afiada, arma padrão dos legionários do Império de Tauron.",
+    "Lança de fogo":"Arma híbrida com cano, coronha e lâmina, alternando golpes alongados e disparos.",
+    "Mordida do diabo":"Aparato em forma de mandíbula preso a corrente, capaz de agarrar e morder a distância.",
+    "Neko-te":"Luva com garras metálicas na palma e no dorso, feita para escalada e cortes rápidos.",
+    "Pistola-punhal":"Lâmina pontiaguda com mecanismo de pistola acoplado, alternando estocada e disparo.",
+    "Porrete":"Pedaço sólido de madeira coberto por lã grossa, feito para nocautear sem matar.",
+    "Presa de serpente":"Espada de obsidiana negra, associada às voracis e à Divina Serpente.",
+    "Shuriken":"Pequenos projéteis metálicos em forma de estrelas ou dardos.",
+    "Tetsubo":"Tacape pesado e reforçado com anéis metálicos, mais sofisticado que um porrete comum.",
+    "Traque":"Arma de fogo improvisada com sucata e materiais baratos, famosa por falhar nos piores momentos.",
+    "Zarabatana":"Tubo oco para disparar dardos, fraco em dano direto e excelente para inocular venenos."
+  };
+  const armorDescriptions={
+    "Armadura sensual":"Armadura mínima e provocante, inspirada em ilustrações heroicas; pouco prática, mas chamativa.",
+    "Armadura de folhas":"Traje leve coberto por folhas tratadas, mantendo o usuário conectado às forças naturais.",
+    "Armadura de engenhoqueiro goblin":"Armadura cheia de ganchos, bolsos e tiras para carregar peças, ferramentas e tralhas.",
+    "Cota de moedas":"Armadura ostensiva feita de tibares entrelaçados, criada para chamar tanta atenção quanto protege.",
+    "Colete fora da lei":"Colete metálico arredondado, criado em Smokestone para redirecionar balas e flechas.",
+    "Brigantina":"Vestimenta de couro com pequenas placas metálicas rebitadas, flexível e relativamente barata.",
+    "Armadura de chumbo":"Armadura pesadíssima e desajeitada, usada por quem teme magia mais do que mobilidade.",
+    "Armadura de justa":"Meia armadura aristocrática feita para torneios, com proteção reforçada contra lanças.",
+    "Armadura de hussardo alado":"Armadura completa com hastes emplumadas nas costas, que zunem em investidas montadas.",
+    "Armadura de pedra":"Armadura pesada de pedra, adaptada das tradições moreau e kobolds para outras raças.",
+    "Broquel":"Escudo pequeno que protege mão e pulso, usado para bloquear golpes com técnica em vez de cobrir o corpo.",
+    "Escudo de vime":"Escudo grande e leve de trama aberta, movido com facilidade para confundir atacantes.",
+    "Escudo torre":"Escudo grande e retangular de madeira reforçada, pesado o bastante para virar cobertura.",
+    "Sagna":"Escudo praiano de devotos de Oceano, também usado para deslizar em ondas.",
+
+    "Armadura de ossos":"Armadura sinistra de ossadas e energias negativas, comum entre nezumi e outros povos.",
+    "Veste de teia de aranha":"Veste cinza-escura de teia de aranha gigante, maleável, silenciosa e forte como aço.",
+    "Armadura de quitina":"Armadura de carapaças de grandes insetos, usada pelos povos-trovão como alternativa ao metal.",
+    "Escudo de couro":"Escudo leve de madeira e couro esticado, popular entre velocis e ubaneri."
+  };
   const spellCostByCircle={1:1,2:3,3:6,4:10,5:15};
   const spellConsumable=(source,name,circle,type)=>{
     const cost=spellCostByCircle[circle]||1;
@@ -20,12 +100,12 @@
     if(range) details.push(`alcance ${range}`);
     if(type) details.push(`tipo ${type}`);
     if(extra) details.push(extra);
-    add(source,name,category,price,spaces,details.join("; ")+".");
+    add(source,name,category,price,spaces,describedNotes(details.join("; ")+".",weaponDescriptions[name]));
   };
   const armor=(source,name,category,price,spaces,defense,penalty,extra="")=>{
     const details=[`Defesa ${defense}`,`penalidade de armadura ${penalty}`];
     if(extra) details.push(extra);
-    add(source,name,category,price,spaces,details.join("; ")+".");
+    add(source,name,category,price,spaces,describedNotes(details.join("; ")+".",armorDescriptions[name]));
   };
 
   [

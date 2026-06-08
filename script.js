@@ -1848,12 +1848,17 @@ function renderCampaignCharacterLinkPicker(){
 }
 function openCampaignDashboard(campaignId){
   if(!campaignId) return;
+  closeProfileMenu();
+  closeSheetActionMenu();
+  if(!document.body.classList.contains("auth-gated")&&!document.body.classList.contains("hub-open")) save(false);
+  document.body.classList.add("hub-open");
   activeHubCampaignId=campaignId;
   activeCampaignDashboardTab="fichas";
   shieldCharacterFilter="";
   shieldSortMode="default";
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
   setHubSection("campanha");
+  renderCloudPanel();
   renderHub();
 }
 function sheetNum(fields,id){
