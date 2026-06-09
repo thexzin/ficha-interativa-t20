@@ -1627,11 +1627,17 @@ function queueCloudAutosave(){
   },900);
   cloudAutosaveTimers.set(snapshot.remoteId,timer);
 }
+function clearCloudAutosaveTimer(remoteId){
+  if(!remoteId||!cloudAutosaveTimers.has(remoteId)) return;
+  clearTimeout(cloudAutosaveTimers.get(remoteId));
+  cloudAutosaveTimers.delete(remoteId);
+}
 async function saveCloudCharacterSnapshot(snapshot){
   if(!supabaseClient||!cloudUser||!snapshot?.remoteId||!snapshot?.data) return;
   const selectedMeta=cloudCharacters.find(character=>character.id===snapshot.remoteId);
   if(isCloudCharacterReadOnly(selectedMeta)) return;
-  const payload=cloudPayloadFromSheetData(snapshot.data,snapshot.campaignId);
+  const preservedCampaignId=snapshot.campaignId||selectedMeta?.campaign_id||null;
+  const payload=cloudPayloadFromSheetData(snapshot.data,preservedCampaignId);
   const {data,error}=await supabaseClient
     .from("characters")
     .update(payload)
@@ -3161,6 +3167,7 @@ async function linkLocalCharacterToCampaign(localId,campaignId){
   if(!data){notify("Ficha local nao encontrada.");return}
   const payload=cloudPayloadFromSheetData(data,campaignId);
   const remoteId=readCloudCharacterMap()[localId]||"";
+  clearCloudAutosaveTimer(remoteId);
   const request=remoteId
     ? supabaseClient.from("characters").update(payload).eq("id",remoteId).select("id,name,campaign_id,updated_at").single()
     : supabaseClient.from("characters").insert(payload).select("id,name,campaign_id,updated_at").single();
@@ -3175,6 +3182,7 @@ async function linkLocalCharacterToCampaign(localId,campaignId){
 async function linkCloudCharacterToCampaign(remoteId,campaignId){
   const character=cloudCharacters.find(entry=>entry.id===remoteId);
   if(!character||character.owner_id!==cloudUser.id){notify("Voce so pode vincular fichas da sua conta.");return}
+  clearCloudAutosaveTimer(remoteId);
   const {error}=await supabaseClient.from("characters").update({campaign_id:campaignId,updated_at:new Date().toISOString()}).eq("id",remoteId);
   if(error) throw error;
   if(mappedCloudCharacterId()===remoteId && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
@@ -3188,7 +3196,7 @@ async function linkSelectedCharacterToCampaign(){
   if(kind==="local") await linkLocalCharacterToCampaign(id,activeHubCampaignId);
   else if(kind==="cloud") await linkCloudCharacterToCampaign(id,activeHubCampaignId);
   else{notify("Escolha uma ficha valida.");return}
-  await loadCloudData();
+  await loadCloudData({syncCurrent:true});
   const campaign=cloudCampaigns.find(item=>item.id===activeHubCampaignId);
   notify(`Ficha vinculada a campanha: <b>${escapeHtml(campaign?.name||"campanha")}</b>`);
 }
@@ -3214,6 +3222,7 @@ async function linkCurrentCharacterToCampaignByCode(){
   }
   if(campaignId){
     if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
+    clearCloudAutosaveTimer(remoteId);
     const {error:updateError}=await supabaseClient
       .from("characters")
       .update({campaign_id:campaignId,updated_at:new Date().toISOString()})
