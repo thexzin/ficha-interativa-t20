@@ -4,6 +4,7 @@ const KEY="t20_sheet_v6_2";
 const CHARACTER_INDEX_KEY="t20_characters_index_v1";
 const CHARACTER_PREFIX="t20_character_v1_";
 const LEGACY_KEYS=["t20_sheet_v3","t20_sheet_v4","t20_sheet_v5","t20_sheet_v6"];
+const LEGACY_MIGRATED_KEY="t20_legacy_sheet_migrated_v1";
 const SUPABASE_URL="https://kcknkxczcczsyoljugcb.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_2v5KyyfqIEm446I7w8Y83Q_LD-Jv5QK";
 const CLOUD_CHARACTER_MAP_KEY="t20_cloud_character_map_v1";
@@ -1563,6 +1564,7 @@ function writeCharacterIndex(index){
   const characters=(index.characters||[]).filter(character=>character&&character.id);
   const activeId=characters.some(character=>character.id===index.activeId)?index.activeId:(characters[0]?.id||"");
   localStorage.setItem(CHARACTER_INDEX_KEY,JSON.stringify({activeId,characters}));
+  if(!characters.length) localStorage.removeItem(KEY);
 }
 function characterNameFromData(data,fallback="Personagem sem nome"){
   return String(data?.fields?.nome||"").trim()||fallback;
@@ -1593,12 +1595,12 @@ function cloudFirstMode(){
   return !!(supabaseClient&&cloudUser);
 }
 function currentLinkedCampaignId(){
-  return value("cloudCampaignSelect")||currentCloudCharacterMeta()?.campaign_id||"";
+  return currentCloudCharacterMeta()?.campaign_id||"";
 }
 function cloudCampaignIdForSave(remoteId=""){
   const selected=value("cloudCampaignSelect");
   if(selected) return selected;
-  const id=remoteId||mappedCloudCharacterId()||value("cloudCharacterSelect");
+  const id=remoteId||mappedCloudCharacterId();
   const meta=id?cloudCharacters.find(character=>character.id===id):currentCloudCharacterMeta();
   return meta?.campaign_id||"";
 }
@@ -1614,12 +1616,13 @@ function queueCloudAutosave(){
   if(!cloudFirstMode()||currentCloudReadOnly||!currentCharacterId) return;
   const snapshot={
     localId:currentCharacterId,
-    remoteId:mappedCloudCharacterId()||value("cloudCharacterSelect"),
+    remoteId:mappedCloudCharacterId(),
     data:sheetDataFromCurrent(),
     campaignId:null
   };
   snapshot.campaignId=cloudCampaignIdForSave(snapshot.remoteId)||null;
   if(!snapshot.remoteId) return;
+  cacheLocalCharacterData(snapshot.localId,snapshot.data,characterNameFromData(snapshot.data),new Date().toISOString());
   clearTimeout(cloudAutosaveTimers.get(snapshot.remoteId));
   const timer=setTimeout(()=>{
     cloudAutosaveTimers.delete(snapshot.remoteId);
@@ -1696,7 +1699,8 @@ function ownCloudCharacters(){
   return cloudUser?cloudCharacters.filter(isOwnCloudCharacter):[];
 }
 function setHubSection(section="fichas"){
-  activeHubSection=section==="campanha"?"campanha":(section==="campanhas"?"campanhas":"fichas");
+  activeHubSection=section==="campanha"?"campanha":(section==="campanhas"?"campanhas":(section==="inicio"?"inicio":"fichas"));
+  $("#hubHome")?.classList.toggle("hidden",activeHubSection!=="inicio");
   $("#hubFichas")?.classList.toggle("hidden",activeHubSection!=="fichas");
   $("#hubCampanhas")?.classList.toggle("hidden",activeHubSection!=="campanhas");
   $("#hubCampaignDashboard")?.classList.toggle("hidden",activeHubSection!=="campanha");
@@ -1722,7 +1726,7 @@ function openHub(section="fichas"){
   closeSheetActionMenu();
   if(section!=="campanha") stopCampaignRollPolling();
   if(!document.body.classList.contains("auth-gated")&&!document.body.classList.contains("hub-open")) save(false);
-  if(section==="fichas"||section==="campanhas") activeHubCampaignId="";
+  if(section==="inicio"||section==="fichas"||section==="campanhas") activeHubCampaignId="";
   document.body.classList.add("hub-open");
   setHubSection(section);
   renderCloudPanel();
@@ -1886,6 +1890,32 @@ function renderCampaignCharacterLinkPicker(){
     : '<option value="">Nenhuma ficha disponivel</option>';
   const preferred=currentCharacterId?`local:${currentCharacterId}`:"";
   if(preferred&&records.some(record=>record.value===preferred)) select.value=preferred;
+  select.disabled=!records.length;
+  button.disabled=!records.length||!activeHubCampaignId;
+}
+function campaignCharacterRemoveRecords(campaignId=activeHubCampaignId){
+  if(!cloudUser||!campaignId) return [];
+  return ownCloudCharacters()
+    .filter(character=>character.campaign_id===campaignId&&!isCampaignOnlyCharacter(character))
+    .map(character=>({
+      value:character.id,
+      label:character.name||"Personagem sem nome"
+    }));
+}
+function renderCampaignCharacterRemovePicker(campaignOwner=false){
+  const select=$("#campaignCharacterRemoveSelect");
+  const button=$("#campaignRemoveSelectedBtn");
+  const label=select?.closest(".campaignRemovePicker");
+  if(!select||!button) return;
+  const records=campaignOwner?[]:campaignCharacterRemoveRecords();
+  const hidden=campaignOwner||!records.length;
+  label?.classList.toggle("hidden",hidden);
+  button.classList.toggle("hidden",hidden);
+  select.innerHTML=records.length
+    ? records.map(record=>`<option value="${escapeHtml(record.value)}">${escapeHtml(record.label)}</option>`).join("")
+    : '<option value="">Nenhuma ficha vinculada</option>';
+  const currentRemoteId=mappedCloudCharacterId();
+  if(currentRemoteId&&records.some(record=>record.value===currentRemoteId)) select.value=currentRemoteId;
   select.disabled=!records.length;
   button.disabled=!records.length||!activeHubCampaignId;
 }
@@ -2190,6 +2220,7 @@ function renderCampaignDashboard(){
   $("#campaignShieldBtn")?.classList.toggle("hidden",!campaignOwner);
   $("#campaignDeleteBtn")?.classList.toggle("hidden",!campaignOwner);
   renderCampaignCharacterLinkPicker();
+  renderCampaignCharacterRemovePicker(campaignOwner);
   $$("[data-campaign-panel='escudo']").forEach(button=>button.classList.toggle("hidden",!campaignOwner));
   $$("[data-campaign-panel]").forEach(button=>button.classList.toggle("active",button.dataset.campaignPanel===activeCampaignDashboardTab));
   if(activeCampaignDashboardTab==="escudo"){
@@ -2423,7 +2454,9 @@ async function openCloudCharacter(remoteId){
   if(!cloudRequireLogin()) return;
   const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
-  save(false);
+  const currentRemoteId=mappedCloudCharacterId();
+  if(currentRemoteId&&currentRemoteId!==remoteId) save(false);
+  else clearCloudAutosaveTimer(remoteId);
   const localId=localIdForCloudCharacter(remoteId);
   if(localId){
     currentCharacterId=localId;
@@ -2437,9 +2470,8 @@ async function openCloudCharacter(remoteId){
   setMappedCloudCharacterId(data.id);
   cacheLocalCharacterData(currentCharacterId,data.sheet_data,data.name,data.updated_at);
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
-  if(data.campaign_id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id;
+  if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id||"";
   renderAll();
-  save(false);
   openSheetView();
   notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
 }
@@ -2483,13 +2515,14 @@ function findLegacySheetData(){
 }
 function load(){
   let index=readCharacterIndex();
-  if(!index.characters.length){
+  if(!index.characters.length&&localStorage.getItem(LEGACY_MIGRATED_KEY)!=="1"){
     const legacy=findLegacySheetData();
     if(legacy){
       createCharacter(legacy,characterNameFromData(legacy));
       index=readCharacterIndex();
     }
   }
+  localStorage.setItem(LEGACY_MIGRATED_KEY,"1");
   currentCharacterId=index.activeId||index.characters[0]?.id||"";
   if(!currentCharacterId){
     setCurrentCloudReadOnly(false);
@@ -2516,7 +2549,6 @@ function saveLocalSnapshot(show=true){
   }
   const data=sheetDataFromCurrent();
   localStorage.setItem(characterKey(currentCharacterId),JSON.stringify(data));
-  localStorage.setItem(KEY,JSON.stringify(data));
   updateActiveCharacterMeta(data);
   if(show) notify("Personagem salvo neste navegador.");
 }
@@ -2537,6 +2569,10 @@ function cacheLocalCharacterData(localId,data,name="",updatedAt=""){
 function save(show=true){
   if(cloudFirstMode()){
     if(show) return runCloudAction(()=>saveCloudCharacter(true));
+    if(!mappedCloudCharacterId()){
+      saveLocalSnapshot(false);
+      return;
+    }
     queueCloudAutosave();
     return;
   }
@@ -2548,14 +2584,26 @@ function switchCharacter(id){
   const raw=localStorage.getItem(characterKey(id));
   if(!raw){alert("Personagem não encontrado neste navegador.");renderCharacterManager();return}
   try{
+    const targetRemoteId=readCloudCharacterMap()[id]||"";
+    const cloudMeta=cloudFirstMode()&&targetRemoteId?cloudCharacters.find(character=>character.id===targetRemoteId):null;
+    const data=cloudMeta?.sheet_data?normalizeSheetData(cloudMeta.sheet_data):JSON.parse(raw);
     currentCharacterId=id;
-    setCurrentCloudReadOnly(isCloudCharacterReadOnly(currentCloudCharacterMeta()));
+    setCurrentCloudReadOnly(isCloudCharacterReadOnly(cloudMeta));
     const index=readCharacterIndex();
     index.activeId=id;
     writeCharacterIndex(index);
-    applySheetData(JSON.parse(raw));
+    applySheetData(data);
+    if(cloudMeta){
+      cacheLocalCharacterData(id,data,cloudMeta.name||characterNameFromData(data),cloudMeta.updated_at);
+      if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=cloudMeta.campaign_id||"";
+    }else if(targetRemoteId){
+      removeCloudMappingForRemote(targetRemoteId);
+      if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value="";
+    }else if($("#cloudCampaignSelect")){
+      $("#cloudCampaignSelect").value="";
+    }
     renderAll();
-    save(false);
+    if(!cloudFirstMode()) save(false);
     notify(`Personagem carregado: <b>${escapeHtml(value("nome")||"sem nome")}</b>`);
   }catch(err){
     console.error("Falha ao trocar personagem:",err);
@@ -2694,12 +2742,11 @@ function setCurrentCloudReadOnly(readOnly){
   document.body.classList.toggle("cloud-readonly",currentCloudReadOnly);
   syncCloudReadOnlyControls();
 }
-function currentCloudCharacterMeta(){
-  const remoteId=mappedCloudCharacterId()||value("cloudCharacterSelect");
+function currentCloudCharacterMeta(remoteId=mappedCloudCharacterId()){
   return remoteId?cloudCharacters.find(character=>character.id===remoteId)||null:null;
 }
 function currentCampaignIdForRoll(){
-  return value("cloudCampaignSelect")||currentCloudCharacterMeta()?.campaign_id||"";
+  return currentCloudCharacterMeta()?.campaign_id||"";
 }
 async function loadCampaignRolls(){
   if(!supabaseClient||!cloudUser){
@@ -2802,7 +2849,7 @@ function enterApp(mode="offline"){
     sessionStorage.setItem(AUTH_MODE_KEY,"offline");
   }
   document.body.classList.remove("auth-gated");
-  if(wasGated) openHub("fichas");
+  if(wasGated) openHub("inicio");
   else{renderCloudPanel();renderHub()}
 }
 function showAuthGate(){
@@ -2855,6 +2902,7 @@ function syncCurrentCharacterFromCloud(){
     removeCloudMappingForRemote(remoteId);
     return;
   }
+  clearCloudAutosaveTimer(remoteId);
   const data=normalizeSheetData(cloudMeta.sheet_data||{});
   applySheetData(data);
   cacheLocalCharacterData(currentCharacterId,data,cloudMeta.name||characterNameFromData(data),cloudMeta.updated_at);
@@ -2917,7 +2965,7 @@ async function saveCloudCharacter(show=true){
     if(show) notify("Crie ou abra uma ficha antes de salvar na nuvem.");
     return;
   }
-  const selected=value("cloudCharacterSelect")||mappedCloudCharacterId();
+  const selected=mappedCloudCharacterId();
   if(selected&&cloudAutosaveTimers.has(selected)){
     clearTimeout(cloudAutosaveTimers.get(selected));
     cloudAutosaveTimers.delete(selected);
@@ -2947,14 +2995,16 @@ async function loadSelectedCloudCharacter(){
   const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   if(!confirm(`Carregar "${data.name||"personagem"}" da nuvem e substituir a ficha atual neste navegador?`)) return;
-  save(false);
+  const currentRemoteId=mappedCloudCharacterId();
+  if(currentRemoteId&&currentRemoteId!==remoteId) save(false);
+  else clearCloudAutosaveTimer(remoteId);
+  if(!currentCharacterId) createCharacter(data.sheet_data,characterNameFromData(data.sheet_data,data.name||"Personagem da nuvem"));
   applySheetData(data.sheet_data);
   setMappedCloudCharacterId(data.id);
   cacheLocalCharacterData(currentCharacterId,data.sheet_data,data.name,data.updated_at);
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
-  if(data.campaign_id && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id;
+  if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id||"";
   renderAll();
-  save(false);
   notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
 }
 async function createCloudCampaign(){
@@ -3114,6 +3164,39 @@ async function leaveCloudCampaign(campaignId=activeHubCampaignId){
   openHub("campanhas");
   notify(`Voce saiu da campanha: <b>${escapeHtml(name)}</b>`);
 }
+async function unlinkSelectedOwnCharacterFromCampaign(){
+  if(!cloudRequireLogin()) return;
+  const campaignId=activeHubCampaignId;
+  const remoteId=value("campaignCharacterRemoveSelect");
+  if(!campaignId){notify("Abra uma campanha primeiro.");return}
+  if(!remoteId){notify("Escolha uma ficha para remover da campanha.");return}
+  const campaign=cloudCampaigns.find(item=>item.id===campaignId);
+  const character=cloudCharacters.find(entry=>entry.id===remoteId);
+  if(!character||!isOwnCloudCharacter(character)||character.campaign_id!==campaignId){
+    notify("Esta ficha nao pertence a sua conta ou nao esta vinculada a esta campanha.");
+    return;
+  }
+  if(isCampaignOnlyCharacter(character)){
+    notify("Fichas ocultas devem ser gerenciadas pelo mestre.");
+    return;
+  }
+  const label=character.name||"esta ficha";
+  const campaignName=campaign?.name||"esta campanha";
+  if(!confirm(`Remover ${label} de ${campaignName}? A ficha continuara salva na sua nuvem.`)) return;
+  clearCloudAutosaveTimer(remoteId);
+  const {error}=await supabaseClient
+    .from("characters")
+    .update({campaign_id:null,updated_at:new Date().toISOString()})
+    .eq("id",remoteId)
+    .eq("owner_id",cloudUser.id);
+  if(error) throw error;
+  if(mappedCloudCharacterId()===remoteId && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value="";
+  await loadCloudData({syncCurrent:true});
+  activeHubCampaignId=campaignId;
+  setHubSection("campanha");
+  renderHub();
+  notify(`Ficha removida da campanha: <b>${escapeHtml(label)}</b>`);
+}
 async function linkCloudCampaign(){
   if(!cloudRequireLogin()) return;
   if(!value("cloudCampaignSelect")){notify("Escolha uma campanha para vincular.");return}
@@ -3205,7 +3288,7 @@ async function linkCurrentCharacterToCampaignByCode(){
   const code=promptCampaignCode();
   if(!code){notify("Informe o codigo de convite.");return}
   await saveCloudCharacter(false);
-  const remoteId=mappedCloudCharacterId()||value("cloudCharacterSelect");
+  const remoteId=mappedCloudCharacterId();
   if(!remoteId){notify("Salve a ficha na nuvem antes de vincular.");return}
   const {data,error}=await supabaseClient.rpc("link_character_to_campaign",{character_uuid:remoteId,code});
   if(error) throw error;
@@ -3461,7 +3544,7 @@ $("#cloudCharacterSelect")?.addEventListener("change",()=>{
 });
 $("#appHomeBtn")?.addEventListener("click",()=>{
   if(document.body.classList.contains("auth-gated")) return;
-  openHub("fichas");
+  openHub("inicio");
 });
 $("#profileMenuBtn")?.addEventListener("click",event=>{
   event.stopPropagation();
@@ -3548,6 +3631,8 @@ document.addEventListener("click",event=>{
   if(!event.target.closest?.(".sheetActionMenu")) closeSheetActionMenu();
 });
 $$("[data-hub-section]").forEach(button=>button.addEventListener("click",()=>openHub(button.dataset.hubSection)));
+$("#homeOpenSheetsBtn")?.addEventListener("click",()=>openHub("fichas"));
+$("#homeOpenCampaignsBtn")?.addEventListener("click",()=>openHub("campanhas"));
 $("#hubCharacterSearch")?.addEventListener("input",renderHub);
 $("#hubNewCharacterBtn")?.addEventListener("click",()=>{newCharacter();openSheetView()});
 $("#hubJoinCampaignBtn")?.addEventListener("click",()=>runCloudAction(joinCloudCampaignByCode));
@@ -3562,6 +3647,7 @@ $("#campaignInviteBtn")?.addEventListener("click",()=>{
     .catch(()=>notify(`Codigo de convite: <b>${escapeHtml(code)}</b>`));
 });
 $("#campaignLinkSelectedBtn")?.addEventListener("click",()=>runCloudAction(linkSelectedCharacterToCampaign));
+$("#campaignRemoveSelectedBtn")?.addEventListener("click",()=>runCloudAction(unlinkSelectedOwnCharacterFromCampaign));
 $("#campaignRenameBtn")?.addEventListener("click",()=>runCloudAction(()=>renameCloudCampaign(activeHubCampaignId)));
 $("#campaignCreatePrivateCharacterBtn")?.addEventListener("click",()=>runCloudAction(()=>createPrivateCampaignCharacter(activeHubCampaignId)));
 $("#campaignLeaveBtn")?.addEventListener("click",()=>runCloudAction(()=>leaveCloudCampaign(activeHubCampaignId)));

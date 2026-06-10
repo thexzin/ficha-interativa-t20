@@ -14,10 +14,14 @@
     <div class="authLayout">
       <div class="authIntro">
         <div class="authBrand"><strong>Ficha Interativa</strong><small>Tormenta20</small></div>
-        <h1>Entre para continuar</h1>
-        <p class="muted">Acesse suas fichas na nuvem ou use o modo local deste navegador.</p>
+        <h1>Acesse sua ficha</h1>
+        <p class="authLead">Entre na nuvem para sincronizar seus personagens ou continue offline neste navegador.</p>
       </div>
       <div class="authCard">
+        <div class="authCardHead">
+          <strong>Entrar</strong>
+          <span>Use uma conta para salvar na nuvem. O modo offline fica neste navegador.</span>
+        </div>
         <div class="authFields">
           <label>Email<input id="cloudEmail" type="email" autocomplete="email" placeholder="email@exemplo.com"></label>
           <label>Senha<input id="cloudPassword" type="password" autocomplete="current-password" placeholder="senha"></label>
@@ -27,14 +31,17 @@
           <button id="cloudSignUpBtn" type="button">Criar conta</button>
           <button id="offlineModeBtn" type="button" class="secondary">Continuar offline</button>
         </div>
-        <small id="authHint">A ficha offline continua salva localmente no seu navegador.</small>
+        <div class="authPath">
+          <small><b>Nuvem</b> sincroniza fichas, campanhas e escudo.</small>
+          <small><b>Offline</b> salva apenas neste navegador, com exportacao/importacao JSON.</small>
+        </div>
       </div>
     </div>
   </div>
 </section>
 <header class="topbar">
   <div class="topbarMain">
-    <button id="appHomeBtn" class="brand" type="button" aria-label="Voltar ao menu de fichas"><strong>Ficha Interativa</strong><small>Tormenta20</small></button>
+    <button id="appHomeBtn" class="brand" type="button" aria-label="Voltar à tela inicial"><strong>Ficha Interativa</strong><small>Tormenta20</small></button>
     <div class="characterManager" aria-label="Gerenciador de personagens">
       <label>Personagem<select id="characterSelect"></select></label>
       <button id="newCharacterBtn" type="button">Novo</button>
@@ -109,7 +116,36 @@
 
 <section id="appHub" class="appHub" aria-label="Painel de fichas e campanhas">
   <div class="hubShell">
-    <section id="hubFichas" class="hubSection">
+    <section id="hubHome" class="hubSection hubHome">
+      <div class="hubHomeHero">
+        <small>Ficha Tormenta20</small>
+        <h1>Bem-vindo ao Ficha Interativa</h1>
+        <p>Gerencie personagens, campanhas e rolagens em um painel único, com fichas prontas para mesa e sincronização na nuvem quando você estiver conectado.</p>
+        <div class="hubHomeActions">
+          <button id="homeOpenSheetsBtn" type="button">Abrir fichas</button>
+          <button id="homeOpenCampaignsBtn" type="button">Abrir campanhas</button>
+        </div>
+      </div>
+      <div class="hubHomeFeatureGrid" aria-label="Recursos principais">
+        <article class="hubHomeFeature">
+          <strong>Fichas completas</strong>
+          <span>PV, PM, atributos, perícias, poderes, grimório, inventário e combate em um só lugar.</span>
+        </article>
+        <article class="hubHomeFeature">
+          <strong>Campanhas</strong>
+          <span>Convide jogadores, vincule fichas e organize personagens da mesma mesa.</span>
+        </article>
+        <article class="hubHomeFeature">
+          <strong>Escudo do Mestre</strong>
+          <span>Acompanhe PV, PM, defesa, condições e rolagens recentes das fichas vinculadas.</span>
+        </article>
+        <article class="hubHomeFeature">
+          <strong>Backups</strong>
+          <span>Use a nuvem para sincronizar dispositivos ou exporte/importe JSON quando precisar.</span>
+        </article>
+      </div>
+    </section>
+    <section id="hubFichas" class="hubSection hidden">
       <div class="hubSectionHead">
         <div>
           <strong id="hubCharacterCount">Fichas: 0</strong>
@@ -147,6 +183,8 @@
           <button id="campaignCreatePrivateCharacterBtn" type="button">Ficha oculta</button>
           <label class="campaignLinkPicker">Ficha para vincular<select id="campaignCharacterLinkSelect"></select></label>
           <button id="campaignLinkSelectedBtn" type="button">Vincular ficha</button>
+          <label class="campaignRemovePicker hidden">Ficha para remover<select id="campaignCharacterRemoveSelect"></select></label>
+          <button id="campaignRemoveSelectedBtn" type="button" class="hidden">Remover ficha</button>
           <button id="campaignLeaveBtn" type="button">Sair da campanha</button>
           <button id="campaignShieldBtn" type="button">Escudo do Mestre</button>
           <button id="campaignDeleteBtn" type="button" class="danger deleteIconButton" title="Excluir campanha" aria-label="Excluir campanha"><span class="deleteIconGlyph" aria-hidden="true"></span></button>
