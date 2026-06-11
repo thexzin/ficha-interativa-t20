@@ -37,6 +37,7 @@ let currentCharacterId="";
 let expandedSpellCards=new Set();
 let expandedPowerCards=new Set();
 let expandedItemCards=new Set();
+let expandedAttackCards=new Set();
 let activeHubSection="fichas";
 let activeHubCampaignId="";
 let activeCampaignDashboardTab="fichas";
@@ -1417,6 +1418,7 @@ function addSelectedCatalogItem(){
   }
 }
 function renderAttackCard(a,i){
+  const isOpen=expandedAttackCards.has(i);
   const name=escapeHtml(a.name||"Ataque sem nome");
   const bonus=Number(a.bonus||0);
   const bonusText=`${bonus>=0?"+":""}${bonus}`;
@@ -1424,32 +1426,46 @@ function renderAttackCard(a,i){
   const crit=escapeHtml(a.crit||"20");
   const mult=escapeHtml(a.mult||"x2");
   const notes=escapeHtml(a.notes||"");
-  return `<div class="card combatAttackCard">
+  const toggleLabel=isOpen?"Recolher detalhes do ataque":"Expandir detalhes do ataque";
+  return `<div class="card combatAttackCard ${isOpen?"expanded":""}">
     <div class="combatAttackHeader">
-      <div class="combatAttackTitle">
-        <strong>${name}</strong>
-        <span>${bonusText} ataque • ${damage} dano • ${crit}/${mult}</span>
-      </div>
+      <button type="button" class="combatAttackToggle" data-attacktoggle="${i}" aria-expanded="${isOpen}" aria-label="${toggleLabel}" title="${toggleLabel}">
+        <span class="combatAttackTitle">
+          <strong>${name}</strong>
+          <span>${bonusText} ataque • ${damage} dano • ${crit}/${mult}</span>
+        </span>
+      </button>
       <div class="combatRollActions">
         <button type="button" class="attackDamageRoll" data-combatroll="${i}" aria-label="Rolar ataque e dano" title="Rolar ataque e dano"><img src="attack-roll-icon.png" alt="" draggable="false"></button>
       </div>
     </div>
-    <div class="attackFields">
-      <label>Nome<input data-a="${i}" data-k="name" value="${name}"></label>
-      <label>Ataque<input data-a="${i}" data-k="bonus" type="number" value="${bonus}"></label>
-      <label>Dano<input data-a="${i}" data-k="damage" value="${damage}" placeholder="1d6+1d12+4"></label>
-      <label>Crítico<input data-a="${i}" data-k="crit" value="${crit}"></label>
-      <label>Mult.<input data-a="${i}" data-k="mult" value="${mult}"></label>
-      <button type="button" class="remove combatRemove deleteIconButton" data-adel="${i}" title="Excluir ataque" aria-label="Excluir ataque">${DELETE_ICON_HTML}</button>
+    <div class="combatAttackBody ${isOpen?"":"hidden"}">
+      <div class="attackFields">
+        <label>Nome<input data-a="${i}" data-k="name" value="${name}"></label>
+        <label>Ataque<input data-a="${i}" data-k="bonus" type="number" value="${bonus}"></label>
+        <label>Dano<input data-a="${i}" data-k="damage" value="${damage}" placeholder="1d6+1d12+4"></label>
+        <label>Crítico<input data-a="${i}" data-k="crit" value="${crit}"></label>
+        <label>Mult.<input data-a="${i}" data-k="mult" value="${mult}"></label>
+        <button type="button" class="remove combatRemove deleteIconButton" data-adel="${i}" title="Excluir ataque" aria-label="Excluir ataque">${DELETE_ICON_HTML}</button>
+      </div>
+      <label class="attackNotes">Notas<textarea data-a="${i}" data-k="notes" rows="2" placeholder="Alcance, munição, melhorias, efeitos especiais...">${notes}</textarea></label>
     </div>
-    <label class="attackNotes">Notas<textarea data-a="${i}" data-k="notes" rows="2" placeholder="Alcance, munição, melhorias, efeitos especiais...">${notes}</textarea></label>
   </div>`;
 }
 function renderAttacks(){
+  expandedAttackCards=new Set([...expandedAttackCards].filter(index=>index<state.attacks.length));
   $("#attacksList").innerHTML=state.attacks.map((a,i)=>renderAttackCard(a,i)).join("") || '<p class="muted">Nenhum ataque registrado ainda.</p>';
+  $$("[data-attacktoggle]").forEach(e=>e.onclick=()=>{
+    const idx=+e.dataset.attacktoggle;
+    if(expandedAttackCards.has(idx)) expandedAttackCards.delete(idx);
+    else expandedAttackCards.add(idx);
+    renderAttacks();
+  });
   bindCollection("a",state.attacks,renderAttacks);
   $$("[data-adel]").forEach(e=>e.onclick=()=>{
-    state.attacks.splice(+e.dataset.adel,1);
+    const idx=+e.dataset.adel;
+    state.attacks.splice(idx,1);
+    expandedAttackCards=new Set([...expandedAttackCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));
     renderAttacks();
     save(false);
   });
@@ -1538,6 +1554,7 @@ function applySheetData(data){
   expandedSpellCards.clear();
   expandedPowerCards.clear();
   expandedItemCards.clear();
+  expandedAttackCards.clear();
 }
 function characterKey(id){return `${CHARACTER_PREFIX}${id}`}
 function newCharacterId(){return `char_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`}
@@ -3515,7 +3532,7 @@ $("#itemCatalogCategory").onchange=updateItemPicker;
 $("#addSelectedItem").onclick=addSelectedCatalogItem;
 $("#addBlankItem").onclick=()=>{addItemEntry();closeItemPicker()};
 $("#applyOriginBtn").onclick=applyOrigin;$("#addOriginBenefit").onclick=()=>{state.originBenefits.push("");renderOriginBenefits();save(false)};$("#addCustomCondition").onclick=()=>{state.customConditions.push({name:"Nova condição",active:true,effect:""});renderCustomConditions();renderConditionMini();save(false)};
-$("#addAttack").onclick=()=>{state.attacks.push({name:"Novo ataque",bonus:0,damage:"1d6",crit:"20",mult:"x2",notes:""});renderAttacks();save(false)};
+$("#addAttack").onclick=()=>{state.attacks.push({name:"Novo ataque",bonus:0,damage:"1d6",crit:"20",mult:"x2",notes:""});expandedAttackCards.add(state.attacks.length-1);renderAttacks();save(false)};
 $("#characterSelect").onchange=e=>switchCharacter(e.target.value);
 $("#newCharacterBtn").onclick=newCharacter;
 $("#duplicateCharacterBtn").onclick=duplicateCharacter;
