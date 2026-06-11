@@ -43,9 +43,10 @@ let activeHubCampaignId="";
 let activeCampaignDashboardTab="fichas";
 let campaignRollPollTimer=null;
 let shieldCharacterFilter="";
-let shieldSortMode="default";
+let shieldSortMode="risco";
 let currentCloudReadOnly=false;
 let cloudAutosaveTimers=new Map();
+let saveStatusTimer=null;
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
 const rawNum=id=>Number($("#"+id)?.value||0);
@@ -55,6 +56,18 @@ const value=id=>$("#"+id)?.value||"";
 const DELETE_ICON_HTML='<span class="deleteIconGlyph" aria-hidden="true"></span>';
 const ROLL_ICON_HTML='<img src="attack-roll-icon.png" alt="" draggable="false" aria-hidden="true">';
 function notify(html){const t=$("#toast");t.innerHTML=html;t.classList.remove("hidden");clearTimeout(window.__to);window.__to=setTimeout(()=>t.classList.add("hidden"),3500)}
+function setSaveStatus(text,type="idle",timeout=0){
+  const el=$("#saveStatus");
+  if(!el) return;
+  el.className=`saveStatus ${type}`;
+  el.innerHTML=`<span>${escapeHtml(text)}</span>`;
+  clearTimeout(saveStatusTimer);
+  if(timeout) saveStatusTimer=setTimeout(()=>setSaveStatus(cloudFirstMode()?"Nuvem pronta":"Modo local","idle"),timeout);
+}
+function markSaving(text="Salvando..."){setSaveStatus(text,"saving")}
+function markSaved(text="Salvo",timeout=2800){setSaveStatus(text,"saved",timeout)}
+function markSaveWarning(text,timeout=4200){setSaveStatus(text,"warning",timeout)}
+function markSaveError(text="Erro ao salvar"){setSaveStatus(text,"error")}
 function rollD20(bonus,title){
   const d=Math.floor(Math.random()*20)+1,total=d+Number(bonus||0);
   const totalColor=d===20?"#72d372":(d===1?"#ff5b52":"var(--gold)");
@@ -1639,6 +1652,7 @@ function queueCloudAutosave(){
   };
   snapshot.campaignId=cloudCampaignIdForSave(snapshot.remoteId)||null;
   if(!snapshot.remoteId) return;
+  markSaving("Salvando...");
   cacheLocalCharacterData(snapshot.localId,snapshot.data,characterNameFromData(snapshot.data),new Date().toISOString());
   clearTimeout(cloudAutosaveTimers.get(snapshot.remoteId));
   const timer=setTimeout(()=>{
@@ -1670,6 +1684,7 @@ async function saveCloudCharacterSnapshot(snapshot){
     cacheLocalCharacterData(snapshot.localId,payload.sheet_data,data.name||payload.name,data.updated_at);
   }
   await loadCloudData();
+  markSaved("Salvo na nuvem");
 }
 function renderCharacterManager(){
   const select=$("#characterSelect");
@@ -1714,6 +1729,64 @@ function isOwnCloudCharacter(character){
 }
 function ownCloudCharacters(){
   return cloudUser?cloudCharacters.filter(isOwnCloudCharacter):[];
+}
+function homeCharacterRecord(){
+  const index=readCharacterIndex();
+  const preferredId=currentCharacterId||index.activeId||index.characters[0]?.id||"";
+  const localMeta=index.characters.find(character=>character.id===preferredId)||index.characters[0];
+  if(localMeta){
+    const data=localCharacterData(localMeta.id)||blankSheetData(localMeta.name);
+    return {
+      kind:"local",
+      id:localMeta.id,
+      name:characterNameFromData(data,localMeta.name||"Personagem sem nome"),
+      meta:characterSummaryFromData(data),
+      updatedAt:localMeta.updatedAt||""
+    };
+  }
+  const cloudMeta=ownCloudCharacters()
+    .filter(character=>!isCampaignOnlyCharacter(character))
+    .sort((a,b)=>new Date(b.updated_at||0)-new Date(a.updated_at||0))[0];
+  if(!cloudMeta) return null;
+  return {
+    kind:"cloud",
+    id:cloudMeta.id,
+    name:cloudMeta.name||"Personagem sem nome",
+    meta:[cloudMeta.player_name,"Nuvem"].filter(Boolean).map(escapeHtml).join(" &bull; "),
+    updatedAt:cloudMeta.updated_at||""
+  };
+}
+function renderHubHome(){
+  const character=homeCharacterRecord();
+  const characterButton=$("#homeContinueCharacterBtn");
+  if($("#homeLastCharacterName")) $("#homeLastCharacterName").textContent=character?.name||"Nenhuma ficha aberta";
+  if($("#homeLastCharacterMeta")){
+    const date=character?.updatedAt?` Atualizada em ${formattedDate(character.updatedAt)}.`:"";
+    $("#homeLastCharacterMeta").innerHTML=character?`${character.meta||"Sem detalhes."}${date}`:"Crie uma ficha ou carregue uma da nuvem.";
+  }
+  if(characterButton){
+    characterButton.disabled=!character;
+    characterButton.dataset.kind=character?.kind||"";
+    characterButton.dataset.id=character?.id||"";
+  }
+  const campaign=cloudUser?cloudCampaigns[0]:null;
+  const campaignButton=$("#homeOpenRecentCampaignBtn");
+  if($("#homeRecentCampaignName")) $("#homeRecentCampaignName").textContent=campaign?.name||"Nenhuma campanha";
+  if($("#homeRecentCampaignMeta")){
+    const count=campaign?campaignCharactersForView(campaign).length:0;
+    $("#homeRecentCampaignMeta").textContent=campaign
+      ? `${count} ficha${count===1?"":"s"}${campaign.updated_at?` - atualizada em ${formattedDate(campaign.updated_at)}`:""}`
+      : "Entre na nuvem para criar ou acessar campanhas.";
+  }
+  if(campaignButton){
+    campaignButton.disabled=!campaign;
+    campaignButton.dataset.id=campaign?.id||"";
+  }
+  if($("#homeCloudState")) $("#homeCloudState").textContent=cloudUser?"Nuvem conectada":"Modo local";
+  if($("#homeCloudMeta")) $("#homeCloudMeta").textContent=cloudUser
+    ? `${cloudUser.email||"Conta conectada"} - fichas e campanhas sincronizadas.`
+    : "Exportar e importar JSON continua disponivel.";
+  if($("#homeCloudActionBtn")) $("#homeCloudActionBtn").textContent=cloudUser?"Abrir fichas":"Entrar na nuvem";
 }
 function setHubSection(section="fichas"){
   activeHubSection=section==="campanha"?"campanha":(section==="campanhas"?"campanhas":(section==="inicio"?"inicio":"fichas"));
@@ -1945,7 +2018,7 @@ function openCampaignDashboard(campaignId){
   activeHubCampaignId=campaignId;
   activeCampaignDashboardTab="fichas";
   shieldCharacterFilter="";
-  shieldSortMode="default";
+  shieldSortMode="risco";
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
   setHubSection("campanha");
   renderCloudPanel();
@@ -2102,9 +2175,18 @@ function renderMasterShield(characters){
     if(summary.conditions.length) items.push({type:"condition",name:summary.name,text:`Condicoes: ${summary.conditions.join(", ")}.`});
     return items;
   });
+  const dyingCount=allSummaries.filter(summary=>summary.status==="morrendo"||summary.status==="morto").length;
+  const woundedCount=allSummaries.filter(summary=>summary.status==="ferido").length;
+  const conditionCount=allSummaries.filter(summary=>summary.conditions.length).length;
   return `<div class="masterShieldLayout">
     <aside class="masterShieldFeed">
       ${renderShieldControls(allSummaries)}
+      <div class="shieldOverview">
+        <div><small>Fichas</small><strong>${allSummaries.length}</strong></div>
+        <div><small>Risco</small><strong>${dyingCount}</strong></div>
+        <div><small>Feridos</small><strong>${woundedCount}</strong></div>
+        <div><small>Cond.</small><strong>${conditionCount}</strong></div>
+      </div>
       <div class="shieldFeedHead">
         <strong>Alertas</strong>
         <span>${alerts.length||"sem"} destaque${alerts.length===1?"":"s"}</span>
@@ -2292,6 +2374,7 @@ function renderCampaignDashboard(){
 }
 function renderHub(){
   if(!$("#appHub")) return;
+  renderHubHome();
   renderHubCharacters();
   renderHubCampaigns();
   renderCampaignDashboard();
@@ -2567,6 +2650,7 @@ function saveLocalSnapshot(show=true){
   const data=sheetDataFromCurrent();
   localStorage.setItem(characterKey(currentCharacterId),JSON.stringify(data));
   updateActiveCharacterMeta(data);
+  markSaved("Salvo localmente");
   if(show) notify("Personagem salvo neste navegador.");
 }
 function cacheLocalCharacterData(localId,data,name="",updatedAt=""){
@@ -2866,6 +2950,7 @@ function enterApp(mode="offline"){
     sessionStorage.setItem(AUTH_MODE_KEY,"offline");
   }
   document.body.classList.remove("auth-gated");
+  setSaveStatus(mode==="cloud"?"Nuvem pronta":"Modo local","idle");
   if(wasGated) openHub("inicio");
   else{renderCloudPanel();renderHub()}
 }
@@ -2991,9 +3076,11 @@ async function saveCloudCharacter(show=true){
   if(currentCloudReadOnly||isCloudCharacterReadOnly(selectedMeta)){
     setCurrentCloudReadOnly(true);
     renderCloudPanel();
+    markSaveWarning("Somente leitura");
     notify("Ficha em modo somente leitura. Apenas o dono pode salvar alteracoes na nuvem.");
     return;
   }
+  markSaving("Salvando...");
   const payload=cloudPayloadFromCurrent(selected);
   const request=selected
     ? supabaseClient.from("characters").update(payload).eq("id",selected).select("id,name,campaign_id,updated_at").single()
@@ -3003,6 +3090,7 @@ async function saveCloudCharacter(show=true){
   setMappedCloudCharacterId(data.id);
   cacheLocalCharacterData(currentCharacterId,payload.sheet_data,data.name||payload.name,data.updated_at);
   await loadCloudData();
+  markSaved("Salvo na nuvem");
   if(show) notify(`Ficha salva na nuvem: <b>${escapeHtml(data.name||payload.name)}</b>`);
 }
 async function loadSelectedCloudCharacter(){
@@ -3407,6 +3495,7 @@ async function initCloud(){
 function runCloudAction(action){
   action().catch(error=>{
     console.error(error);
+    markSaveError("Erro na nuvem");
     notify(`Erro na nuvem: ${escapeHtml(error.message||String(error))}`);
   });
 }
@@ -3650,6 +3739,25 @@ document.addEventListener("click",event=>{
 $$("[data-hub-section]").forEach(button=>button.addEventListener("click",()=>openHub(button.dataset.hubSection)));
 $("#homeOpenSheetsBtn")?.addEventListener("click",()=>openHub("fichas"));
 $("#homeOpenCampaignsBtn")?.addEventListener("click",()=>openHub("campanhas"));
+$("#homeContinueCharacterBtn")?.addEventListener("click",()=>{
+  const button=$("#homeContinueCharacterBtn");
+  const kind=button?.dataset.kind||"",id=button?.dataset.id||"";
+  if(!id) return;
+  if(kind==="cloud") runCloudAction(()=>openCloudCharacter(id));
+  else{switchCharacter(id);openSheetView()}
+});
+$("#homeOpenRecentCampaignBtn")?.addEventListener("click",()=>{
+  const id=$("#homeOpenRecentCampaignBtn")?.dataset.id||"";
+  if(id) openCampaignDashboard(id);
+});
+$("#homeCloudActionBtn")?.addEventListener("click",()=>{
+  if(cloudUser) openHub("fichas");
+  else{
+    localStorage.removeItem(AUTH_MODE_KEY);
+    sessionStorage.removeItem(AUTH_MODE_KEY);
+    showAuthGate();
+  }
+});
 $("#hubCharacterSearch")?.addEventListener("input",renderHub);
 $("#hubNewCharacterBtn")?.addEventListener("click",()=>{newCharacter();openSheetView()});
 $("#hubJoinCampaignBtn")?.addEventListener("click",()=>runCloudAction(joinCloudCampaignByCode));

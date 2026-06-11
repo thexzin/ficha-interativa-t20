@@ -7,6 +7,8 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 ## Atualizações recentes
 
 - Tela inicial com login/modo local e hub de `Fichas`/`Campanhas`. Uma conta ou navegador novo nao cria mais uma ficha local automaticamente; use o botao `+` para criar.
+- Tela inicial com atalhos para continuar a ficha recente, abrir a campanha recente e alternar entre nuvem/fichas.
+- Indicador discreto de salvamento no cabecalho da ficha: mostra quando esta salvando, salvo, em modo local, somente leitura ou com erro de nuvem.
 - Integracao opcional com Supabase para salvar fichas na nuvem, criar campanhas, entrar por codigo de convite e vincular fichas a campanhas.
 - Quando conectado, a ficha usa a nuvem como salvamento principal. Para backup manual, use `Exportar JSON` e `Importar JSON`.
 - Dashboard de campanha com lista de fichas, jogadores e `Escudo do Mestre`.
@@ -19,7 +21,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 - O resumo da raça mostra modificadores de atributos; tamanho e deslocamento base aparecem em campos editáveis logo abaixo. Quando a raça não informa esses dados, a ficha assume tamanho Médio e deslocamento 9m.
 - Progressão de classe automática: habilidades recebidas por nível entram sozinhas na aba Poderes, com descrições completas.
 - Poderes em sanfona, duas entradas por linha, mostrando nome e tipo mesmo recolhidos.
-- Grimório, Poderes e Inventário usam cards recolhidos/expansíveis para manter a ficha mais limpa.
+- Grimório, Poderes, Inventário e Ataques usam cards recolhidos/expansíveis para manter a ficha mais limpa.
 - PV aceita valores negativos e segue a regra de morte por metade dos PV máximos negativos, morrendo apenas 1 PV abaixo desse limite.
 - PV e PM temporários substituem o antigo campo de bônus máximo e são consumidos antes dos pontos normais.
 - PM máximo de Arcanista, Clérigo, Frade, Druida e Bardo soma o atributo-chave de magia quando aplicável.
@@ -112,7 +114,7 @@ Habilidades automáticas ficam bloqueadas para edição direta e são atualizada
 
 ### Combate
 
-Agrupa ataques e rolagens rápidas. Cada ataque pode ter bônus, dano, crítico, multiplicador e notas. O campo de dano aceita expressões como `1d6+1d12+4`.
+Agrupa ataques e rolagens rápidas. Cada ataque fica recolhido por padrao, mostrando nome, ataque, dano e critico; clique no resumo para editar detalhes. Cada ataque pode ter bônus, dano, crítico, multiplicador e notas. O campo de dano aceita expressões como `1d6+1d12+4`.
 
 ### Grimório
 

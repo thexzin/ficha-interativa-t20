@@ -42,6 +42,7 @@
 <header class="topbar">
   <div class="topbarMain">
     <button id="appHomeBtn" class="brand" type="button" aria-label="Voltar à tela inicial"><strong>Ficha Interativa</strong><small>Tormenta20</small></button>
+    <div id="saveStatus" class="saveStatus" aria-live="polite"><span>Pronto</span></div>
     <div class="characterManager" aria-label="Gerenciador de personagens">
       <label>Personagem<select id="characterSelect"></select></label>
       <button id="newCharacterBtn" type="button">Novo</button>
@@ -125,6 +126,26 @@
           <button id="homeOpenSheetsBtn" type="button">Abrir fichas</button>
           <button id="homeOpenCampaignsBtn" type="button">Abrir campanhas</button>
         </div>
+      </div>
+      <div class="hubHomeQuickGrid" aria-label="Atalhos rápidos">
+        <article class="hubHomeQuick">
+          <small>Continuar</small>
+          <strong id="homeLastCharacterName">Nenhuma ficha aberta</strong>
+          <span id="homeLastCharacterMeta">Crie uma ficha ou carregue uma da nuvem.</span>
+          <button id="homeContinueCharacterBtn" type="button" disabled>Continuar ficha</button>
+        </article>
+        <article class="hubHomeQuick">
+          <small>Campanha recente</small>
+          <strong id="homeRecentCampaignName">Nenhuma campanha</strong>
+          <span id="homeRecentCampaignMeta">Entre na nuvem para criar ou acessar campanhas.</span>
+          <button id="homeOpenRecentCampaignBtn" type="button" disabled>Abrir campanha</button>
+        </article>
+        <article class="hubHomeQuick">
+          <small>Nuvem</small>
+          <strong id="homeCloudState">Modo local</strong>
+          <span id="homeCloudMeta">Exportar e importar JSON continua disponível.</span>
+          <button id="homeCloudActionBtn" type="button">Entrar na nuvem</button>
+        </article>
       </div>
       <div class="hubHomeFeatureGrid" aria-label="Recursos principais">
         <article class="hubHomeFeature">
