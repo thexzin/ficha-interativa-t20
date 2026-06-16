@@ -55,7 +55,7 @@ const attrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+rawNum(`${id}Temp`):rawNum(i
 const value=id=>$("#"+id)?.value||"";
 const DELETE_ICON_HTML='<span class="deleteIconGlyph" aria-hidden="true"></span>';
 const ROLL_ICON_HTML='<img src="attack-roll-icon.png" alt="" draggable="false" aria-hidden="true">';
-function notify(html){const t=$("#toast");t.innerHTML=html;t.classList.remove("hidden");clearTimeout(window.__to);window.__to=setTimeout(()=>t.classList.add("hidden"),3500)}
+function notify(html,duration=3500){const t=$("#toast");t.innerHTML=html;t.classList.remove("hidden");clearTimeout(window.__to);window.__to=setTimeout(()=>t.classList.add("hidden"),duration)}
 function setSaveStatus(text,type="idle",timeout=0){
   const el=$("#saveStatus");
   if(!el) return;
@@ -72,7 +72,7 @@ function rollD20(bonus,title){
   const d=Math.floor(Math.random()*20)+1,total=d+Number(bonus||0);
   const totalColor=d===20?"#72d372":(d===1?"#ff5b52":"var(--gold)");
   const naturalLabel=d===20?"20 natural":(d===1?"1 natural":"");
-  notify(`<b>${title}</b><br><span style="font-size:2rem;color:${totalColor}">${total}</span>${naturalLabel?`<br><strong style="color:${totalColor}">${naturalLabel}</strong>`:""}<br>1d20 (${d}) + ${bonus}`);
+  notify(`<b>${title}</b><br><span style="font-size:2rem;color:${totalColor}">${total}</span>${naturalLabel?`<br><strong style="color:${totalColor}">${naturalLabel}</strong>`:""}<br>1d20 (${d}) + ${bonus}`,8000);
   recordCampaignRoll({
     type:"d20",
     title,
@@ -171,7 +171,7 @@ function rollAttackDamage(attack){
       <div><strong class="${attackTotalClass}">${totalAttack}</strong><small>Ataque</small></div>
       <div><strong>${damage.total}</strong><small>Dano</small></div>
     </div>
-  </div>`);
+  </div>`,9000);
   return {
     type:"attack",
     title:attack.name||"Ataque",
@@ -281,6 +281,22 @@ function applyQuickResourceChange(id,delta){
   if(id==="pvAtual") applyResourceDelta("pvAtual","pvBonus",delta,true);
   else if(id==="pmAtual") applyResourceDelta("pmAtual","pmBonus",delta,false);
   else setNumberField(id,Math.max(0,num(id)+delta));
+}
+function applyResourceAmount(kind,direction){
+  const resource=kind==="pm"?"pm":"pv";
+  const amountInput=$(`#${resource}Delta`);
+  const amount=Math.abs(Number(amountInput?.value||0));
+  if(!amount){
+    notify(`Informe um valor para aplicar em ${resource.toUpperCase()}.`);
+    amountInput?.focus();
+    return;
+  }
+  const delta=amount*(Number(direction)<0?-1:1);
+  if(resource==="pv") applyResourceDelta("pvAtual","pvBonus",delta,true);
+  else applyResourceDelta("pmAtual","pmBonus",delta,false);
+  if(amountInput) amountInput.value="";
+  recalc();
+  save(false);
 }
 const SPELL_ATTR_PM_CLASSES=new Set(["arcanista","bardo","clerigo","druida","frade"]);
 function classUsesSpellAttrForPm(cls){return SPELL_ATTR_PM_CLASSES.has(cls?.idBase)}
@@ -457,6 +473,7 @@ function skillBadges(name){
 }
 function renderSkills(){
   const cls=T20_DATA.classes[value("classe")], fx=activeConditionEffects();
+  const globalSkillBonus=num("skillGlobalBonus");
   const rows=[];
   for(const [name,defaultAttr] of Object.entries(T20_DATA.pericias)){
     if(name==="Ofício"){
@@ -465,7 +482,7 @@ function renderSkills(){
         const attr=validSkillAttr(office.attr,defaultAttr);
         office.attr=attr;
         const locked=skillIsLocked(name,office.trained);
-        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+globalSkillBonus+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
         rows.push(`<div class="skill office-skill ${office.trained?"trained":""} ${locked?"locked":""}">
           <span class="skillName">Ofício <select class="skillAttrSelect" data-officeattr="${idx}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}</span>
           <input class="officeName" data-officename="${idx}" value="${escapeHtml(office.name||"")}" placeholder="Ex.: Alquimia">
@@ -484,7 +501,7 @@ function renderSkills(){
     const attr=d.attr;
     const armorPenalty=ARMOR_PENALTY_SKILLS.has(name)?armorPenaltyValue():0;
     const locked=skillIsLocked(name,d.trained);
-    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+globalSkillBonus+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
     rows.push(`<div class="skill ${d.trained?"trained":""} ${locked?"locked":""} ${armorPenalty?"hasArmorPenalty":""}">
       <span class="skillName">${escapeHtml(name)} <select class="skillAttrSelect" data-skattr="${escapeHtml(name)}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}</span>
       <label><input type="checkbox" data-sktrain="${escapeHtml(name)}" ${d.trained?"checked":""}> Treino</label>
@@ -1195,7 +1212,7 @@ function renderSpellsLegacy(){
   }).join('') || '<p class="muted">Nenhuma magia no Grimório ainda. Vá até a aba Magias para adicionar.</p>';
   bindCollection('s',state.spells,renderSpells);
   $$('[data-sdel]').forEach(e=>e.onclick=()=>{state.spells.splice(+e.dataset.sdel,1);renderSpells();save(false)});
-  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=Math.max(0,Number(spell.cost||0));applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();notify(`${spell.name||'Magia'} conjurada: −${cost} PM`)});
+  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=Math.max(0,Number(spell.cost||0));applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||'Magia'} conjurada: −${cost} PM`)});
 }
 function renderGrimoireSpellCard(s,i){
   const isOpen=expandedSpellCards.has(i);
@@ -1243,7 +1260,7 @@ function renderSpells(){
   $$('[data-spelltoggle]').forEach(e=>e.onclick=()=>{const idx=+e.dataset.spelltoggle;if(expandedSpellCards.has(idx))expandedSpellCards.delete(idx);else expandedSpellCards.add(idx);renderSpells()});
   bindCollection('s',state.spells,renderSpells);
   $$('[data-sdel]').forEach(e=>e.onclick=()=>{const idx=+e.dataset.sdel;state.spells.splice(idx,1);expandedSpellCards=new Set([...expandedSpellCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderSpells();save(false)});
-  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=Math.max(0,Number(spell.cost||0));applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();notify(`${spell.name||'Magia'} conjurada: -${cost} PM`)});
+  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=Math.max(0,Number(spell.cost||0));applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||'Magia'} conjurada: -${cost} PM`)});
 }
 function renderItemCard(it,i){
   const isOpen=expandedItemCards.has(i);
@@ -3603,7 +3620,8 @@ $("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpe
 $("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc();save(false)});
 $("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc();save(false)});
 $$("[data-tab]").forEach(b=>b.onclick=()=>{$$("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));$$(".tab").forEach(t=>t.classList.toggle("active",t.id===`tab-${b.dataset.tab}`))});
-$$("[data-change]").forEach(b=>b.onclick=()=>{const[id,delta]=b.dataset.change.split(":");applyQuickResourceChange(id,Number(delta));recalc()});
+$$("[data-change]").forEach(b=>b.onclick=()=>{const[id,delta]=b.dataset.change.split(":");applyQuickResourceChange(id,Number(delta));recalc();save(false)});
+$$("[data-resource-amount]").forEach(b=>b.onclick=()=>{const[kind,direction]=b.dataset.resourceAmount.split(":");applyResourceAmount(kind,Number(direction))});
 $("#spellSearchCatalog").oninput=renderSpellCatalog;$("#spellCircleFilter").onchange=renderSpellCatalog;$("#spellTypeFilter").onchange=renderSpellCatalog;$("#spellSchoolFilter").onchange=renderSpellCatalog;
 $$("[data-close-spell-modal]").forEach(el=>el.onclick=closeSpellModal);$("#spellModalAdd").onclick=()=>{if(window.__selectedCatalogSpell){addSpellToGrimoire(window.__selectedCatalogSpell);closeSpellModal();}};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSpellModal();});
 $("#addPower").onclick=openPowerPicker;

@@ -9,6 +9,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 - Tela inicial com login/modo local e hub de `Fichas`/`Campanhas`. Uma conta ou navegador novo nao cria mais uma ficha local automaticamente; use o botao `+` para criar.
 - Tela inicial com atalhos para continuar a ficha recente, abrir a campanha recente e alternar entre nuvem/fichas.
 - Indicador discreto de salvamento no cabecalho da ficha: mostra quando esta salvando, salvo, em modo local, somente leitura ou com erro de nuvem.
+- Pop-ups de rolagem de pericias e ataques ficam mais tempo na tela para facilitar leitura durante a sessao.
 - Integracao opcional com Supabase para salvar fichas na nuvem, criar campanhas, entrar por codigo de convite e vincular fichas a campanhas.
 - Quando conectado, a ficha usa a nuvem como salvamento principal. Para backup manual, use `Exportar JSON` e `Importar JSON`.
 - Dashboard de campanha com lista de fichas, jogadores e `Escudo do Mestre`.
@@ -24,9 +25,10 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 - Grimório, Poderes, Inventário e Ataques usam cards recolhidos/expansíveis para manter a ficha mais limpa.
 - PV aceita valores negativos e segue a regra de morte por metade dos PV máximos negativos, morrendo apenas 1 PV abaixo desse limite.
 - PV e PM temporários substituem o antigo campo de bônus máximo e são consumidos antes dos pontos normais.
+- PV e PM possuem campo de aplicação por valor para dano/cura ou gasto/recuperação, consumindo temporarios antes dos pontos normais quando o valor reduz o recurso.
 - PM máximo de Arcanista, Clérigo, Frade, Druida e Bardo soma o atributo-chave de magia quando aplicável.
 - Atributos têm modificadores temporários; eles entram em perícias e CD de magias, mas não alteram todos os cálculos derivados.
-- Perícias permitem trocar o atributo-chave, destacam treinadas, aplicam penalidade de armadura e indicam limitações de treinamento.
+- Perícias permitem trocar o atributo-chave, destacam treinadas, aplicam penalidade de armadura, indicam limitações de treinamento e possuem modificador geral para efeitos como Oração ou Inspiração.
 - Defesa possui campos para penalidade de armadura e resistência a dano.
 - Inventário possui menu de itens mundanos e mágicos, com categorias simplificadas.
 - Magias têm filtros por arcanas, divinas, universais e escola de magia.
@@ -87,7 +89,7 @@ Arquivos SQL auxiliares:
 
 Mostra o resumo principal do personagem: atributos, PV, PM, Defesa, RD, deslocamento, CD de magia, limite de PM e condições ativas.
 
-PV e PM têm campos de pontos atuais, base calculada, temporários e ajuste livre. Os botões rápidos descontam primeiro os pontos temporários.
+PV e PM têm campos de pontos atuais, base calculada, temporários e ajuste livre. Os botões rápidos e o campo de aplicar valor descontam primeiro os pontos temporários quando reduzem o recurso.
 
 ### Origem
 
@@ -95,7 +97,7 @@ Mostra origem, perícias sugeridas, poderes/benefícios, itens e descrição. A 
 
 ### Perícias
 
-Lista as perícias com atributo-chave editável, treino, bônus e ajuste. Perícias treinadas ficam destacadas. Penalidade de armadura e exigências de treino são tratadas visualmente e nos cálculos.
+Lista as perícias com atributo-chave editável, treino, bônus e ajuste. O campo `Modificador geral` soma em todas as perícias e Ofícios, útil para efeitos de cena. Perícias treinadas ficam destacadas. Penalidade de armadura e exigências de treino são tratadas visualmente e nos cálculos.
 
 ### Poderes
 

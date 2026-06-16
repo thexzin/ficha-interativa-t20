@@ -267,6 +267,11 @@
         <label>Temporários<input id="pvBonus" data-save type="number" min="0" value="0"></label>
         <label>Ajuste livre<input id="pvAjuste" data-save type="number" value="0"></label>
       </div>
+      <div class="resourceDelta">
+        <label>Aplicar valor<input id="pvDelta" type="number" min="0" step="1" placeholder="Dano ou cura"></label>
+        <button type="button" data-resource-amount="pv:-1">Dano</button>
+        <button type="button" data-resource-amount="pv:1">Cura</button>
+      </div>
       <div class="quick"><button data-change="pvAtual:-5">−5</button><button data-change="pvAtual:-1">−1</button><button data-change="pvAtual:1">+1</button><button data-change="pvAtual:5">+5</button></div>
     </article>
 
@@ -278,6 +283,11 @@
         <label>Base calculada<input id="pmBase" readonly></label>
         <label>Temporários<input id="pmBonus" data-save type="number" min="0" value="0"></label>
         <label>Ajuste livre<input id="pmAjuste" data-save type="number" value="0"></label>
+      </div>
+      <div class="resourceDelta">
+        <label>Aplicar valor<input id="pmDelta" type="number" min="0" step="1" placeholder="Gasto ou recuperação"></label>
+        <button type="button" data-resource-amount="pm:-1">Gasto</button>
+        <button type="button" data-resource-amount="pm:1">Recuperar</button>
       </div>
       <div class="quick"><button data-change="pmAtual:-5">−5</button><button data-change="pmAtual:-1">−1</button><button data-change="pmAtual:1">+1</button><button data-change="pmAtual:5">+5</button></div>
     </article>
@@ -335,6 +345,7 @@
         <h2>Perícias</h2>
         <p class="muted">Metade do nível + atributo + treinamento + ajuste. Você pode cadastrar mais de um Ofício e nomear cada especialização.</p>
       </div>
+      <label class="skillGlobalBonus">Modificador geral<input id="skillGlobalBonus" data-save type="number" value="0" placeholder="Ex.: Oração, inspiração"></label>
     </div>
     <div id="skillsList" class="skills"></div>
   </article>
