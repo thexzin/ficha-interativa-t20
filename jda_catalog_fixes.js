@@ -1,4 +1,14 @@
 ;(function(){
+  const classFixes={
+    cacador:{pmNivel:4},
+    seteiro:{pmNivel:4}
+  };
+  Object.entries(classFixes).forEach(([id,patch])=>{
+    if(window.T20_DATA?.classes?.[id]){
+      Object.assign(window.T20_DATA.classes[id],patch);
+    }
+  });
+
   const originChoice="Escolha dois benefícios entre as perícias e poderes disponíveis.";
   const jdaOrigins={
     acolito:{nome:"Acólito",fonte:"Jogo do Ano",tipo:"comum",pericias:["Cura","Religião","Vontade"],poderes:["Medicina","Membro da Igreja","Vontade de Ferro"],itens:"Símbolo sagrado, traje de sacerdote.",beneficio:originChoice},
