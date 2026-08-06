@@ -17,17 +17,25 @@ let cloudCampaigns=[];
 let cloudCampaignRolls=[];
 
 function defaultState(){
-  return {powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[]};
+  return {powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false};
 }
 function normalizeState(){
   const defaults=defaultState();
   state={...defaults,...(state||{})};
   for(const k of Object.keys(defaults)){
-    if(Array.isArray(defaults[k]) && !Array.isArray(state[k])) state[k]=[];
-    if(!Array.isArray(defaults[k]) && typeof state[k]!=="object") state[k]={};
+    if(Array.isArray(defaults[k])){
+      if(!Array.isArray(state[k])) state[k]=[];
+      continue;
+    }
+    if(defaults[k]&&typeof defaults[k]==="object"){
+      if(!state[k]||typeof state[k]!=="object"||Array.isArray(state[k])) state[k]={};
+      continue;
+    }
+    if(typeof state[k]!==typeof defaults[k]) state[k]=defaults[k];
   }
   if(!state.attacks.length) state.attacks=defaultState().attacks;
   if(!state.offices.length) state.offices=defaultState().offices;
+  state.classLevels=Array.isArray(state.classLevels)?state.classLevels:[];
   state.spells=state.spells.map(spell=>normalizeSpellDetailFields({...spell}));
   state.items=state.items.map(item=>normalizeInventoryItemDescription(item));
 }
@@ -259,8 +267,144 @@ function fillSpellSchoolFilter(){
   select.innerHTML=`<option value="">Todas</option>${schools.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}`;
   if(schools.includes(current)) select.value=current;
 }
-function trainingBonus(){const l=num("nivel");return l>=15?6:l>=7?4:2}
-function halfLevel(){return Math.floor(num("nivel")/2)}
+function firstClassId(){return Object.keys(T20_DATA.classes||{})[0]||""}
+function clampClassLevel(level){
+  const n=Math.floor(Number(level)||1);
+  return Math.max(1,Math.min(20,n));
+}
+function sanitizeClassLevels(levels,options={}){
+  const fallbackId=T20_DATA.classes[options.fallbackId]?options.fallbackId:(T20_DATA.classes[value("classe")]?value("classe"):firstClassId());
+  const fallbackLevel=clampClassLevel(options.fallbackLevel||num("nivel")||1);
+  const rows=(Array.isArray(levels)?levels:[])
+    .map(entry=>({
+      id:T20_DATA.classes[entry?.id||entry?.classe]?String(entry.id||entry.classe):"",
+      level:clampClassLevel(entry?.level||entry?.nivel||1)
+    }))
+    .filter(entry=>entry.id);
+  if(!rows.length&&fallbackId) rows.push({id:fallbackId,level:fallbackLevel});
+  return rows;
+}
+function classLevelsForSheet(fields={},savedState={}){
+  const fallbackId=T20_DATA.classes[fields.classe]?fields.classe:firstClassId();
+  const fallbackLevel=clampClassLevel(fields.nivel||1);
+  return sanitizeClassLevels(savedState.classLevels,{fallbackId,fallbackLevel});
+}
+function currentClassLevels(){
+  state.classLevels=sanitizeClassLevels(state.classLevels);
+  return state.classLevels;
+}
+function totalClassLevel(levels=currentClassLevels()){
+  return Math.max(1,levels.reduce((sum,entry)=>sum+clampClassLevel(entry.level),0));
+}
+function classListLabel(levels=currentClassLevels()){
+  return levels.map(entry=>{
+    const cls=T20_DATA.classes[entry.id];
+    return `${cls?.nome||"Classe"} ${clampClassLevel(entry.level)}`;
+  }).join(" / ");
+}
+function primaryClassEntry(){
+  return currentClassLevels()[0]||{id:firstClassId(),level:1};
+}
+function primaryClass(){
+  const entry=primaryClassEntry();
+  return T20_DATA.classes[entry.id]||T20_DATA.classes[firstClassId()];
+}
+function syncPrimaryFieldsFromClassLevels(){
+  const levels=currentClassLevels();
+  const main=levels[0];
+  if(main&&$("#classe")) $("#classe").value=main.id;
+  const levelInput=$("#nivel");
+  if(levelInput){
+    levelInput.value=totalClassLevel(levels);
+    levelInput.readOnly=levels.length>1;
+    levelInput.title=levels.length>1?"Nível total calculado pela soma das classes.":"Nível do personagem.";
+  }
+}
+function setClassLevels(levels,{render=true}={}){
+  state.classLevels=sanitizeClassLevels(levels);
+  syncPrimaryFieldsFromClassLevels();
+  if(render) renderClassLevels();
+}
+function classSelectOptions(selected){
+  const grouped={};
+  Object.entries(T20_DATA.classes||{}).forEach(([id,cls])=>(grouped[cls.fonte||"Outras fontes"]??=[]).push([id,cls]));
+  return Object.entries(grouped).map(([source,items])=>{
+    const options=items
+      .sort((a,b)=>String(a[1].nome).localeCompare(String(b[1].nome),"pt-BR"))
+      .map(([id,cls])=>`<option value="${escapeHtml(id)}" ${id===selected?"selected":""}>${escapeHtml(cls.nome)}${cls.variante?` (variante de ${escapeHtml(cls.classeBase)})`:""}</option>`)
+      .join("");
+    return `<optgroup label="${escapeHtml(source)}">${options}</optgroup>`;
+  }).join("");
+}
+function syncClassLevelsFromPrimaryFields(){
+  const levels=currentClassLevels();
+  levels[0]={id:T20_DATA.classes[value("classe")]?value("classe"):levels[0].id,level:levels.length===1?clampClassLevel(num("nivel")||levels[0].level):levels[0].level};
+  setClassLevels(levels);
+}
+function renderClassLevels(){
+  const list=$("#classLevelsList");
+  if(!list) return;
+  const levels=currentClassLevels();
+  const enabled=levels.length>1||state.multiclassEnabled===true;
+  state.multiclassEnabled=enabled;
+  if($("#multiclassEnabled")) $("#multiclassEnabled").checked=enabled;
+  if($("#multiclassEditor")) $("#multiclassEditor").classList.toggle("hidden",!enabled);
+  syncPrimaryFieldsFromClassLevels();
+  const total=totalClassLevel(levels);
+  const meta=$("#multiclassMeta");
+  if(meta) meta.textContent=`Nível total ${total}${levels.length>1?` • ${levels.length} classes`:""}`;
+  list.innerHTML=levels.map((entry,index)=>{
+    const cls=T20_DATA.classes[entry.id];
+    return `<div class="classLevelRow ${index===0?"primary":""}">
+      <span class="classLevelRole">${index===0?"Principal":"Extra"}</span>
+      <label>Classe<select data-classlevel-id="${index}">${classSelectOptions(entry.id)}</select></label>
+      <label>Nível de classe<input data-classlevel-level="${index}" type="number" min="1" max="20" value="${clampClassLevel(entry.level)}"></label>
+      <span class="classLevelSource">${escapeHtml(cls?.fonte||"Fonte")}</span>
+      ${index===0?`<span class="classLevelLocked">PV inicial</span>`:`<button type="button" class="remove deleteIconButton classLevelRemove" data-classlevel-remove="${index}" title="Remover classe" aria-label="Remover classe">${DELETE_ICON_HTML}</button>`}
+    </div>`;
+  }).join("");
+  $$("[data-classlevel-id]").forEach(element=>element.onchange=()=>{
+    const levels=currentClassLevels();
+    const idx=Number(element.dataset.classlevelId);
+    if(levels.some((entry,entryIndex)=>entryIndex!==idx&&entry.id===element.value)){
+      notify("Essa classe já foi adicionada ao personagem.");
+      renderClassLevels();
+      return;
+    }
+    levels[idx].id=element.value;
+    if(idx===0) state.skillData={};
+    setClassLevels(levels);
+    syncClassDefenseAttr();
+    renderPowers();refreshPowerPickerIfOpen();recalc();save(false);
+  });
+  $$("[data-classlevel-level]").forEach(element=>element.onchange=()=>{
+    const levels=currentClassLevels();
+    const idx=Number(element.dataset.classlevelLevel);
+    const otherLevels=levels.reduce((sum,entry,entryIndex)=>sum+(entryIndex===idx?0:clampClassLevel(entry.level)),0);
+    levels[idx].level=Math.min(clampClassLevel(element.value),Math.max(1,20-otherLevels));
+    setClassLevels(levels);
+    renderPowers();refreshPowerPickerIfOpen();recalc();save(false);
+  });
+  $$("[data-classlevel-remove]").forEach(element=>element.onclick=()=>{
+    const levels=currentClassLevels();
+    const idx=Number(element.dataset.classlevelRemove);
+    if(idx<=0) return;
+    levels.splice(idx,1);
+    setClassLevels(levels);
+    renderPowers();refreshPowerPickerIfOpen();recalc();save(false);
+  });
+}
+function addClassLevel(){
+  const levels=currentClassLevels();
+  if(totalClassLevel(levels)>=20){notify("O nível total já está em 20.");return}
+  const used=new Set(levels.map(entry=>entry.id));
+  const id=Object.keys(T20_DATA.classes).find(classId=>!used.has(classId))||firstClassId();
+  levels.push({id,level:1});
+  setClassLevels(levels);
+  renderPowers();refreshPowerPickerIfOpen();recalc();save(false);
+}
+function trainingBonus(){const l=totalClassLevel();return l>=15?6:l>=7?4:2}
+function halfLevel(){return Math.floor(totalClassLevel()/2)}
 function deathLimitFromPvMax(pvMax){return Math.min(-10,-Math.ceil(Math.max(1,pvMax)/2))}
 function setNumberField(id,value){$("#"+id).value=Number.isFinite(value)?value:0}
 function applyResourceDelta(currentId,tempId,delta,allowNegative=false){
@@ -301,6 +445,21 @@ function applyResourceAmount(kind,direction){
 const SPELL_ATTR_PM_CLASSES=new Set(["arcanista","bardo","clerigo","druida","frade"]);
 function classUsesSpellAttrForPm(cls){return SPELL_ATTR_PM_CLASSES.has(cls?.idBase)}
 function spellAttrPmBonus(cls){return classUsesSpellAttrForPm(cls)?num(value("spellAttr")):0}
+function classLevelsUseSpellAttrForPm(levels){return levels.some(entry=>classUsesSpellAttrForPm(T20_DATA.classes[entry.id]))}
+function classResourceBases(levels,{con=0,spellAttrValue=0}={}){
+  const rows=sanitizeClassLevels(levels);
+  let pvBase=0,pmBase=0;
+  rows.forEach((entry,index)=>{
+    const cls=T20_DATA.classes[entry.id];
+    if(!cls) return;
+    const level=clampClassLevel(entry.level);
+    const pvPerLevel=Number(cls.pvNivel||0)+Number(con||0);
+    pvBase+=index===0?Number(cls.pv1||0)+Number(con||0)+Math.max(0,level-1)*pvPerLevel:level*pvPerLevel;
+    pmBase+=level*Number(cls.pmNivel||0);
+  });
+  if(classLevelsUseSpellAttrForPm(rows)) pmBase+=Number(spellAttrValue||0);
+  return {pvBase,pmBase};
+}
 
 function activeConditionEffects(){
   const result={defense:0,attack:0,allSkills:0,attrs:{},skills:{}};
@@ -328,9 +487,10 @@ function activeConditionEffects(){
   return result;
 }
 function recalc(){
-  const cls=T20_DATA.classes[value("classe")], race=T20_DATA.racas[value("raca")], lvl=Math.max(1,Math.min(20,num("nivel")||1)), con=num("CON");
-  const pmAttrBonus=spellAttrPmBonus(cls);
-  const pvBase=cls.pv1+con+(lvl-1)*(cls.pvNivel+con), pmBase=lvl*cls.pmNivel+pmAttrBonus;
+  const classLevels=currentClassLevels(), cls=primaryClass()||{nome:"Classe",pv1:0,pvNivel:0,pmNivel:0}, race=T20_DATA.racas[value("raca")], lvl=totalClassLevel(classLevels), con=num("CON");
+  syncPrimaryFieldsFromClassLevels();
+  const bases=classResourceBases(classLevels,{con,spellAttrValue:num(value("spellAttr"))});
+  const pvBase=bases.pvBase, pmBase=bases.pmBase;
   $("#pvBase").value=pvBase;$("#pmBase").value=pmBase;
   const pvTemp=Math.max(0,num("pvBonus")),pmTemp=Math.max(0,num("pmBonus"));
   const pvMax=pvBase+num("pvAjuste"),pmMax=pmBase+num("pmAjuste");
@@ -381,8 +541,19 @@ function recalc(){
   const customMove=value("deslocamento");
   const moveValue=customMove!==""?customMove:baseMove;
   const baseMoveText=`Base ${baseMove}m`;
-  const variantText=cls.variante?` — variante de ${escapeHtml(cls.classeBase)}`:"";
-  const pmSummary=`${cls.pmNivel} por nível${classUsesSpellAttrForPm(cls)?" + atributo-chave de magia":""}`;
+  const classSummary=classListLabel(classLevels);
+  const classSources=[...new Set(classLevels.map(entry=>T20_DATA.classes[entry.id]?.fonte).filter(Boolean))].join(" • ");
+  const classDetails=classLevels.map((entry,index)=>{
+    const rowCls=T20_DATA.classes[entry.id]||cls;
+    const variant=rowCls.variante?` (${escapeHtml(rowCls.classeBase)})`:"";
+    const pvText=index===0
+      ? `${rowCls.pv1}+CON no 1º nível, ${rowCls.pvNivel}+CON nos demais`
+      : `${rowCls.pvNivel}+CON por nível`;
+    const pmText=`${rowCls.pmNivel} PM por nível`;
+    return `<p><b>${escapeHtml(rowCls.nome)} ${clampClassLevel(entry.level)}${variant}:</b> PV ${pvText}; PM ${pmText}.</p>`;
+  }).join("");
+  const multiclassNote=classLevels.length>1?`<p><b>Multiclasse:</b> a primeira classe usa PV inicial; classes extras usam PV de nível subsequente.</p>`:"";
+  const pmAttrNote=classLevelsUseSpellAttrForPm(classLevels)?`<p><b>PM:</b> soma atributo-chave de magia uma vez.</p>`:"";
   $("#summaryText").innerHTML=`<article class="summaryCard">
     <small>Raça</small>
     <strong>${escapeHtml(race.nome)}</strong>
@@ -394,11 +565,10 @@ function recalc(){
     </div>
   </article>
   <article class="summaryCard">
-    <small>Classe</small>
-    <strong>${escapeHtml(cls.nome)}</strong>
-    <span>${escapeHtml(cls.fonte)}${variantText}</span>
-    <p><b>PV:</b> ${cls.pv1}+CON no 1º nível, ${cls.pvNivel}+CON por nível adicional.</p>
-    <p><b>PM:</b> ${pmSummary}.</p>
+    <small>Classes</small>
+    <strong>${escapeHtml(classSummary)}</strong>
+    <span>${escapeHtml(classSources||"Fonte não informada")}</span>
+    ${classDetails}${multiclassNote}${pmAttrNote}
   </article>`;
   const sizeInput=$("#summarySizeInput");
   if(sizeInput) sizeInput.onchange=()=>{const sizeField=$("#tamanho");if(sizeField) sizeField.value=sizeInput.value===baseSize?"":sizeInput.value;save(false)};
@@ -406,17 +576,27 @@ function recalc(){
   if(moveInput) moveInput.oninput=()=>{const moveField=$("#deslocamento");if(moveField) moveField.value=moveInput.value;save(false)};
   renderProgress();renderSkills();renderInventorySummary();
 }
-function renderProgress(){
-  const cls=T20_DATA.classes[value("classe")],lvl=num("nivel"),rows=[];
+function classProgressionForClassId(classId){
+  const cls=T20_DATA.classes[classId];
+  if(!cls) return {classId:"",cls:null,progression:{}};
   const baseProgress=T20_DATA.classes[cls.idBase]?.progressao;
-  const progression=cls.progressao||baseProgress||{};
-  rows.push(`<div class="progressHeader"><strong>Nível</strong><span>Habilidades de Classe</span></div>`);
-  for(let i=1;i<=20;i++){
-    let text=progression[i]||(i===1?`Características iniciais de ${cls.nome}`:`Escolhas e habilidades do ${i}º nível`);
-    if(!progression[i]&&i>=2) text+=` • poder/avanço de classe conforme tabela`;
-    rows.push(`<div class="level ${i<=lvl?"active":""}"><strong>${i}º</strong><span>${escapeHtml(text)}</span></div>`);
-  }
-  if($("#progressSummaryMeta")) $("#progressSummaryMeta").textContent=`${cls.nome}, nível ${lvl}`;
+  return {classId,cls,progression:cls.progressao||baseProgress||{}};
+}
+function renderProgress(){
+  const classLevels=currentClassLevels(),rows=[];
+  classLevels.forEach((entry,index)=>{
+    const {cls,progression}=classProgressionForClassId(entry.id);
+    if(!cls) return;
+    const lvl=clampClassLevel(entry.level);
+    rows.push(`<div class="progressClassTitle"><strong>${escapeHtml(cls.nome)} ${lvl}</strong><span>${index===0?"Classe principal":"Multiclasse"}</span></div>`);
+    rows.push(`<div class="progressHeader"><strong>Nível</strong><span>Habilidades de Classe</span></div>`);
+    for(let i=1;i<=20;i++){
+      let text=progression[i]||(i===1?`Características iniciais de ${cls.nome}`:`Escolhas e habilidades do ${i}º nível`);
+      if(!progression[i]&&i>=2) text+=` • poder/avanço de classe conforme tabela`;
+      rows.push(`<div class="level ${i<=lvl?"active":""}"><strong>${i}º</strong><span>${escapeHtml(text)}</span></div>`);
+    }
+  });
+  if($("#progressSummaryMeta")) $("#progressSummaryMeta").textContent=`${classListLabel(classLevels)} • nível total ${totalClassLevel(classLevels)}`;
   if($("#progressList")) $("#progressList").innerHTML=rows.join("");
 }
 function renderSkillsLegacy(){
@@ -472,7 +652,7 @@ function skillBadges(name){
   return badges.length?`<span class="skillBadges">${badges.join("")}</span>`:"";
 }
 function renderSkills(){
-  const cls=T20_DATA.classes[value("classe")], fx=activeConditionEffects();
+  const cls=primaryClass()||{pericias:[]}, fx=activeConditionEffects();
   const globalSkillBonus=num("skillGlobalBonus");
   const rows=[];
   for(const [name,defaultAttr] of Object.entries(T20_DATA.pericias)){
@@ -495,7 +675,7 @@ function renderSkills(){
       rows.push(`<div><button id="addOffice">+ Adicionar Ofício</button></div>`);
       continue;
     }
-    const d=state.skillData[name]||{trained:cls.pericias.includes(name),adjust:0,attr:defaultAttr};
+    const d=state.skillData[name]||{trained:(cls.pericias||[]).includes(name),adjust:0,attr:defaultAttr};
     d.attr=validSkillAttr(d.attr,defaultAttr);
     state.skillData[name]=d;
     const attr=d.attr;
@@ -511,7 +691,7 @@ function renderSkills(){
     </div>`);
   }
   $("#skillsList").innerHTML=rows.join("");
-  $$("[data-skattr]").forEach(e=>e.onchange=()=>{const name=e.dataset.skattr;state.skillData[name]=state.skillData[name]||{trained:cls.pericias.includes(name),adjust:0};state.skillData[name].attr=e.value;renderSkills();save(false)});
+  $$("[data-skattr]").forEach(e=>e.onchange=()=>{const name=e.dataset.skattr;state.skillData[name]=state.skillData[name]||{trained:(cls.pericias||[]).includes(name),adjust:0};state.skillData[name].attr=e.value;renderSkills();save(false)});
   $$("[data-sktrain]").forEach(e=>e.onchange=()=>{state.skillData[e.dataset.sktrain].trained=e.checked;renderSkills();save(false)});
   $$("[data-skadj]").forEach(e=>e.oninput=()=>{state.skillData[e.dataset.skadj].adjust=Number(e.value||0);renderSkills();save(false)});
   $$("[data-skroll]").forEach(e=>e.onclick=()=>rollD20(e.dataset.bonus,e.dataset.skroll));
@@ -649,11 +829,7 @@ function prettifyClassFeatureName(feature){
   }).join(" ");
 }
 function classProgressionForCurrentClass(){
-  const classId=value("classe");
-  const cls=T20_DATA.classes[classId];
-  if(!cls) return {classId:"",cls:null,progression:{}};
-  const baseProgress=T20_DATA.classes[cls.idBase]?.progressao;
-  return {classId,cls,progression:cls.progressao||baseProgress||{}};
+  return classProgressionForClassId(primaryClassEntry().id);
 }
 function classFeatureDetailsFor(classId,baseClassId,baseKey){
   const catalog=window.T20_CLASS_FEATURE_DETAILS||{};
@@ -663,23 +839,26 @@ function classFeatureDetailsFor(classId,baseClassId,baseKey){
     || {};
 }
 function currentAutoClassFeatures(){
-  const {classId,cls,progression}=classProgressionForCurrentClass();
-  const lvl=Math.max(1,Math.min(20,num("nivel")||1));
   const byFeature=new Map();
-  for(let level=1;level<=lvl;level++){
-    splitProgressionFeatures(progression[level]).forEach(rawFeature=>{
-      if(!rawFeature || isProgressionChoiceFeature(rawFeature)) return;
-      const baseKey=classFeatureBaseKey(rawFeature);
-      if(!baseKey) return;
-      const feature=prettifyClassFeatureName(rawFeature);
-      const previous=byFeature.get(baseKey)||{firstLevel:level,history:[]};
-      previous.name=feature;
-      previous.level=level;
-      previous.history.push({level,feature});
-      byFeature.set(baseKey,previous);
-    });
-  }
-  return [...byFeature.entries()].map(([baseKey,feature])=>{
+  currentClassLevels().forEach(entry=>{
+    const {classId,cls,progression}=classProgressionForClassId(entry.id);
+    for(let level=1;level<=clampClassLevel(entry.level);level++){
+      splitProgressionFeatures(progression[level]).forEach(rawFeature=>{
+        if(!rawFeature || isProgressionChoiceFeature(rawFeature)) return;
+        const baseKey=classFeatureBaseKey(rawFeature);
+        if(!baseKey) return;
+        const featureName=prettifyClassFeatureName(rawFeature);
+        const mapKey=`${classId}|${baseKey}`;
+        const previous=byFeature.get(mapKey)||{firstLevel:level,history:[],classId,cls,baseKey};
+        previous.name=featureName;
+        previous.level=level;
+        previous.history.push({level,feature:featureName});
+        byFeature.set(mapKey,previous);
+      });
+    }
+  });
+  return [...byFeature.values()].map(feature=>{
+    const {classId,cls,baseKey}=feature;
     const history=feature.history.map(item=>`${item.level}º: ${item.feature}`).join("; ");
     const evolved=feature.history.length>1?` Evolução registrada: ${history}.`:"";
     const details=classFeatureDetailsFor(classId,cls?.idBase,baseKey);
@@ -696,7 +875,7 @@ function currentAutoClassFeatures(){
       autoFeatureKey:`${classId}|${baseKey}`,
       autoLevel:feature.level
     };
-  }).sort((a,b)=>Number(a.autoLevel||0)-Number(b.autoLevel||0)||String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
+  }).sort((a,b)=>Number(a.autoLevel||0)-Number(b.autoLevel||0)||String(a.source||"").localeCompare(String(b.source||""),"pt-BR")||String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
 }
 function autoPowerSuppressionKey(power){
   if(power?.autoClassFeature===AUTO_CLASS_FEATURE_FLAG){
@@ -801,9 +980,10 @@ function renderPowers(){
   $$("[data-pdel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pdel;state.powers.splice(idx,1);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();save(false)});
 }
 function currentClassPowerIds(){
-  const selected=value("classe");
-  const cls=T20_DATA.classes[selected];
-  return [...new Set([selected,cls?.idBase].filter(Boolean))];
+  return [...new Set(currentClassLevels().flatMap(entry=>{
+    const cls=T20_DATA.classes[entry.id];
+    return [entry.id,cls?.idBase].filter(Boolean);
+  }))];
 }
 function currentClassPowers(){
   const catalog=window.T20_CLASS_POWERS||{};
@@ -895,8 +1075,8 @@ function currentPowerPickerPowers(){
 function powerPickerMetaText(powers){
   const type=currentPowerPickerType();
   if(type==="Classe"){
-    const cls=T20_DATA.classes[value("classe")];
-    return powers.length?`${cls?.nome||"Classe"} • ${powers.length} poderes encontrados`:`${cls?.nome||"Classe"} • nenhum poder catalogado para esta classe`;
+    const classes=classListLabel();
+    return powers.length?`${classes} • ${powers.length} poderes encontrados`:`${classes} • nenhum poder catalogado para estas classes`;
   }
   if(type==="Geral"){
     const subtype=value("powerCatalogSubtype")||"todos os grupos";
@@ -914,6 +1094,7 @@ function powerPickerMetaText(powers){
   return `${deity} • ${powers.length} poderes concedidos encontrados`;
 }
 function powerOptionMeta(power){
+  if(power.classId) return T20_DATA.classes[power.classId]?.nome||power.classId;
   if(power.type==="Raça" && power.races?.length) return power.races.join(", ");
   if(power.type==="Origem" && power.origins?.length) return power.origins.join(", ");
   if(power.type==="Concedido" && power.deities?.length) return power.deities.join(", ");
@@ -1553,7 +1734,9 @@ function normalizeLoadedState(saved){
     customConditions:Array.isArray(saved.customConditions)?saved.customConditions:base.customConditions,
     originBenefits:Array.isArray(saved.originBenefits)?saved.originBenefits:base.originBenefits,
     offices:Array.isArray(saved.offices)&&saved.offices.length?saved.offices:base.offices,
-    suppressedAutoPowers:Array.isArray(saved.suppressedAutoPowers)?saved.suppressedAutoPowers:base.suppressedAutoPowers
+    suppressedAutoPowers:Array.isArray(saved.suppressedAutoPowers)?saved.suppressedAutoPowers:base.suppressedAutoPowers,
+    classLevels:Array.isArray(saved.classLevels)?saved.classLevels:base.classLevels,
+    multiclassEnabled:saved.multiclassEnabled===true
   };
 }
 function normalizeSheetData(data){
@@ -1581,6 +1764,8 @@ function applySheetData(data){
   state=normalized.state;
   Object.entries(normalized.fields).forEach(([id,v])=>restoreSavedField(id,v));
   normalizeState();
+  state.classLevels=sanitizeClassLevels(state.classLevels,{fallbackId:value("classe"),fallbackLevel:num("nivel")||1});
+  syncPrimaryFieldsFromClassLevels();
   expandedSpellCards.clear();
   expandedPowerCards.clear();
   expandedItemCards.clear();
@@ -1729,11 +1914,11 @@ function localCharacterData(id){
 function characterSummaryFromData(data){
   const fields=data?.fields||{};
   const race=T20_DATA.racas[fields.raca]?.nome||fields.raca||"Raca nao definida";
-  const cls=T20_DATA.classes[fields.classe];
-  const clsName=cls?.nome||fields.classe||"Classe nao definida";
-  const lvl=fields.nivel||1;
+  const classLevels=classLevelsForSheet(fields,data?.state||{});
+  const clsName=classListLabel(classLevels);
+  const lvl=totalClassLevel(classLevels);
   const player=fields.jogador?` &bull; ${escapeHtml(fields.jogador)}`:"";
-  return `${escapeHtml(race)} &bull; ${escapeHtml(clsName)} nivel ${escapeHtml(lvl)}${player}`;
+  return `${escapeHtml(race)} &bull; ${escapeHtml(clsName)} &bull; nivel ${escapeHtml(lvl)}${player}`;
 }
 function localCloudIdSet(){
   const index=readCharacterIndex();
@@ -1860,7 +2045,9 @@ function renderHubCharacters(){
     const name=character.name||characterNameFromData(data);
     const fields=data?.fields||{};
     const race=T20_DATA.racas[fields.raca]?.nome||fields.raca||"";
-    const cls=T20_DATA.classes[fields.classe]?.nome||fields.classe||"";
+    const classLevels=classLevelsForSheet(fields,data?.state||{});
+    const cls=classListLabel(classLevels);
+    const level=totalClassLevel(classLevels);
     return {
       kind:"local",
       id:character.id,
@@ -1873,7 +2060,7 @@ function renderHubCharacters(){
       campaignOnly:!!(cloudMeta&&isCampaignOnlyCharacter(cloudMeta)),
       orphanCloud:!!(cloudMap[character.id]&&cloudUser&&!cloudMeta),
       foreignCloud:!!(cloudMeta&&!isOwnCloudCharacter(cloudMeta)),
-      search:[name,fields.jogador,race,cls,fields.nivel].filter(Boolean).join(" ").toLowerCase()
+      search:[name,fields.jogador,race,cls,level].filter(Boolean).join(" ").toLowerCase()
     };
   }).filter(record=>!record.foreignCloud&&!record.campaignOnly&&!record.orphanCloud);
   const cloudRecords=ownCloudList.filter(character=>!mappedCloudIds.has(character.id)&&!isCampaignOnlyCharacter(character)).map(character=>({
@@ -2076,14 +2263,14 @@ function activeConditionNamesFromSheet(data){
 function sheetSummaryFromCloudCharacter(character){
   const data=normalizeSheetData(character.sheet_data||{});
   const fields=data.fields||{},savedState=data.state||{};
-  const cls=T20_DATA.classes[fields.classe]||{nome:"Classe nao definida",pv1:0,pvNivel:0,pmNivel:0};
+  const classLevels=classLevelsForSheet(fields,savedState);
   const race=T20_DATA.racas[fields.raca]||{};
-  const lvl=Math.max(1,Math.min(20,sheetNum(fields,"nivel")||1));
+  const lvl=totalClassLevel(classLevels);
   const con=sheetNum(fields,"CON");
   const spellAttr=ATTR_KEYS.includes(fields.spellAttr)?fields.spellAttr:"INT";
-  const pmAttrBonus=classUsesSpellAttrForPm(cls)?sheetNum(fields,spellAttr):0;
-  const pvBase=Number(cls.pv1||0)+con+(lvl-1)*(Number(cls.pvNivel||0)+con);
-  const pmBase=lvl*Number(cls.pmNivel||0)+pmAttrBonus;
+  const bases=classResourceBases(classLevels,{con,spellAttrValue:sheetNum(fields,spellAttr)});
+  const pvBase=bases.pvBase;
+  const pmBase=bases.pmBase;
   const pvMax=pvBase+sheetNum(fields,"pvAjuste");
   const pmMax=pmBase+sheetNum(fields,"pmAjuste");
   const defenseAttr=ATTR_KEYS.includes(fields.defAttr)?fields.defAttr:"DES";
@@ -2098,7 +2285,7 @@ function sheetSummaryFromCloudCharacter(character){
     name:character.name||fields.nome||"Personagem sem nome",
     imageUrl:characterImageUrlFromFields(fields),
     player:character.player_name||fields.jogador||"",
-    className:cls.nome||"Classe nao definida",
+    className:classListLabel(classLevels),
     raceName:race.nome||fields.raca||"Raca nao definida",
     level:lvl,
     attrs:Object.fromEntries(ATTR_KEYS.map(key=>[key,sheetNum(fields,key)])),
@@ -3586,7 +3773,7 @@ function renderOriginBenefits(){
   $$("[data-ob]").forEach(e=>e.oninput=()=>{state.originBenefits[+e.dataset.ob]=e.value;save(false)});
   $$("[data-obdel]").forEach(e=>e.onclick=()=>{state.originBenefits.splice(+e.dataset.obdel,1);renderOriginBenefits();save(false)});
 }
-function renderAll(){normalizeState();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();recalc();syncCloudReadOnlyControls()}
+function renderAll(){normalizeState();renderClassLevels();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();recalc();syncCloudReadOnlyControls()}
 function showFatalError(error){
   console.error(error);
   const banner=document.createElement("div");
@@ -3604,7 +3791,18 @@ try{
 }
 
 $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
-  if(e.id==="nivel"){renderPowers();refreshPowerPickerIfOpen()}
+  if(e.id==="classe"){
+    state.skillData={};
+    syncClassLevelsFromPrimaryFields();
+  }
+  if(e.id==="nivel"){
+    const levels=currentClassLevels();
+    if(levels.length===1){
+      levels[0].level=clampClassLevel(e.value);
+      setClassLevels(levels);
+    }
+    renderPowers();refreshPowerPickerIfOpen();
+  }
   if(e.id==="portraitUrl") renderCharacterPortrait();
   recalc();
   if(e.id==="divindade") refreshPowerPickerIfOpen();
@@ -3613,9 +3811,20 @@ $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
 $("#spellAttr").addEventListener("change",()=>{recalc();save(false)});
 $("#defAttr").addEventListener("change",()=>{recalc();save(false)});
 function syncClassDefenseAttr(){
-  if(value("classe")==="sentinela" && (!value("defAttr") || value("defAttr")==="DES")) $("#defAttr").value="INT";
+  if(currentClassLevels().some(entry=>entry.id==="sentinela") && (!value("defAttr") || value("defAttr")==="DES")) $("#defAttr").value="INT";
 }
-$("#classe").addEventListener("change",()=>{state.skillData={};syncClassDefenseAttr();renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
+$("#classe").addEventListener("change",()=>{state.skillData={};syncClassLevelsFromPrimaryFields();syncClassDefenseAttr();renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
+$("#multiclassEnabled")?.addEventListener("change",event=>{
+  if(!event.target.checked&&currentClassLevels().length>1){
+    event.target.checked=true;
+    notify("Remova as classes extras antes de desativar a multiclasse.");
+    return;
+  }
+  state.multiclassEnabled=event.target.checked;
+  renderClassLevels();
+  save(false);
+});
+$("#addClassLevelBtn")?.addEventListener("click",addClassLevel);
 $("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
 $("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc();save(false)});
 $("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc();save(false)});

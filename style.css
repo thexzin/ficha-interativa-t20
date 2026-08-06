@@ -327,3 +327,66 @@ input,select,textarea{border-color:#694038}.attrs label{position:relative;paddin
   .hubCard .hubDeleteButton.deleteIconButton{width:42px;min-width:42px}
   .skillActions{justify-content:flex-start}
 }
+
+.classIdentityField{display:grid;gap:.35rem;align-self:end;min-width:0}
+.classIdentityHead{display:flex;align-items:center;justify-content:space-between;gap:.35rem;min-width:0}
+.classIdentityHead>label:first-child{color:var(--muted);font-size:.84rem;min-width:0}
+.multiclassToggle{
+  display:flex;
+  align-items:center;
+  gap:.3rem;
+  width:max-content;
+  color:#d8bd94;
+  font-size:.64rem;
+  font-weight:800;
+  cursor:pointer;
+}
+.multiclassToggle input[type="checkbox"]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.multiclassToggle i{position:relative;width:28px;height:16px;flex:none;border:1px solid #6e4b2b;border-radius:999px;background:#17130f;transition:.18s ease}
+.multiclassToggle i::after{content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;background:#a88b67;transition:.18s ease}
+.multiclassToggle input:checked+i{border-color:#b0842f;background:#5b4328}
+.multiclassToggle input:checked+i::after{left:14px;background:#f1c46f}
+.multiclassToggle input:focus-visible+i{outline:2px solid rgba(213,168,76,.7);outline-offset:2px}
+.multiclassEditor{
+  grid-column:1/-1;
+  display:grid;
+  gap:.65rem;
+  padding:.75rem;
+  border:1px solid #704139;
+  border-radius:8px;
+  background:linear-gradient(145deg,#211b16,#17130f);
+}
+.multiclassEditor.hidden{display:none}
+.multiclassHead{display:flex;justify-content:space-between;align-items:end;gap:.75rem}
+.multiclassHead strong{font-family:Cinzel,Georgia,serif;color:#f4ead8;font-size:1rem}
+.multiclassHead span{display:block;margin-top:.15rem;color:var(--muted);font-size:.82rem}
+.classLevelsList{display:grid;gap:.45rem}
+.classLevelRow{
+  display:grid;
+  grid-template-columns:92px minmax(220px,1fr) 120px minmax(120px,.55fr) auto;
+  gap:.5rem;
+  align-items:end;
+  padding:.55rem;
+  border:1px solid #3f3029;
+  border-radius:7px;
+  background:#17130f;
+}
+.classLevelRow.primary{border-color:#7a5c33;background:rgba(213,168,76,.06)}
+.classLevelRole,.classLevelSource,.classLevelLocked{color:var(--muted);font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.classLevelRole{color:var(--gold);align-self:center}
+.classLevelSource{align-self:center}
+.classLevelLocked{justify-self:end;padding:.35rem .55rem;border:1px solid #6e4b2b;border-radius:999px;background:#211912;color:#f1c98d;text-align:center}
+.classLevelRemove{width:38px;height:38px;min-width:38px;padding:0}
+.progressClassTitle{display:flex;justify-content:space-between;gap:.7rem;align-items:center;margin:.5rem 0 .2rem;padding:.55rem .7rem;border:1px solid #7a4639;border-radius:8px;background:linear-gradient(90deg,#2b2119,#17130f)}
+.progressClassTitle:first-child{margin-top:0}
+.progressClassTitle strong{font-family:Cinzel,Georgia,serif;color:#f4ead8}
+.progressClassTitle span{color:var(--gold);font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+@media(max-width:820px){
+  .classLevelRow{grid-template-columns:1fr 1fr}
+  .classLevelRemove{justify-self:end}
+}
+@media(max-width:560px){
+  .multiclassHead{align-items:stretch;flex-direction:column}
+  .classLevelRow{grid-template-columns:1fr}
+  .classLevelLocked,.classLevelRemove{justify-self:stretch}
+}

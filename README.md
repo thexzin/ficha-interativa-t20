@@ -21,6 +21,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 - Gerenciador de personagens no cabeçalho: permite criar, trocar, duplicar, renomear e excluir várias fichas salvas no mesmo navegador.
 - O resumo da raça mostra modificadores de atributos; tamanho e deslocamento base aparecem em campos editáveis logo abaixo. Quando a raça não informa esses dados, a ficha assume tamanho Médio e deslocamento 9m.
 - Progressão de classe automática: habilidades recebidas por nível entram sozinhas na aba Poderes, com descrições completas.
+- Suporte a multiclasse: marque `Multiclasse` junto ao seletor de classe para abrir o bloco que adiciona classes extras e controla o nível de cada uma. O nível de personagem é calculado pela soma das classes.
 - Poderes em sanfona, duas entradas por linha, mostrando nome e tipo mesmo recolhidos.
 - Grimório, Poderes, Inventário e Ataques usam cards recolhidos/expansíveis para manter a ficha mais limpa.
 - PV aceita valores negativos e segue a regra de morte por metade dos PV máximos negativos, morrendo apenas 1 PV abaixo desse limite.
@@ -38,7 +39,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 ## Como usar
 
 1. Abra `index.html`.
-2. Preencha os dados principais no cabeçalho: raça, classe, nível, origem, divindade e atributos.
+2. Preencha os dados principais no cabeçalho: raça, classe principal, nível, origem, divindade e atributos. Para multiclasse, marque `Multiclasse`, use `+ Classe` no bloco aberto e informe o nível de cada classe.
 3. Use o seletor de personagem no cabeçalho para criar novas fichas, duplicar, renomear, excluir ou alternar entre personagens.
 4. Use as abas para completar a ficha.
 5. Se estiver conectado, a ficha salva automaticamente na nuvem. No modo offline, ela salva no navegador.
@@ -112,7 +113,7 @@ Registra poderes e habilidades do personagem. A aba combina:
 - poderes concedidos;
 - poderes manuais.
 
-Habilidades automáticas ficam bloqueadas para edição direta e são atualizadas quando raça, classe ou nível mudam. Modificadores raciais de atributos aparecem no resumo da raça, não como poderes. Entradas que exigem escolha, como herança de Moreau, presentes de Duende, talentos de Kobolds ou bênçãos de Kallyanach, aparecem como orientação, mas a escolha específica continua manual.
+Habilidades automáticas ficam bloqueadas para edição direta e são atualizadas quando raça, classes ou níveis de classe mudam. Em personagens multiclasse, a progressão e o catálogo de poderes consideram todas as classes; perícias e proficiências iniciais continuam vindo apenas da classe principal. Modificadores raciais de atributos aparecem no resumo da raça, não como poderes. Entradas que exigem escolha, como herança de Moreau, presentes de Duende, talentos de Kobolds ou bênçãos de Kallyanach, aparecem como orientação, mas a escolha específica continua manual.
 
 ### Combate
 
@@ -140,8 +141,9 @@ Catálogo de magias. Permite pesquisar, filtrar por círculo, tipo e escola de m
 
 ## Cálculos e automações
 
-- PV base: usa os valores da classe, Constituição e nível.
-- PM base: usa PM por nível da classe e, para conjuradores compatíveis, soma o atributo-chave de magia.
+- PV base: a classe principal usa os PV do 1º nível; cada nível de uma classe extra usa os PV de nível subsequente dessa classe. Constituição entra em todos os níveis.
+- PM base: soma os PM por nível de todas as classes e, para conjuradores compatíveis, soma o atributo-chave de magia uma vez.
+- Nível de personagem: soma dos níveis de todas as classes; é usado em metade do nível, bônus de treinamento, CD e limite de PM.
 - CD de magia: `10 + metade do nível + atributo-chave + bônus`.
 - Limite de PM: nível + bônus + ajuste livre.
 - Defesa: base 10 + Destreza opcional + armadura + escudo + bônus + ajuste + condições. Desmarque “Somar Destreza” quando usar armaduras pesadas ou qualquer efeito que remova esse bônus.

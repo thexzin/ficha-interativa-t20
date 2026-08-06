@@ -230,13 +230,33 @@
   <label>Nome<input id="nome" data-save></label>
   <label>Jogador<input id="jogador" data-save></label>
   <label>Raça<select id="raca" data-save></select></label>
-  <label>Classe<select id="classe" data-save></select></label>
+  <div class="classIdentityField">
+    <div class="classIdentityHead">
+      <label for="classe">Classe</label>
+      <label class="multiclassToggle" title="Ativar multiclasse">
+        <span>Multiclasse</span>
+        <input id="multiclassEnabled" type="checkbox">
+        <i aria-hidden="true"></i>
+      </label>
+    </div>
+    <select id="classe" data-save></select>
+  </div>
   <label>Nível<input id="nivel" data-save type="number" min="1" max="20" value="1"></label>
   <select id="origem" data-save hidden></select>
   <input id="deslocamento" data-save type="number" hidden>
   <select id="tamanho" data-save hidden><option value=""></option><option>Minúsculo</option><option>Pequeno</option><option>Médio</option><option>Grande</option><option>Enorme</option><option>Colossal</option></select>
   <label>Origem<input id="originSummary" readonly></label>
   <label>Divindade<input id="divindade" data-save></label>
+  <div id="multiclassEditor" class="multiclassEditor hidden">
+    <div class="multiclassHead">
+      <div>
+        <strong>Classes</strong>
+        <span id="multiclassMeta">Nível total 1</span>
+      </div>
+      <button id="addClassLevelBtn" type="button">+ Classe</button>
+    </div>
+    <div id="classLevelsList" class="classLevelsList"></div>
+  </div>
 </section>
 
 <section id="tab-resumo" class="tab active">
