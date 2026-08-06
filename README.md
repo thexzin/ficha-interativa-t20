@@ -117,7 +117,7 @@ Habilidades automáticas ficam bloqueadas para edição direta e são atualizada
 
 ### Combate
 
-Agrupa ataques e rolagens rápidas. Cada ataque fica recolhido por padrao, mostrando nome, ataque, dano e critico; clique no resumo para editar detalhes. Cada ataque pode ter bônus, dano, crítico, multiplicador e notas. O campo de dano aceita expressões como `1d6+1d12+4`.
+Agrupa ataques e rolagens rápidas. Cada ataque fica recolhido por padrao, mostrando nome, ataque, dano e critico; clique no resumo para editar detalhes. Cada ataque pode ter bônus, dano base, dano extra, crítico, multiplicador e notas. Todos os termos de dados do dano base recebem a multiplicação do crítico; o dano extra é rolado uma única vez. Bônus numéricos normalmente não são multiplicados, mas o check `Bônus numérico: Crita` permite multiplicá-los em efeitos como o encanto Lancinante. Os campos aceitam expressões como `2d6`, `1d8+1d6` ou `1d6+3`.
 
 ### Grimório
 

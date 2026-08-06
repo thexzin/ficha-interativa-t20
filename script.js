@@ -17,7 +17,7 @@ let cloudCampaigns=[];
 let cloudCampaignRolls=[];
 
 function defaultState(){
-  return {powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false};
+  return {powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",extraDamage:"",critFlat:false,crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false};
 }
 function normalizeState(){
   const defaults=defaultState();
@@ -119,30 +119,30 @@ function rollDice(expr){
   return {total,details};
 };
 
-function rollDamageExpression(expr,critMultiplier=1){
+function rollDamageExpression(expr,critMultiplier=1,multiplyFlat=false){
   const clean=String(expr).toLowerCase().replace(/\s/g,"");
   if(!clean) throw Error("Informe uma expressao de dano.");
   const normalized=clean.replace(/-/g,"+-");
   const parts=normalized.split("+").filter(Boolean);
   let total=0;
   const details=[];
-  let multipliedBaseDice=false;
   const multiplier=Math.max(1,Math.floor(Number(critMultiplier)||1));
   for(const part of parts){
     const dice=part.match(/^(-?)(\d+)d(\d+)$/);
     if(dice){
       const sign=dice[1]==="-"?-1:1,q=Number(dice[2]),faces=Number(dice[3]);
-      const finalQty=!multipliedBaseDice?q*multiplier:q;
+      const finalQty=q*multiplier;
       if(q<1||finalQty>100||faces<2||faces>1000) throw Error("Expressao de dados invalida.");
       const rolls=Array.from({length:finalQty},()=>Math.floor(Math.random()*faces)+1);
       total+=rolls.reduce((a,b)=>a+b,0)*sign;
-      const critNote=multiplier>1&&!multipliedBaseDice?` (${q}d${faces} x${multiplier})`:"";
+      const critNote=multiplier>1?` (${q}d${faces} x${multiplier})`:"";
       details.push(`${sign<0?"-":""}${finalQty}d${faces} [${rolls.join(", ")}]${critNote}`);
-      multipliedBaseDice=true;
     }else if(/^-?\d+$/.test(part)){
       const flat=Number(part);
-      total+=flat;
-      details.push(String(flat));
+      const finalFlat=multiplyFlat?flat*multiplier:flat;
+      total+=finalFlat;
+      const critNote=multiplyFlat&&multiplier>1?` (${flat} x${multiplier})`:"";
+      details.push(`${finalFlat}${critNote}`);
     }else{
       throw Error("Use formatos como 1d8, 2d6+4 ou 1d6+1d12+3.");
     }
@@ -167,14 +167,21 @@ function rollAttackDamage(attack){
   const critical=parseCritical(attack.crit,attack.mult);
   const isCritical=d20>=critical.threshold;
   const isFumble=d20===1;
-  const damage=rollDamageExpression(attack.damage,isCritical?critical.multiplier:1);
+  const baseDamage=rollDamageExpression(attack.damage,isCritical?critical.multiplier:1,isCritical&&attack.critFlat===true);
+  const extraExpression=String(attack.extraDamage||"").trim();
+  const extraDamage=extraExpression?rollDamageExpression(extraExpression,1):{total:0,details:[]};
+  const damage={
+    total:baseDamage.total+extraDamage.total,
+    details:[...baseDamage.details,...extraDamage.details]
+  };
   const attackTotalClass=isFumble?"fumbleTotal":isCritical?"criticalTotal":"";
   const rollLabel=isFumble?"Falha":isCritical?"Cr&iacute;tico":"Ataque";
   const title=escapeHtml(attack.name||"Ataque");
-  const damageLine=escapeHtml(damage.details.join(" + "));
+  const baseDamageLine=escapeHtml(baseDamage.details.join(" + "));
+  const extraDamageLine=extraDamage.details.length?`<br>Dano extra: ${escapeHtml(extraDamage.details.join(" + "))}`:"";
   notify(`<div class="combatRollToast">
     <div class="combatRollTop"><strong>${title}</strong><span>${rollLabel}</span></div>
-    <div class="combatRollFormula">Ataque: 1d20 [${d20}] ${signedNumber(bonus)}<br>Dano: ${damageLine}${isCritical?`<br>Cr&iacute;tico: ${critical.threshold}/x${critical.multiplier}`:""}</div>
+    <div class="combatRollFormula">Ataque: 1d20 [${d20}] ${signedNumber(bonus)}<br>Dano base: ${baseDamageLine}${extraDamageLine}${isCritical?`<br>Cr&iacute;tico: ${critical.threshold}/x${critical.multiplier}`:""}</div>
     <div class="combatRollTotals">
       <div><strong class="${attackTotalClass}">${totalAttack}</strong><small>Ataque</small></div>
       <div><strong>${damage.total}</strong><small>Dano</small></div>
@@ -187,7 +194,7 @@ function rollAttackDamage(attack){
     bonus,
     totalAttack,
     totalDamage:damage.total,
-    damageDetails:damage.details.join(" + "),
+    damageDetails:`Base: ${baseDamage.details.join(" + ")}${extraDamage.details.length?` | Extra: ${extraDamage.details.join(" + ")}`:""}`,
     isCritical,
     isFumble,
     critical,
@@ -1634,6 +1641,8 @@ function renderAttackCard(a,i){
   const bonus=Number(a.bonus||0);
   const bonusText=`${bonus>=0?"+":""}${bonus}`;
   const damage=escapeHtml(a.damage||"sem dano");
+  const extraDamage=escapeHtml(a.extraDamage||"");
+  const critFlat=a.critFlat===true;
   const crit=escapeHtml(a.crit||"20");
   const mult=escapeHtml(a.mult||"x2");
   const notes=escapeHtml(a.notes||"");
@@ -1643,7 +1652,7 @@ function renderAttackCard(a,i){
       <button type="button" class="combatAttackToggle" data-attacktoggle="${i}" aria-expanded="${isOpen}" aria-label="${toggleLabel}" title="${toggleLabel}">
         <span class="combatAttackTitle">
           <strong>${name}</strong>
-          <span>${bonusText} ataque • ${damage} dano • ${crit}/${mult}</span>
+          <span>${bonusText} ataque • ${damage} dano${extraDamage?` + ${extraDamage} extra`:""} • ${crit}/${mult}${critFlat?" • bônus crita":""}</span>
         </span>
       </button>
       <div class="combatRollActions">
@@ -1654,7 +1663,9 @@ function renderAttackCard(a,i){
       <div class="attackFields">
         <label>Nome<input data-a="${i}" data-k="name" value="${name}"></label>
         <label>Ataque<input data-a="${i}" data-k="bonus" type="number" value="${bonus}"></label>
-        <label>Dano<input data-a="${i}" data-k="damage" value="${damage}" placeholder="1d6+1d12+4"></label>
+        <label>Dano base (crítico)<input data-a="${i}" data-k="damage" value="${damage}" placeholder="Ex.: 2d6 ou 1d8+1d6"></label>
+        <label>Dano extra<input data-a="${i}" data-k="extraDamage" value="${extraDamage}" placeholder="Ex.: +3 ou 1d6"></label>
+        <label class="attackCritFlat">Bônus numérico<span class="attackCritFlatControl"><input data-a="${i}" data-k="critFlat" type="checkbox" ${critFlat?"checked":""}><span>Crita</span></span></label>
         <label>Crítico<input data-a="${i}" data-k="crit" value="${crit}"></label>
         <label>Mult.<input data-a="${i}" data-k="mult" value="${mult}"></label>
         <button type="button" class="remove combatRemove deleteIconButton" data-adel="${i}" title="Excluir ataque" aria-label="Excluir ataque">${DELETE_ICON_HTML}</button>
@@ -1689,7 +1700,7 @@ function renderAttacks(){
     }
   });
 }
-function bindCollection(prefix,arr,rerender){$$(`[data-${prefix}]`).forEach(e=>e.onchange=()=>{let v=e.value;if(e.type==="number")v=Number(v||0);if(e.tagName==="SELECT"&&(v==="true"||v==="false"))v=v==="true";arr[+e.dataset[prefix]][e.dataset.k]=v;if(prefix==="i")renderInventorySummary();save(false);if(prefix==="s"||prefix==="p"||prefix==="i"||prefix==="a")rerender()})}
+function bindCollection(prefix,arr,rerender){$$(`[data-${prefix}]`).forEach(e=>e.onchange=()=>{let v=e.type==="checkbox"?e.checked:e.value;if(e.type==="number")v=Number(v||0);if(e.tagName==="SELECT"&&(v==="true"||v==="false"))v=v==="true";arr[+e.dataset[prefix]][e.dataset.k]=v;if(prefix==="i")renderInventorySummary();save(false);if(prefix==="s"||prefix==="p"||prefix==="i"||prefix==="a")rerender()})}
 function savedFieldValue(element){
   return element.type==="checkbox"?element.checked:element.value;
 }
@@ -3848,7 +3859,7 @@ $("#itemCatalogCategory").onchange=updateItemPicker;
 $("#addSelectedItem").onclick=addSelectedCatalogItem;
 $("#addBlankItem").onclick=()=>{addItemEntry();closeItemPicker()};
 $("#applyOriginBtn").onclick=applyOrigin;$("#addOriginBenefit").onclick=()=>{state.originBenefits.push("");renderOriginBenefits();save(false)};$("#addCustomCondition").onclick=()=>{state.customConditions.push({name:"Nova condição",active:true,effect:""});renderCustomConditions();renderConditionMini();save(false)};
-$("#addAttack").onclick=()=>{state.attacks.push({name:"Novo ataque",bonus:0,damage:"1d6",crit:"20",mult:"x2",notes:""});expandedAttackCards.add(state.attacks.length-1);renderAttacks();save(false)};
+$("#addAttack").onclick=()=>{state.attacks.push({name:"Novo ataque",bonus:0,damage:"1d6",extraDamage:"",critFlat:false,crit:"20",mult:"x2",notes:""});expandedAttackCards.add(state.attacks.length-1);renderAttacks();save(false)};
 $("#characterSelect").onchange=e=>switchCharacter(e.target.value);
 $("#newCharacterBtn").onclick=newCharacter;
 $("#duplicateCharacterBtn").onclick=duplicateCharacter;
