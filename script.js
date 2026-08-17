@@ -1569,6 +1569,7 @@ function suppressAutoPower(power){
 function syncAutoClassFeatures(){
   state.powers=Array.isArray(state.powers)?state.powers:[];
   state.suppressedAutoPowers=Array.isArray(state.suppressedAutoPowers)?state.suppressedAutoPowers:[];
+  const previousPowers=state.powers.filter(power=>!isRaceAttributeModifierPower(power));
   const manual=state.powers.filter(power=>power.autoClassFeature!==AUTO_CLASS_FEATURE_FLAG && power.autoRaceAbility!==AUTO_RACE_ABILITY_FLAG && !isRaceAttributeModifierPower(power));
   const manualClassFeatureKeys=new Set(manual
     .filter(power=>normalizePowerType(power.type)==="Classe")
@@ -1580,7 +1581,23 @@ function syncAutoClassFeatures(){
     .filter(Boolean));
   const auto=currentAutoClassFeatures().filter(power=>!manualClassFeatureKeys.has(classFeatureBaseKey(power.name)) && !isSuppressedAutoPower(power));
   const autoRace=currentAutoRaceAbilities().filter(power=>!manualRaceAbilityKeys.has(powerCatalogKey(power.name)) && !isSuppressedAutoPower(power));
-  state.powers=[...auto,...autoRace,...manual];
+  const generated=[...auto,...autoRace],generatedByKey=new Map(generated.map(power=>[autoPowerSuppressionKey(power),power]));
+  const hadAutomatic=previousPowers.some(power=>autoPowerSuppressionKey(power));
+  if(!hadAutomatic){
+    state.powers=[...generated,...manual];
+  }else{
+    const ordered=[];
+    previousPowers.forEach(power=>{
+      const key=autoPowerSuppressionKey(power);
+      if(!key){ordered.push(power);return}
+      const refreshed=generatedByKey.get(key);
+      if(refreshed){ordered.push(refreshed);generatedByKey.delete(key)}
+    });
+    const newAutomatic=[...generatedByKey.values()];
+    const lastAutomaticIndex=ordered.reduce((last,power,index)=>autoPowerSuppressionKey(power)?index:last,-1);
+    ordered.splice(lastAutomaticIndex+1,0,...newAutomatic);
+    state.powers=ordered;
+  }
   expandedPowerCards=new Set([...expandedPowerCards].filter(index=>index<state.powers.length));
 }
 function isAutoRaceAbilityEntry(power){
@@ -1609,6 +1626,21 @@ function currentAutoRaceAbilities(){
       autoRaceAbilityKey:`${raceId}|${powerCatalogKey(power.name)}|${powerCatalogKey(power.source)}`
     }));
 }
+function moveCollectionEntry(collection,index,direction){
+  const target=index+direction;
+  if(!Array.isArray(collection)||index<0||target<0||index>=collection.length||target>=collection.length) return false;
+  [collection[index],collection[target]]=[collection[target],collection[index]];
+  return true;
+}
+function swapExpandedIndexes(indexes,first,second){
+  return new Set([...indexes].map(index=>index===first?second:index===second?first:index));
+}
+function accordionOrderControls(kind,index,total){
+  return `<div class="accordionOrderControls" role="group" aria-label="Reordenar">
+    <button type="button" data-${kind}move="-1" data-${kind}index="${index}" title="Mover para cima" aria-label="Mover para cima" ${index===0?"disabled":""}>&uarr;</button>
+    <button type="button" data-${kind}move="1" data-${kind}index="${index}" title="Mover para baixo" aria-label="Mover para baixo" ${index===total-1?"disabled":""}>&darr;</button>
+  </div>`;
+}
 function renderPowerCard(p,i){
   const isOpen=expandedPowerCards.has(i);
   p.type=normalizePowerType(p.type||"Classe");
@@ -1622,10 +1654,13 @@ function renderPowerCard(p,i){
     ? `<div class="autoPowerActions"><span class="autoPowerBadge">${isAutoRace?"Raça":"Progressão"}</span><button type="button" class="remove autoRemove deleteIconButton" data-pautodel="${i}" title="Remover este poder automático" aria-label="Remover este poder automático">${DELETE_ICON_HTML}</button></div>`
     : `<button type="button" class="remove deleteIconButton" data-pdel="${i}" title="Excluir poder" aria-label="Excluir poder">${DELETE_ICON_HTML}</button>`;
   return `<div class="card powerAccordionCard ${isOpen?"expanded":""}">
-    <button type="button" class="powerAccordionToggle" data-powertoggle="${i}" aria-expanded="${isOpen}">
-      <span class="powerAccordionTitle"><strong>${escapeHtml(p.name||"Poder sem nome")}</strong><small>${autoText}</small></span>
-      <span class="powerAccordionCue">${isOpen?"Recolher":"Expandir"}</span>
-    </button>
+    <div class="accordionCardHeader">
+      <button type="button" class="powerAccordionToggle" data-powertoggle="${i}" aria-expanded="${isOpen}">
+        <span class="powerAccordionTitle"><strong>${escapeHtml(p.name||"Poder sem nome")}</strong><small>${autoText}</small></span>
+        <span class="powerAccordionCue">${isOpen?"Recolher":"Expandir"}</span>
+      </button>
+      ${accordionOrderControls("power",i,state.powers.length)}
+    </div>
     <div class="powerAccordionBody ${isOpen?"":"hidden"}">
       <div class="powerMainFields">
         <label>Nome<input data-p="${i}" data-k="name" value="${escapeHtml(p.name||"")}" placeholder="Nome"${lockAttr}></label>
@@ -1645,6 +1680,13 @@ function renderPowers(){
   syncAutoClassFeatures();
   $("#powersList").innerHTML=state.powers.map((p,i)=>renderPowerCard(p,i)).join("") || '<p class="muted">Nenhum poder registrado ainda.</p>';
   $$("[data-powertoggle]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.powertoggle;if(expandedPowerCards.has(idx))expandedPowerCards.delete(idx);else expandedPowerCards.add(idx);renderPowers()});
+  $$("[data-powermove]").forEach(button=>button.onclick=()=>{
+    const index=Number(button.dataset.powerindex),direction=Number(button.dataset.powermove),target=index+direction;
+    if(!moveCollectionEntry(state.powers,index,direction)) return;
+    expandedPowerCards=swapExpandedIndexes(expandedPowerCards,index,target);
+    renderPowers();
+    save(false);
+  });
   bindCollection("p",state.powers,renderPowers);
   $$("[data-pautodel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pautodel;suppressAutoPower(state.powers[idx]);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();save(false)});
   $$("[data-pdel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pdel;state.powers.splice(idx,1);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();save(false)});
@@ -2165,10 +2207,13 @@ function renderItemCard(it,i){
     it.equipped?"Equipado":null
   ].filter(Boolean).map(escapeHtml).join(" &bull; ");
   return `<div class="card itemAccordionCard ${isOpen?"expanded":""} ${it.equipped?"equipped":""}">
-    <button type="button" class="itemAccordionToggle" data-itemtoggle="${i}" aria-expanded="${isOpen}">
-      <span class="itemAccordionTitle"><strong>${escapeHtml(it.name||"Item sem nome")}</strong><small>${summary||"Sem detalhes"}</small></span>
-      <span class="itemAccordionCue">${isOpen?"Recolher":"Expandir"}</span>
-    </button>
+    <div class="accordionCardHeader">
+      <button type="button" class="itemAccordionToggle" data-itemtoggle="${i}" aria-expanded="${isOpen}">
+        <span class="itemAccordionTitle"><strong>${escapeHtml(it.name||"Item sem nome")}</strong><small>${summary||"Sem detalhes"}</small></span>
+        <span class="itemAccordionCue">${isOpen?"Recolher":"Expandir"}</span>
+      </button>
+      ${accordionOrderControls("item",i,state.items.length)}
+    </div>
     <div class="itemAccordionBody ${isOpen?"":"hidden"}">
       <div class="itemMainFields">
         <label>Item<input data-i="${i}" data-k="name" value="${escapeHtml(it.name||"")}"></label>
@@ -2208,6 +2253,12 @@ function renderItemCard(it,i){
 function renderItems(){
   $("#itemsList").innerHTML=state.items.map((it,i)=>renderItemCard(it,i)).join("") || '<p class="muted">Nenhum item registrado ainda.</p>';
   $$("[data-itemtoggle]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.itemtoggle;if(expandedItemCards.has(idx))expandedItemCards.delete(idx);else expandedItemCards.add(idx);renderItems()});
+  $$("[data-itemmove]").forEach(button=>button.onclick=()=>{
+    const index=Number(button.dataset.itemindex),direction=Number(button.dataset.itemmove),target=index+direction;
+    if(!moveCollectionEntry(state.items,index,direction)) return;
+    expandedItemCards=swapExpandedIndexes(expandedItemCards,index,target);
+    refreshInventoryEffects();
+  });
   bindCollection("i",state.items,renderItems);
   $$("[data-additemmod]").forEach(button=>button.onclick=()=>{
     const index=Number(button.dataset.itemindex),kind=button.dataset.additemmod,select=$(`#item-${kind}-${index}`),id=select?.value;

@@ -121,7 +121,7 @@ Registra poderes e habilidades do personagem. A aba combina:
 - poderes concedidos;
 - poderes manuais.
 
-Habilidades automáticas ficam bloqueadas para edição direta e são atualizadas quando raça, classes ou níveis de classe mudam. Em personagens multiclasse, a progressão e o catálogo de poderes consideram todas as classes; perícias e proficiências iniciais continuam vindo apenas da classe principal. Modificadores raciais de atributos aparecem no resumo da raça, não como poderes. Entradas que exigem escolha, como herança de Moreau, presentes de Duende, talentos de Kobolds ou bênçãos de Kallyanach, aparecem como orientação, mas a escolha específica continua manual.
+Habilidades automáticas ficam bloqueadas para edição direta e são atualizadas quando raça, classes ou níveis de classe mudam. Em personagens multiclasse, a progressão e o catálogo de poderes consideram todas as classes; perícias e proficiências iniciais continuam vindo apenas da classe principal. Modificadores raciais de atributos aparecem no resumo da raça, não como poderes. Entradas que exigem escolha, como herança de Moreau, presentes de Duende, talentos de Kobolds ou bênçãos de Kallyanach, aparecem como orientação, mas a escolha específica continua manual. As setas nos cards permitem reorganizar poderes manuais e automáticos, e a ordem escolhida é preservada nas próximas sincronizações.
 
 ### Combate
 
@@ -135,7 +135,7 @@ Guarda as magias conhecidas pelo personagem. Magias podem ser adicionadas manual
 
 ### Inventário
 
-Controla itens, quantidade, espaço, preço, equipamento e notas. O botão de adicionar abre o catálogo de itens mundanos; o botão de item mágico abre catálogo próprio. Os itens ficam em cards recolhidos, duas entradas por linha.
+Controla itens, quantidade, espaço, preço, equipamento e notas. O botão de adicionar abre o catálogo de itens mundanos; o botão de item mágico abre catálogo próprio. Os itens ficam em cards recolhidos, duas entradas por linha, com setas para reorganizar a ordem do inventário.
 
 Armas, armaduras, escudos, esotéricos, ferramentas e vestuário recebem uma área de `Modificações`. Nela é possível escolher melhorias, material especial e encantos do Jogo do Ano. Pré-requisitos diretos, como Certeira para Pungente e Defensor para Guardião, são adicionados em conjunto; o material especial conta no limite de quatro melhorias e cada item aceita até três encantos.
 
