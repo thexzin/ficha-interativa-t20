@@ -17,7 +17,26 @@ let cloudCampaigns=[];
 let cloudCampaignRolls=[];
 
 function defaultState(){
-  return {powers:[],spells:[],items:[],attacks:[{name:"Ataque desarmado",bonus:0,damage:"1d3",extraDamage:"",critFlat:false,crit:"20",mult:"x2",notes:""}],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false};
+  return {powers:[],spells:[],items:[],attacks:[defaultAttack({name:"Ataque desarmado",damage:"1d3"})],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false};
+}
+function defaultAttack(overrides={}){
+  return {
+    name:"Novo ataque",attackSkill:"Manual",attackAttr:"",bonus:0,
+    damage:"1d6",extraDamage:"",damageAttr:"",damageType:"",range:"",
+    bestDice:0,worstDice:0,critFlat:false,crit:"20",mult:"x2",notes:"",
+    ...overrides
+  };
+}
+function normalizeAttack(attack){
+  attack=attack&&typeof attack==="object"?attack:{};
+  const normalized=defaultAttack(attack);
+  if(!["Manual","Luta","Pontaria"].includes(normalized.attackSkill)) normalized.attackSkill="Manual";
+  if(!ATTR_KEYS.includes(normalized.attackAttr)) normalized.attackAttr="";
+  if(!ATTR_KEYS.includes(normalized.damageAttr)) normalized.damageAttr="";
+  normalized.bestDice=Number(normalized.bestDice)>0;
+  normalized.worstDice=Number(normalized.worstDice)>0;
+  normalized.critFlat=normalized.critFlat===true;
+  return normalized;
 }
 function normalizeState(){
   const defaults=defaultState();
@@ -34,6 +53,7 @@ function normalizeState(){
     if(typeof state[k]!==typeof defaults[k]) state[k]=defaults[k];
   }
   if(!state.attacks.length) state.attacks=defaultState().attacks;
+  state.attacks=state.attacks.map(normalizeAttack);
   if(!state.offices.length) state.offices=defaultState().offices;
   state.classLevels=Array.isArray(state.classLevels)?state.classLevels:[];
   state.spells=state.spells.map(spell=>normalizeSpellDetailFields({...spell}));
@@ -57,6 +77,15 @@ let cloudAutosaveTimers=new Map();
 let saveStatusTimer=null;
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
+const RESISTANCE_SKILLS=new Set(["Fortitude","Reflexos","Vontade"]);
+const GLOBAL_MODIFIER_FIELDS=[
+  {id:"globalTestBonus",label:"Testes"},
+  {id:"globalAttackBonus",label:"Ataques"},
+  {id:"skillGlobalBonus",label:"Perícias"},
+  {id:"globalResistanceBonus",label:"Resistências"},
+  {id:"globalDamageBonus",label:"Dano"},
+  {id:"globalDefenseBonus",label:"Defesa"}
+];
 const rawNum=id=>Number($("#"+id)?.value||0);
 const num=id=>rawNum(id);
 const attrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+rawNum(`${id}Temp`):rawNum(id);
@@ -160,9 +189,49 @@ function parseCritical(crit,mult){
   return {threshold,multiplier};
 }
 function signedNumber(n){return `${Number(n)>=0?"+":""}${Number(n)||0}`}
+function attackSkillName(attack){
+  return ["Luta","Pontaria"].includes(attack?.attackSkill)?attack.attackSkill:"Manual";
+}
+function attackAttribute(attack,skillName=attackSkillName(attack)){
+  if(skillName==="Manual") return "";
+  const defaultAttr=T20_DATA.pericias[skillName]||"FOR";
+  const skillAttr=state.skillData?.[skillName]?.attr;
+  return ATTR_KEYS.includes(attack?.attackAttr)?attack.attackAttr:validSkillAttr(skillAttr,defaultAttr);
+}
+function attackBonusBreakdown(attack){
+  const skillName=attackSkillName(attack);
+  const manual=Number(attack?.bonus||0);
+  const fx=activeConditionEffects();
+  const attackOnly=num("globalAttackBonus")+Number(fx.attack||0);
+  if(skillName==="Manual"){
+    const total=manual+num("globalTestBonus")+attackOnly;
+    return {total,skillName,attr:"",manual};
+  }
+  const cls=primaryClass()||{pericias:[]};
+  const defaultAttr=T20_DATA.pericias[skillName]||"FOR";
+  const data=state.skillData?.[skillName]||{};
+  const trained=data.trained===true || (data.trained===undefined&&(cls.pericias||[]).includes(skillName));
+  const attr=attackAttribute(attack,skillName);
+  const skillBase=halfLevel()+attrNum(attr)+(trained?trainingBonus():0)+Number(data.adjust||0)
+    +num("globalTestBonus")+num("skillGlobalBonus")
+    +Number(fx.allSkills||0)+Number(fx.attrs?.[attr]||0)+Number(fx.skills?.[skillName]||0);
+  return {total:skillBase+attackOnly+manual,skillName,attr,manual,trained,skillBase};
+}
+function rollAttackD20(attack){
+  const best=Math.max(0,Math.min(5,Math.floor(Number(attack?.bestDice)||0)));
+  const worst=Math.max(0,Math.min(5,Math.floor(Number(attack?.worstDice)||0)));
+  const balance=best-worst;
+  const count=1+Math.abs(balance);
+  const rolls=Array.from({length:count},()=>Math.floor(Math.random()*20)+1);
+  const selected=balance>0?Math.max(...rolls):(balance<0?Math.min(...rolls):rolls[0]);
+  const mode=balance>0?`melhor de ${count}`:(balance<0?`pior de ${count}`:"normal");
+  return {selected,rolls,mode,balance};
+}
 function rollAttackDamage(attack){
-  const bonus=Number(attack.bonus||0)+activeConditionEffects().attack;
-  const d20=Math.floor(Math.random()*20)+1;
+  const attackBreakdown=attackBonusBreakdown(attack);
+  const bonus=attackBreakdown.total;
+  const attackDice=rollAttackD20(attack);
+  const d20=attackDice.selected;
   const totalAttack=d20+bonus;
   const critical=parseCritical(attack.crit,attack.mult);
   const isCritical=d20>=critical.threshold;
@@ -170,18 +239,25 @@ function rollAttackDamage(attack){
   const baseDamage=rollDamageExpression(attack.damage,isCritical?critical.multiplier:1,isCritical&&attack.critFlat===true);
   const extraExpression=String(attack.extraDamage||"").trim();
   const extraDamage=extraExpression?rollDamageExpression(extraExpression,1):{total:0,details:[]};
+  const damageAttr=ATTR_KEYS.includes(attack.damageAttr)?attack.damageAttr:"";
+  const damageAttrBonus=damageAttr?rawNum(damageAttr):0;
+  const globalDamage=num("globalDamageBonus");
   const damage={
-    total:baseDamage.total+extraDamage.total,
-    details:[...baseDamage.details,...extraDamage.details]
+    total:baseDamage.total+extraDamage.total+damageAttrBonus+globalDamage,
+    details:[...baseDamage.details,...extraDamage.details,...(damageAttr?[`${damageAttr} ${signedNumber(damageAttrBonus)}`]:[]),...(globalDamage?[signedNumber(globalDamage)]:[])]
   };
   const attackTotalClass=isFumble?"fumbleTotal":isCritical?"criticalTotal":"";
   const rollLabel=isFumble?"Falha":isCritical?"Cr&iacute;tico":"Ataque";
   const title=escapeHtml(attack.name||"Ataque");
   const baseDamageLine=escapeHtml(baseDamage.details.join(" + "));
   const extraDamageLine=extraDamage.details.length?`<br>Dano extra: ${escapeHtml(extraDamage.details.join(" + "))}`:"";
+  const damageAttrLine=damageAttr?`<br>Atributo no dano: ${damageAttr} ${signedNumber(damageAttrBonus)}`:"";
+  const globalDamageLine=globalDamage?`<br>Dano global: ${signedNumber(globalDamage)}`:"";
+  const diceLine=attackDice.rolls.length>1?` [${attackDice.rolls.join(", ")}] (${attackDice.mode})`:` [${d20}]`;
+  const skillLine=attackBreakdown.skillName==="Manual"?"Manual":`${attackBreakdown.skillName} (${attackBreakdown.attr})`;
   notify(`<div class="combatRollToast">
     <div class="combatRollTop"><strong>${title}</strong><span>${rollLabel}</span></div>
-    <div class="combatRollFormula">Ataque: 1d20 [${d20}] ${signedNumber(bonus)}<br>Dano base: ${baseDamageLine}${extraDamageLine}${isCritical?`<br>Cr&iacute;tico: ${critical.threshold}/x${critical.multiplier}`:""}</div>
+    <div class="combatRollFormula">Ataque: ${attackDice.rolls.length}d20${diceLine} ${signedNumber(bonus)}<br>Per&iacute;cia: ${skillLine}<br>Dano base: ${baseDamageLine}${extraDamageLine}${damageAttrLine}${globalDamageLine}${isCritical?`<br>Cr&iacute;tico: ${critical.threshold}/x${critical.multiplier}`:""}</div>
     <div class="combatRollTotals">
       <div><strong class="${attackTotalClass}">${totalAttack}</strong><small>Ataque</small></div>
       <div><strong>${damage.total}</strong><small>Dano</small></div>
@@ -194,7 +270,7 @@ function rollAttackDamage(attack){
     bonus,
     totalAttack,
     totalDamage:damage.total,
-    damageDetails:`Base: ${baseDamage.details.join(" + ")}${extraDamage.details.length?` | Extra: ${extraDamage.details.join(" + ")}`:""}`,
+    damageDetails:`Ataque ${attackDice.mode}: [${attackDice.rolls.join(", ")}] | Base: ${baseDamage.details.join(" + ")}${extraDamage.details.length?` | Extra: ${extraDamage.details.join(" + ")}`:""}${damageAttr?` | ${damageAttr}: ${signedNumber(damageAttrBonus)}`:""}${globalDamage?` | Global: ${signedNumber(globalDamage)}`:""}`,
     isCritical,
     isFumble,
     critical,
@@ -493,6 +569,23 @@ function activeConditionEffects(){
   for(const [s,v] of Object.entries(stacked.skills)) result.skills[s]=Number(result.skills[s]||0)+v;
   return result;
 }
+function activeGlobalModifiers(){
+  const attributes=ATTR_KEYS.map(attr=>({label:attr,value:num(`${attr}Temp`)})).filter(entry=>entry.value);
+  const globals=GLOBAL_MODIFIER_FIELDS.map(field=>({label:field.label,value:num(field.id)})).filter(entry=>entry.value);
+  return [...attributes,...globals];
+}
+function renderGlobalModifierSummary(){
+  const active=activeGlobalModifiers();
+  const text=active.length?active.map(entry=>`${entry.label} ${signedNumber(entry.value)}`).join(" • "):"Nenhum modificador ativo";
+  const summaryText=$("#activeModifiersSummaryText");
+  if(summaryText) summaryText.textContent=text;
+  const summaryButton=$("#activeModifiersSummary");
+  if(summaryButton) summaryButton.classList.toggle("active",active.length>0);
+  const list=$("#globalModifierActiveList");
+  if(list) list.innerHTML=active.length
+    ? active.map(entry=>`<span>${escapeHtml(entry.label)} <strong>${signedNumber(entry.value)}</strong></span>`).join("")
+    : '<span class="emptyModifierState">Nenhum modificador ativo</span>';
+}
 function recalc(){
   const classLevels=currentClassLevels(), cls=primaryClass()||{nome:"Classe",pv1:0,pvNivel:0,pmNivel:0}, race=T20_DATA.racas[value("raca")], lvl=totalClassLevel(classLevels), con=num("CON");
   syncPrimaryFieldsFromClassLevels();
@@ -508,7 +601,7 @@ function recalc(){
   const defenseAttr=ATTR_KEYS.includes(value("defAttr"))?value("defAttr"):"DES";
   const defenseAttrBonus=$("#defUseDex")?.checked!==false?num(defenseAttr):0;
   if($("#defUseDexState")) $("#defUseDexState").textContent=$("#defUseDex")?.checked!==false?"Sim":"Não";
-  $("#defView").textContent=10+defenseAttrBonus+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+conditionFx.defense;
+  $("#defView").textContent=10+defenseAttrBonus+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+num("globalDefenseBonus")+conditionFx.defense;
   const penalties=[];
   if(conditionFx.defense) penalties.push(`Defesa ${conditionFx.defense}`);
   if(conditionFx.attack) penalties.push(`Ataques ${conditionFx.attack}`);
@@ -581,7 +674,7 @@ function recalc(){
   if(sizeInput) sizeInput.onchange=()=>{const sizeField=$("#tamanho");if(sizeField) sizeField.value=sizeInput.value===baseSize?"":sizeInput.value;save(false)};
   const moveInput=$("#summaryMoveInput");
   if(moveInput) moveInput.oninput=()=>{const moveField=$("#deslocamento");if(moveField) moveField.value=moveInput.value;save(false)};
-  renderProgress();renderSkills();renderInventorySummary();
+  renderProgress();renderSkills();renderInventorySummary();renderGlobalModifierSummary();refreshAttackSummaries();
 }
 function classProgressionForClassId(classId){
   const cls=T20_DATA.classes[classId];
@@ -661,6 +754,8 @@ function skillBadges(name){
 function renderSkills(){
   const cls=primaryClass()||{pericias:[]}, fx=activeConditionEffects();
   const globalSkillBonus=num("skillGlobalBonus");
+  const globalTestBonus=num("globalTestBonus");
+  const globalResistanceBonus=num("globalResistanceBonus");
   const rows=[];
   for(const [name,defaultAttr] of Object.entries(T20_DATA.pericias)){
     if(name==="Ofício"){
@@ -669,7 +764,7 @@ function renderSkills(){
         const attr=validSkillAttr(office.attr,defaultAttr);
         office.attr=attr;
         const locked=skillIsLocked(name,office.trained);
-        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+globalSkillBonus+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+globalTestBonus+globalSkillBonus+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
         rows.push(`<div class="skill office-skill ${office.trained?"trained":""} ${locked?"locked":""}">
           <span class="skillName">Ofício <select class="skillAttrSelect" data-officeattr="${idx}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}</span>
           <input class="officeName" data-officename="${idx}" value="${escapeHtml(office.name||"")}" placeholder="Ex.: Alquimia">
@@ -688,7 +783,8 @@ function renderSkills(){
     const attr=d.attr;
     const armorPenalty=ARMOR_PENALTY_SKILLS.has(name)?armorPenaltyValue():0;
     const locked=skillIsLocked(name,d.trained);
-    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+globalSkillBonus+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+    const resistanceBonus=RESISTANCE_SKILLS.has(name)?globalResistanceBonus:0;
+    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+globalTestBonus+globalSkillBonus+resistanceBonus+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
     rows.push(`<div class="skill ${d.trained?"trained":""} ${locked?"locked":""} ${armorPenalty?"hasArmorPenalty":""}">
       <span class="skillName">${escapeHtml(name)} <select class="skillAttrSelect" data-skattr="${escapeHtml(name)}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}</span>
       <label><input type="checkbox" data-sktrain="${escapeHtml(name)}" ${d.trained?"checked":""}> Treino</label>
@@ -709,6 +805,7 @@ function renderSkills(){
   $$("[data-officeroll]").forEach(e=>e.onclick=()=>{const o=state.offices[+e.dataset.officeroll];rollD20(e.dataset.bonus,`Ofício${o.name?": "+o.name:""}`)});
   $$("[data-officedel]").forEach(e=>e.onclick=()=>{if(state.offices.length>1)state.offices.splice(+e.dataset.officedel,1);else state.offices[0]={name:"",trained:false,adjust:0,attr:T20_DATA.pericias["Ofício"]};renderSkills();save(false)});
   if($("#addOffice"))$("#addOffice").onclick=()=>{state.offices.push({name:"",trained:false,adjust:0,attr:T20_DATA.pericias["Ofício"]});renderSkills();save(false)};
+  refreshAttackSummaries();
 }
 function renderPowersLegacy(){
   $("#powersList").innerHTML=state.powers.map((p,i)=>`<div class="card"><div class="cardHead"><input data-p="${i}" data-k="name" value="${p.name||""}" placeholder="Nome"><select data-p="${i}" data-k="type"><option ${p.type==="Classe"?"selected":""}>Classe</option><option ${p.type==="Raça"?"selected":""}>Raça</option><option ${p.type==="Origem"?"selected":""}>Origem</option><option ${p.type==="Concedido"?"selected":""}>Concedido</option><option ${p.type==="Distinção"?"selected":""}>Distinção</option><option ${p.type==="Outro"?"selected":""}>Outro</option></select><button type="button" class="remove deleteIconButton" data-pdel="${i}" title="Excluir poder" aria-label="Excluir poder">${DELETE_ICON_HTML}</button></div><div class="powerMeta"><input data-p="${i}" data-k="cost" value="${p.cost||""}" placeholder="Custo/uso"><input data-p="${i}" data-k="action" value="${p.action||""}" placeholder="Ação"><input data-p="${i}" data-k="source" value="${p.source||""}" placeholder="Fonte/página"></div><textarea data-p="${i}" data-k="desc" rows="4" placeholder="Descrição">${p.desc||""}</textarea></div>`).join("");
@@ -1491,7 +1588,31 @@ function renderItems(){
   bindCollection("i",state.items,renderItems);
   $$("[data-idel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.idel;state.items.splice(idx,1);expandedItemCards=new Set([...expandedItemCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderItems();renderInventorySummary();save(false)});
 }
-function renderInventorySummary(){const used=state.items.reduce((sum,it)=>sum+Number(it.qty||0)*Number(it.spaces||0),0);$("#spacesUsed").textContent=used.toFixed(used%1?1:0)+(used>num("spacesLimit")?" ⚠":"")}
+function baseLoadLimitForStrength(strength){
+  strength=Number(strength)||0;
+  return Math.max(0,10+(strength>=0?strength*2:strength));
+}
+function baseLoadLimitFromStrength(){return baseLoadLimitForStrength(rawNum("FOR"))}
+function renderInventorySummary(){
+  const used=state.items.reduce((sum,it)=>sum+Number(it.qty||0)*Number(it.spaces||0),0);
+  const auto=$("#spacesLimitAuto")?.checked!==false;
+  const calculatedLimit=baseLoadLimitFromStrength();
+  if(auto&&$("#spacesLimit")) $("#spacesLimit").value=calculatedLimit;
+  const limit=Math.max(0,num("spacesLimit"));
+  const absoluteMax=limit*2;
+  const overloaded=used>limit;
+  const impossible=used>absoluteMax;
+  $("#spacesUsed").textContent=used.toFixed(used%1?1:0)+(overloaded?" ⚠":"");
+  if($("#spacesMax")) $("#spacesMax").textContent=absoluteMax.toFixed(absoluteMax%1?1:0);
+  const hint=$("#loadRuleHint"),text=$("#loadRuleText");
+  if(text) text.textContent=auto
+    ? "Automático pela FOR atual: "+calculatedLimit+" espaços."
+    : "Limite manual: "+limit+" espaços. O máximo permanece o dobro desse valor.";
+  if(hint){
+    hint.classList.toggle("overloaded",overloaded&&!impossible);
+    hint.classList.toggle("impossible",impossible);
+  }
+}
 let itemPickerMode="mundane";
 function itemPickerIsMagic(){return itemPickerMode==="magic"}
 function itemCatalogEntries(){
@@ -1635,42 +1756,100 @@ function addSelectedCatalogItem(){
     closeItemPicker();
   }
 }
+function attackSkillOptions(selected){
+  return ["Manual","Luta","Pontaria"].map(skill=>`<option value="${skill}" ${skill===selected?"selected":""}>${skill}</option>`).join("");
+}
+function attackAttributeOptions(selected,skillName){
+  const defaultAttr=skillName==="Manual"?"":(T20_DATA.pericias[skillName]||"FOR");
+  const defaultLabel=defaultAttr?`Padr&atilde;o (${defaultAttr})`:"Escolha uma per&iacute;cia";
+  return `<option value="" ${selected?"":"selected"}>${defaultLabel}</option>${ATTR_KEYS.map(attr=>`<option value="${attr}" ${attr===selected?"selected":""}>${attr}</option>`).join("")}`;
+}
+function damageAttributeOptions(selected){
+  return `<option value="" ${selected?"":"selected"}>Nenhum</option>${ATTR_KEYS.map(attr=>`<option value="${attr}" ${attr===selected?"selected":""}>${attr}</option>`).join("")}`;
+}
+function attackDiceModeText(attack){
+  const balance=(Number(attack.bestDice)||0)-(Number(attack.worstDice)||0);
+  if(balance>0) return `${balance+1}d20, melhor`;
+  if(balance<0) return `${Math.abs(balance)+1}d20, pior`;
+  return "1d20";
+}
+function refreshAttackSummaries(){
+  state.attacks.forEach((attack,index)=>{
+    const root=$(`[data-attacksummary="${index}"]`);
+    if(!root) return;
+    const normalized=normalizeAttack(attack);
+    const breakdown=attackBonusBreakdown(normalized);
+    const damageAttr=ATTR_KEYS.includes(normalized.damageAttr)?normalized.damageAttr:"";
+    const extra=[String(normalized.extraDamage||""),damageAttr?`${damageAttr} ${signedNumber(rawNum(damageAttr))}`:""].filter(Boolean).join(" + ")||"-";
+    const set=(selector,text)=>{const element=root.querySelector(selector);if(element) element.textContent=text};
+    set(".js-attack-source",breakdown.skillName==="Manual"?"Manual":`${breakdown.skillName} / ${breakdown.attr}`);
+    set(".js-attack-bonus",signedNumber(breakdown.total));
+    set(".js-attack-damage",normalized.damage||"sem dano");
+    set(".js-attack-extra",extra);
+    set(".js-attack-crit",`${normalized.crit||"20"}/${normalized.mult||"x2"}`);
+    set(".js-attack-dice",attackDiceModeText(normalized));
+  });
+}
 function renderAttackCard(a,i){
+  a=normalizeAttack(a);
+  state.attacks[i]=a;
   const isOpen=expandedAttackCards.has(i);
   const name=escapeHtml(a.name||"Ataque sem nome");
   const bonus=Number(a.bonus||0);
-  const bonusText=`${bonus>=0?"+":""}${bonus}`;
+  const attackBreakdown=attackBonusBreakdown(a);
+  const bonusText=signedNumber(attackBreakdown.total);
   const damage=escapeHtml(a.damage||"sem dano");
   const extraDamage=escapeHtml(a.extraDamage||"");
+  const damageAttr=ATTR_KEYS.includes(a.damageAttr)?a.damageAttr:"";
+  const extraSummary=[String(a.extraDamage||""),damageAttr?`${damageAttr} ${signedNumber(rawNum(damageAttr))}`:""].filter(Boolean).join(" + ")||"-";
   const critFlat=a.critFlat===true;
   const crit=escapeHtml(a.crit||"20");
   const mult=escapeHtml(a.mult||"x2");
+  const attackSkill=attackSkillName(a);
+  const attackAttr=ATTR_KEYS.includes(a.attackAttr)?a.attackAttr:"";
+  const skillSummary=attackSkill==="Manual"?"Manual":`${attackSkill} / ${attackBreakdown.attr}`;
+  const bestDice=Number(a.bestDice)>0;
+  const worstDice=Number(a.worstDice)>0;
+  const damageType=escapeHtml(a.damageType||"");
+  const range=escapeHtml(a.range||"");
   const notes=escapeHtml(a.notes||"");
   const toggleLabel=isOpen?"Recolher detalhes do ataque":"Expandir detalhes do ataque";
   return `<div class="card combatAttackCard ${isOpen?"expanded":""}">
     <div class="combatAttackHeader">
+      <button type="button" class="attackDamageRoll" data-combatroll="${i}" aria-label="Rolar ataque e dano" title="Rolar ataque e dano"><img src="attack-roll-icon.png" alt="" draggable="false"></button>
       <button type="button" class="combatAttackToggle" data-attacktoggle="${i}" aria-expanded="${isOpen}" aria-label="${toggleLabel}" title="${toggleLabel}">
-        <span class="combatAttackTitle">
-          <strong>${name}</strong>
-          <span>${bonusText} ataque • ${damage} dano${extraDamage?` + ${extraDamage} extra`:""} • ${crit}/${mult}${critFlat?" • bônus crita":""}</span>
+        <span class="combatAttackOverview" data-attacksummary="${i}">
+          <span class="combatAttackTitle"><strong>${name}</strong><small class="js-attack-source">${skillSummary}</small></span>
+          <span class="combatAttackStat"><small>Ataque</small><strong class="js-attack-bonus">${bonusText}</strong></span>
+          <span class="combatAttackStat"><small>Dano base</small><strong class="js-attack-damage">${damage}</strong></span>
+          <span class="combatAttackStat"><small>Dano extra</small><strong class="js-attack-extra">${escapeHtml(extraSummary)}</strong></span>
+          <span class="combatAttackStat"><small>Cr&iacute;tico</small><strong class="js-attack-crit">${crit}/${mult}</strong></span>
+          <span class="combatAttackStat combatDiceStat"><small>Dados</small><strong class="js-attack-dice">${attackDiceModeText(a)}</strong></span>
+          <span class="combatAttackChevron" aria-hidden="true">${isOpen?"&#9650;":"&#9660;"}</span>
         </span>
       </button>
-      <div class="combatRollActions">
-        <button type="button" class="attackDamageRoll" data-combatroll="${i}" aria-label="Rolar ataque e dano" title="Rolar ataque e dano"><img src="attack-roll-icon.png" alt="" draggable="false"></button>
-      </div>
     </div>
     <div class="combatAttackBody ${isOpen?"":"hidden"}">
       <div class="attackFields">
         <label>Nome<input data-a="${i}" data-k="name" value="${name}"></label>
-        <label>Ataque<input data-a="${i}" data-k="bonus" type="number" value="${bonus}"></label>
+        <label>Per&iacute;cia do ataque<select data-a="${i}" data-k="attackSkill">${attackSkillOptions(attackSkill)}</select></label>
+        <label>Atributo do ataque<select data-a="${i}" data-k="attackAttr" ${attackSkill==="Manual"?"disabled":""}>${attackAttributeOptions(attackAttr,attackSkill)}</select></label>
+        <label>B&ocirc;nus de ataque<input data-a="${i}" data-k="bonus" type="number" value="${bonus}"></label>
         <label>Dano base (crítico)<input data-a="${i}" data-k="damage" value="${damage}" placeholder="Ex.: 2d6 ou 1d8+1d6"></label>
         <label>Dano extra<input data-a="${i}" data-k="extraDamage" value="${extraDamage}" placeholder="Ex.: +3 ou 1d6"></label>
-        <label class="attackCritFlat">Bônus numérico<span class="attackCritFlatControl"><input data-a="${i}" data-k="critFlat" type="checkbox" ${critFlat?"checked":""}><span>Crita</span></span></label>
         <label>Crítico<input data-a="${i}" data-k="crit" value="${crit}"></label>
         <label>Mult.<input data-a="${i}" data-k="mult" value="${mult}"></label>
+      </div>
+      <div class="attackDetailFields">
+        <label>Tipo de dano<input data-a="${i}" data-k="damageType" value="${damageType}" placeholder="Ex.: corte"></label>
+        <label>Alcance<input data-a="${i}" data-k="range" value="${range}" placeholder="Ex.: corpo a corpo"></label>
+        <label>Atributo no dano<select data-a="${i}" data-k="damageAttr">${damageAttributeOptions(damageAttr)}</select></label>
+        <label class="attackDiceToggle">Melhor dado<span class="attackCritFlatControl"><input data-a="${i}" data-k="bestDice" type="checkbox" ${bestDice?"checked":""}><span>+1d20</span></span></label>
+        <label class="attackDiceToggle">Pior dado<span class="attackCritFlatControl"><input data-a="${i}" data-k="worstDice" type="checkbox" ${worstDice?"checked":""}><span>-1d20</span></span></label>
+        <label class="attackCritFlat">Bônus numérico<span class="attackCritFlatControl"><input data-a="${i}" data-k="critFlat" type="checkbox" ${critFlat?"checked":""}><span>Crita</span></span></label>
         <button type="button" class="remove combatRemove deleteIconButton" data-adel="${i}" title="Excluir ataque" aria-label="Excluir ataque">${DELETE_ICON_HTML}</button>
       </div>
-      <label class="attackNotes">Notas<textarea data-a="${i}" data-k="notes" rows="2" placeholder="Alcance, munição, melhorias, efeitos especiais...">${notes}</textarea></label>
+      <label class="attackNotes">Notas<textarea data-a="${i}" data-k="notes" rows="2" placeholder="Munição, melhorias, efeitos especiais...">${notes}</textarea></label>
     </div>
   </div>`;
 }
@@ -1755,6 +1934,11 @@ function normalizeSheetData(data){
   const fields=data.fields&&typeof data.fields==="object"?{...data.fields}:{};
   if(fields.raca==="suraggel") fields.raca="suraggel_aggelus";
   if(fields.classe==="sentinela" && fields.defAttr===undefined) fields.defAttr="INT";
+  if(fields.spacesLimitAuto===undefined){
+    const savedLimit=Number(fields.spacesLimit);
+    const calculatedLimit=baseLoadLimitForStrength(fields.FOR);
+    fields.spacesLimitAuto=!Number.isFinite(savedLimit)||savedLimit===10||savedLimit===calculatedLimit;
+  }
   return {
     fields,
     state:normalizeLoadedState(data.state)
@@ -2287,7 +2471,7 @@ function sheetSummaryFromCloudCharacter(character){
   const defenseAttr=ATTR_KEYS.includes(fields.defAttr)?fields.defAttr:"DES";
   const defenseAttrBonus=sheetBool(fields,"defUseDex",true)?sheetNum(fields,defenseAttr):0;
   const conditionFx=sheetConditionEffects(savedState);
-  const defense=10+defenseAttrBonus+sheetNum(fields,"armadura")+sheetNum(fields,"escudo")+sheetNum(fields,"defBonus")+sheetNum(fields,"defAjuste")+conditionFx.defense;
+  const defense=10+defenseAttrBonus+sheetNum(fields,"armadura")+sheetNum(fields,"escudo")+sheetNum(fields,"defBonus")+sheetNum(fields,"defAjuste")+sheetNum(fields,"globalDefenseBonus")+conditionFx.defense;
   const activeConditions=activeConditionNamesFromSheet(data);
   const deathLimit=deathLimitFromPvMax(pvMax);
   const pvAtual=sheetNum(fields,"pvAtual");
@@ -3815,6 +3999,7 @@ $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
     renderPowers();refreshPowerPickerIfOpen();
   }
   if(e.id==="portraitUrl") renderCharacterPortrait();
+  if(e.id==="spacesLimit"&&$("#spacesLimitAuto")?.checked) $("#spacesLimitAuto").checked=false;
   recalc();
   if(e.id==="divindade") refreshPowerPickerIfOpen();
   save(false);
@@ -3840,6 +4025,14 @@ $("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpe
 $("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc();save(false)});
 $("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc();save(false)});
 $$("[data-tab]").forEach(b=>b.onclick=()=>{$$("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));$$(".tab").forEach(t=>t.classList.toggle("active",t.id===`tab-${b.dataset.tab}`))});
+$("#activeModifiersSummary")?.addEventListener("click",()=>{$('[data-tab="modificadores"]')?.click()});
+$("#clearGlobalModifiers")?.addEventListener("click",()=>{
+  if(!confirm("Zerar todos os modificadores temporários e globais?")) return;
+  [...ATTR_KEYS.map(attr=>`${attr}Temp`),...GLOBAL_MODIFIER_FIELDS.map(field=>field.id)].forEach(id=>setNumberField(id,0));
+  recalc();
+  save(false);
+  notify("Modificadores temporários removidos.");
+});
 $$("[data-change]").forEach(b=>b.onclick=()=>{const[id,delta]=b.dataset.change.split(":");applyQuickResourceChange(id,Number(delta));recalc();save(false)});
 $$("[data-resource-amount]").forEach(b=>b.onclick=()=>{const[kind,direction]=b.dataset.resourceAmount.split(":");applyResourceAmount(kind,Number(direction))});
 $("#spellSearchCatalog").oninput=renderSpellCatalog;$("#spellCircleFilter").onchange=renderSpellCatalog;$("#spellTypeFilter").onchange=renderSpellCatalog;$("#spellSchoolFilter").onchange=renderSpellCatalog;
@@ -3859,7 +4052,7 @@ $("#itemCatalogCategory").onchange=updateItemPicker;
 $("#addSelectedItem").onclick=addSelectedCatalogItem;
 $("#addBlankItem").onclick=()=>{addItemEntry();closeItemPicker()};
 $("#applyOriginBtn").onclick=applyOrigin;$("#addOriginBenefit").onclick=()=>{state.originBenefits.push("");renderOriginBenefits();save(false)};$("#addCustomCondition").onclick=()=>{state.customConditions.push({name:"Nova condição",active:true,effect:""});renderCustomConditions();renderConditionMini();save(false)};
-$("#addAttack").onclick=()=>{state.attacks.push({name:"Novo ataque",bonus:0,damage:"1d6",extraDamage:"",critFlat:false,crit:"20",mult:"x2",notes:""});expandedAttackCards.add(state.attacks.length-1);renderAttacks();save(false)};
+$("#addAttack").onclick=()=>{state.attacks.push(defaultAttack());expandedAttackCards.add(state.attacks.length-1);renderAttacks();save(false)};
 $("#characterSelect").onchange=e=>switchCharacter(e.target.value);
 $("#newCharacterBtn").onclick=newCharacter;
 $("#duplicateCharacterBtn").onclick=duplicateCharacter;

@@ -28,8 +28,8 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 - PV e PM temporários substituem o antigo campo de bônus máximo e são consumidos antes dos pontos normais.
 - PV e PM possuem campo de aplicação por valor para dano/cura ou gasto/recuperação, consumindo temporarios antes dos pontos normais quando o valor reduz o recurso.
 - PM máximo de Arcanista, Clérigo, Frade, Druida e Bardo soma o atributo-chave de magia quando aplicável.
-- Atributos têm modificadores temporários; eles entram em perícias e CD de magias, mas não alteram todos os cálculos derivados.
-- Perícias permitem trocar o atributo-chave, destacam treinadas, aplicam penalidade de armadura, indicam limitações de treinamento e possuem modificador geral para efeitos como Oração ou Inspiração.
+- A aba Modificadores reúne atributos temporários e bônus globais de Testes, Ataques, Perícias, Resistências, Dano e Defesa.
+- Perícias permitem trocar o atributo-chave, destacam treinadas, aplicam penalidade de armadura e indicam limitações de treinamento.
 - Defesa possui campos para penalidade de armadura e resistência a dano.
 - Inventário possui menu de itens mundanos e mágicos, com categorias simplificadas.
 - Magias têm filtros por arcanas, divinas, universais e escola de magia.
@@ -92,6 +92,12 @@ Mostra o resumo principal do personagem: atributos, PV, PM, Defesa, RD, deslocam
 
 PV e PM têm campos de pontos atuais, base calculada, temporários e ajuste livre. Os botões rápidos e o campo de aplicar valor descontam primeiro os pontos temporários quando reduzem o recurso.
 
+Um resumo clicável indica os modificadores temporários ativos e abre diretamente a aba Modificadores.
+
+### Modificadores
+
+Reúne os modificadores temporários dos seis atributos e os bônus globais. Os atributos temporários continuam entrando apenas em perícias e CD de magia. `Testes` afeta ataques e perícias; `Ataques` afeta apenas ataques; `Perícias` afeta todas as perícias; `Resistências` acrescenta em Fortitude, Reflexos e Vontade; `Dano` é somado uma vez sem multiplicação de crítico; `Defesa` entra no cálculo de Defesa. O botão `Limpar temporários` zera todos esses campos.
+
 ### Origem
 
 Mostra origem, perícias sugeridas, poderes/benefícios, itens e descrição. A ficha possui origens do livro básico, Heróis de Arton e Atlas de Arton, incluindo origens regionais.
@@ -117,7 +123,9 @@ Habilidades automáticas ficam bloqueadas para edição direta e são atualizada
 
 ### Combate
 
-Agrupa ataques e rolagens rápidas. Cada ataque fica recolhido por padrao, mostrando nome, ataque, dano e critico; clique no resumo para editar detalhes. Cada ataque pode ter bônus, dano base, dano extra, crítico, multiplicador e notas. Todos os termos de dados do dano base recebem a multiplicação do crítico; o dano extra é rolado uma única vez. Bônus numéricos normalmente não são multiplicados, mas o check `Bônus numérico: Crita` permite multiplicá-los em efeitos como o encanto Lancinante. Os campos aceitam expressões como `2d6`, `1d8+1d6` ou `1d6+3`.
+Agrupa ataques e rolagens rápidas. Cada ataque fica recolhido por padrão em uma linha com nome, bônus final, dano base, dano extra, crítico e dados usados; clique no resumo para editar os detalhes. O teste pode continuar `Manual` ou usar Luta/Pontaria, com escolha independente do atributo e um `Bônus de ataque` adicional. Os checks `Melhor dado` (`+1d20`) e `Pior dado` (`-1d20`) fazem conservar, respectivamente, o maior ou o menor resultado; se ambos estiverem marcados, anulam-se. Também é possível registrar tipo de dano, alcance e um atributo no dano.
+
+Todos os termos de dados do dano base recebem a multiplicação do crítico; dano extra, atributo no dano e bônus global são somados uma única vez. Bônus numéricos do dano base normalmente não são multiplicados, mas o check `Bônus numérico: Crita` permite multiplicá-los em efeitos como o encanto Lancinante. Os campos aceitam expressões como `2d6`, `1d8+1d6` ou `1d6+3`. Ataques criados antes desta atualização permanecem em modo manual, preservando o bônus já configurado.
 
 ### Grimório
 
@@ -126,6 +134,8 @@ Guarda as magias conhecidas pelo personagem. Magias podem ser adicionadas manual
 ### Inventário
 
 Controla itens, quantidade, espaço, preço, equipamento e notas. O botão de adicionar abre catálogo de itens mundanos; o botão de item mágico abre catálogo próprio. Os itens ficam em cards recolhidos, duas entradas por linha.
+
+O limite normal de carga é calculado automaticamente pela regra do Jogo do Ano: 10 espaços, aumentado em 2 por ponto positivo de Força ou reduzido em 1 por ponto negativo. O máximo carregável, exibido ao lado, é o dobro do limite normal. Editar o limite desativa o check `Auto`, preservando ajustes de poderes e outros efeitos; reativá-lo restaura o cálculo pela Força. Ultrapassar o limite normal deixa o personagem sobrecarregado, com penalidade de armadura -5 e deslocamento -3m.
 
 ### Notas
 
@@ -146,9 +156,9 @@ Catálogo de magias. Permite pesquisar, filtrar por círculo, tipo e escola de m
 - Nível de personagem: soma dos níveis de todas as classes; é usado em metade do nível, bônus de treinamento, CD e limite de PM.
 - CD de magia: `10 + metade do nível + atributo-chave + bônus`.
 - Limite de PM: nível + bônus + ajuste livre.
-- Defesa: base 10 + Destreza opcional + armadura + escudo + bônus + ajuste + condições. Desmarque “Somar Destreza” quando usar armaduras pesadas ou qualquer efeito que remova esse bônus.
+- Defesa: base 10 + Destreza opcional + armadura + escudo + bônus + ajuste + modificador global + condições. Desmarque “Somar Destreza” quando usar armaduras pesadas ou qualquer efeito que remova esse bônus.
 - Morte: quando os PV atuais ficam negativos, a barra passa a representar o limite negativo. Um personagem com 30 PV máximos tem limite em -15 e morre em -16.
-- Perícias: usam metade do nível, atributo-chave selecionado, treino, ajustes, penalidade de armadura e condições.
+- Perícias: usam metade do nível, atributo-chave selecionado, treino, ajustes, modificadores globais, penalidade de armadura e condições.
 
 ## Catálogos incluídos
 

@@ -102,6 +102,7 @@
   </div>
   <nav class="tabs" aria-label="Seções da ficha">
     <button data-tab="resumo" class="active">Stats</button>
+    <button data-tab="modificadores">Modificadores</button>
     <button data-tab="origem">Origem</button>
     <button data-tab="pericias">Perícias</button>
     <button data-tab="poderes">Poderes</button>
@@ -263,13 +264,14 @@
   <article class="panel">
     <h2>Atributos</h2>
     <div class="attrs">
-      <label>FOR<input id="FOR" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="FORTemp" data-save type="number" value="0"></span></label>
-      <label>DES<input id="DES" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="DESTemp" data-save type="number" value="0"></span></label>
-      <label>CON<input id="CON" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="CONTemp" data-save type="number" value="0"></span></label>
-      <label>INT<input id="INT" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="INTTemp" data-save type="number" value="0"></span></label>
-      <label>SAB<input id="SAB" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="SABTemp" data-save type="number" value="0"></span></label>
-      <label>CAR<input id="CAR" data-save type="number" value="0"><span class="attrTemp"><small>temp</small><input id="CARTemp" data-save type="number" value="0"></span></label>
+      <label>FOR<input id="FOR" data-save type="number" value="0"></label>
+      <label>DES<input id="DES" data-save type="number" value="0"></label>
+      <label>CON<input id="CON" data-save type="number" value="0"></label>
+      <label>INT<input id="INT" data-save type="number" value="0"></label>
+      <label>SAB<input id="SAB" data-save type="number" value="0"></label>
+      <label>CAR<input id="CAR" data-save type="number" value="0"></label>
     </div>
+    <button id="activeModifiersSummary" type="button" class="modifierSummaryButton"><strong>Modificadores</strong><span id="activeModifiersSummaryText">Nenhum modificador ativo</span></button>
     <div id="summaryText" class="summaryCards"></div><div id="conditionPenaltySummary" class="penaltySummary"></div>
     <div class="conditionMini standalone">
         <h3>Condições ativas</h3>
@@ -331,6 +333,38 @@
   
 </section>
 
+<section id="tab-modificadores" class="tab">
+  <article class="panel modifiersPanel">
+    <div class="sectionHead">
+      <h2>Modificadores</h2>
+      <button id="clearGlobalModifiers" type="button">Limpar temporários</button>
+    </div>
+    <section class="modifierSection">
+      <h3>Atributos temporários</h3>
+      <div class="temporaryAttributesGrid">
+        <label>FOR<input id="FORTemp" data-save type="number" value="0"></label>
+        <label>DES<input id="DESTemp" data-save type="number" value="0"></label>
+        <label>CON<input id="CONTemp" data-save type="number" value="0"></label>
+        <label>INT<input id="INTTemp" data-save type="number" value="0"></label>
+        <label>SAB<input id="SABTemp" data-save type="number" value="0"></label>
+        <label>CAR<input id="CARTemp" data-save type="number" value="0"></label>
+      </div>
+    </section>
+    <section class="modifierSection">
+      <h3>Modificadores globais</h3>
+      <div class="globalModifiersGrid">
+        <label>Testes<input id="globalTestBonus" data-save type="number" value="0"></label>
+        <label>Ataques<input id="globalAttackBonus" data-save type="number" value="0"></label>
+        <label>Perícias<input id="skillGlobalBonus" data-save type="number" value="0"></label>
+        <label>Resistências<input id="globalResistanceBonus" data-save type="number" value="0"></label>
+        <label>Dano<input id="globalDamageBonus" data-save type="number" value="0"></label>
+        <label>Defesa<input id="globalDefenseBonus" data-save type="number" value="0"></label>
+      </div>
+    </section>
+    <div id="globalModifierActiveList" class="globalModifierActiveList"></div>
+  </article>
+</section>
+
 
 <section id="tab-origem" class="tab">
   <article class="panel">
@@ -365,7 +399,6 @@
         <h2>Perícias</h2>
         <p class="muted">Metade do nível + atributo + treinamento + ajuste. Você pode cadastrar mais de um Ofício e nomear cada especialização.</p>
       </div>
-      <label class="skillGlobalBonus">Modificador geral<input id="skillGlobalBonus" data-save type="number" value="0" placeholder="Ex.: Oração, inspiração"></label>
     </div>
     <div id="skillsList" class="skills"></div>
   </article>
@@ -430,8 +463,13 @@
     <div class="sectionHead"><div><h2>Inventário</h2><p class="muted">Controle de quantidade, espaços, preço e itens equipados.</p></div><div class="inventoryActions"><button id="addItem">+ Adicionar</button><button id="addMagicItem">+ Item mágico</button></div></div>
     <div class="inventorySummary">
       <div><small>Espaços usados</small><strong id="spacesUsed">0</strong></div>
-      <label>Limite de espaços<input id="spacesLimit" data-save type="number" value="10"></label>
+      <label class="loadLimitField"><span>Limite normal <small class="loadAutoToggle"><input id="spacesLimitAuto" data-save type="checkbox" checked> Auto</small></span><input id="spacesLimit" data-save type="number" value="10"></label>
+      <div><small>Máximo carregável</small><strong id="spacesMax">20</strong></div>
       <div><small>Dinheiro</small><input id="money" data-save placeholder="T$ 0"></div>
+      <div id="loadRuleHint" class="loadRuleInline" role="note">
+        <span id="loadRuleText">Automático: 10 espaços +2 por FOR positivo, ou -1 por ponto negativo.</span>
+        <small>Acima do limite: sobrecarregado (-5 armadura, -3m deslocamento). JdA, p. 141.</small>
+      </div>
     </div>
     <div id="itemPicker" class="itemPicker hidden">
       <div class="itemPickerHead">
@@ -473,7 +511,7 @@
 
 <section id="tab-combate" class="tab">
   <article class="panel">
-    <div class="sectionHead"><div><h2>Ataques</h2><p class="muted">Role ataque e dano em um clique. O dano aceita express&otilde;es como 1d6+1d12+4.</p></div><button id="addAttack">+ Adicionar</button></div>
+    <div class="sectionHead"><div><h2>Ataques</h2><p class="muted">Configure per&iacute;cia, atributo, melhor ou pior dado e role ataque e dano em um clique.</p></div><button id="addAttack">+ Adicionar</button></div>
     <div id="combatPenaltySummary" class="penaltySummary"></div><div id="attacksList" class="cards"></div>
   </article>
 </section>
