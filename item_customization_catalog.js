@@ -135,6 +135,17 @@
     improvements,
     materials,
     enchantments:[...weaponEnchantments,...armorEnchantments],
-    presetEffects
+    presetEffects,
+    pricing:{
+      improvements:[0,300,3000,9000,18000],
+      enchantments:[0,18000,36000,72000],
+      materials:{
+        weapon:{"aco-rubi":6000,adamante:3000,"gelo-eterno":600,"madeira-tollon":1500,"materia-vermelha":1500,mitral:1500},
+        lightArmor:{"aco-rubi":3000,adamante:6000,"gelo-eterno":1500,"materia-vermelha":6000,mitral:3000},
+        heavyArmor:{"aco-rubi":6000,adamante:18000,"gelo-eterno":3000,"materia-vermelha":18000,mitral:12000},
+        shield:{"aco-rubi":3000,adamante:6000,"gelo-eterno":1500,"madeira-tollon":1500,"materia-vermelha":6000,mitral:3000},
+        esoteric:{"aco-rubi":6000,adamante:3000,"gelo-eterno":3000,"madeira-tollon":1500,"materia-vermelha":3000,mitral:3000}
+      }
+    }
   };
 })();

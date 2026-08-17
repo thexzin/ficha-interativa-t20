@@ -340,6 +340,80 @@ function itemIsHeavyArmor(item){
   const text=foldItemText(`${item?.category||""} ${item?.name||""} ${item?.notes||""}`);
   return text.includes("pesada")||["armadura completa","brunea","cota de malha","loriga segmentada","meia armadura"].some(name=>text.includes(name));
 }
+function itemPriceNumber(price){
+  const original=String(price??"").trim();
+  if(/\bbase\b/i.test(original)) return null;
+  const raw=original.replace(/T\$/gi,"").trim();
+  if(!/\d/.test(raw)) return null;
+  let numeric=raw.replace(/[^\d,.-]/g,"");
+  if(numeric.includes(",")) numeric=numeric.replace(/\./g,"").replace(",",".");
+  else if(/^\d{1,3}(?:\.\d{3})+$/.test(numeric)) numeric=numeric.replace(/\./g,"");
+  const parsed=Number(numeric);
+  return Number.isFinite(parsed)?parsed:null;
+}
+function formatItemPrice(amount){
+  if(!Number.isFinite(Number(amount))) return "";
+  return `T$ ${Number(amount).toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2})}`;
+}
+function itemSuperiorSlots(item){
+  return new Set(Array.isArray(item?.improvements)?item.improvements:[]).size+(item?.material?1:0);
+}
+function itemEnchantmentSlots(item){
+  const ids=new Set(Array.isArray(item?.enchantments)?item.enchantments:[]);
+  const prerequisites={energetica:"formidavel",lancinante:"dilacerante",magnifica:"formidavel",guardiao:"defensor"};
+  let slots=ids.size;
+  Object.entries(prerequisites).forEach(([id,prerequisite])=>{if(ids.has(id)&&!ids.has(prerequisite)) slots++});
+  return slots;
+}
+function materialPriceCategory(item){
+  const type=inventoryItemType(item);
+  if(type==="armor") return itemIsHeavyArmor(item)?"heavyArmor":"lightArmor";
+  return type;
+}
+function customizationPriceParts(item){
+  const pricing=itemCustomizationData().pricing||{},improvementTable=pricing.improvements||[0],enchantmentTable=pricing.enchantments||[0];
+  const superiorSlots=itemSuperiorSlots(item),enchantmentSlots=itemEnchantmentSlots(item);
+  const improvementCost=Number(improvementTable[Math.min(superiorSlots,improvementTable.length-1)]||0);
+  const enchantmentCost=Number(enchantmentTable[Math.min(enchantmentSlots,enchantmentTable.length-1)]||0);
+  const materialCost=Number(pricing.materials?.[materialPriceCategory(item)]?.[item?.material]||0);
+  return {superiorSlots,enchantmentSlots,improvementCost,materialCost,enchantmentCost};
+}
+function catalogPricingBaseline(item){
+  const catalogItem=catalogInventoryItem(item);
+  const magicCatalog=[
+    ...(Array.isArray(window.T20_MAGIC_ITEM_CATALOG)?window.T20_MAGIC_ITEM_CATALOG:[]),
+    ...(Array.isArray(window.T20_EXPANSION_MAGIC_ITEM_CATALOG)?window.T20_EXPANSION_MAGIC_ITEM_CATALOG:[])
+  ];
+  if(!catalogItem||!magicCatalog.includes(catalogItem)) return customizationPriceParts({});
+  const inferred=inferItemCustomizations(catalogItem);
+  return customizationPriceParts({...catalogItem,...inferred});
+}
+function itemPriceDetails(item){
+  const registered=itemPriceNumber(item?.price),automatic=item?.priceAuto!==false&&registered!==null;
+  const current=customizationPriceParts(item),baseline=catalogPricingBaseline(item);
+  const improvementAdjustment=Math.max(0,current.improvementCost-baseline.improvementCost);
+  const materialAdjustment=Math.max(0,current.materialCost-baseline.materialCost);
+  const enchantmentAdjustment=Math.max(0,current.enchantmentCost-baseline.enchantmentCost);
+  const totalAdjustment=improvementAdjustment+materialAdjustment+enchantmentAdjustment;
+  const final=registered===null?null:(automatic?Math.max(0,registered+totalAdjustment):registered);
+  return {registered,automatic,current,baseline,improvementAdjustment,materialAdjustment,enchantmentAdjustment,totalAdjustment,final,display:final===null?String(item?.price||""):formatItemPrice(final)};
+}
+function itemPriceBreakdownHtml(item){
+  const details=itemPriceDetails(item);
+  if(details.registered===null) return `<div class="itemPriceBreakdown manual"><small>Preço automático indisponível para este valor.</small><strong>${escapeHtml(String(item?.price||"Sem preço"))}</strong></div>`;
+  if(!details.automatic) return `<div class="itemPriceBreakdown manual"><small>Preço manual</small><strong>${escapeHtml(details.display)}</strong></div>`;
+  return `<div class="itemPriceBreakdown">
+    <div><small>Preço base/listado</small><strong>${formatItemPrice(details.registered)}</strong></div>
+    <span aria-hidden="true">${details.improvementAdjustment<0?"-":"+"}</span>
+    <div><small>Melhorias</small><strong>${formatItemPrice(Math.abs(details.improvementAdjustment))}</strong></div>
+    <span aria-hidden="true">${details.materialAdjustment<0?"-":"+"}</span>
+    <div><small>Material</small><strong>${formatItemPrice(Math.abs(details.materialAdjustment))}</strong></div>
+    <span aria-hidden="true">${details.enchantmentAdjustment<0?"-":"+"}</span>
+    <div><small>Encantos</small><strong>${formatItemPrice(Math.abs(details.enchantmentAdjustment))}</strong></div>
+    <span aria-hidden="true">=</span>
+    <div class="itemPriceTotal"><small>Preço final</small><strong>${formatItemPrice(details.final)}</strong></div>
+  </div>`;
+}
 function allInventoryCatalogEntries(){
   return [
     ...(Array.isArray(window.T20_ITEM_CATALOG)?window.T20_ITEM_CATALOG:[]),
@@ -2193,12 +2267,12 @@ function renderItemCard(it,i){
   const type=inventoryItemType(it),data=itemCustomizationData(),protection=baseProtectionStats(it);
   const foldedCategory=foldItemText(it.category),ambiguousProtection=foldedCategory.includes("armadura")&&foldedCategory.includes("escudo");
   const effectLabels=itemAutomaticEffectLabels(it);
-  const improvementCount=(it.improvements||[]).length,enchantmentCount=(it.enchantments||[]).length,superiorCount=improvementCount+(it.material?1:0);
+  const improvementCount=(it.improvements||[]).length,enchantmentCount=itemEnchantmentSlots(it),superiorCount=itemSuperiorSlots(it),priceDetails=itemPriceDetails(it);
   const materialName=it.material?data.materials.find(entry=>entry.id===it.material)?.name:"";
   const summary=[
     qty?`${qty}x`:null,
     it.category,
-    it.price,
+    priceDetails.display,
     it.source,
     effectiveSpaces?`${totalSpaces.toFixed(totalSpaces%1?1:0)} espaços`:null,
     improvementCount?`${improvementCount} melhoria${improvementCount===1?"":"s"}`:null,
@@ -2223,10 +2297,12 @@ function renderItemCard(it,i){
       <div class="itemDetailFields">
         <label>Qtd.<input data-i="${i}" data-k="qty" type="number" min="0" value="${qty}"></label>
         <label>Espaços<input data-i="${i}" data-k="spaces" type="number" step=".5" value="${spaces}"></label>
-        <label>Preço<input data-i="${i}" data-k="price" value="${escapeHtml(it.price||"")}"></label>
+        <label>Preço base/listado<input data-i="${i}" data-k="price" value="${escapeHtml(it.price||"")}"></label>
+        <label>Preço automático<span class="itemPriceToggle"><span>${priceDetails.automatic?"Sim":"Não"}</span><input data-i="${i}" data-k="priceAuto" type="checkbox" ${it.priceAuto!==false?"checked":""} ${priceDetails.registered===null?"disabled":""}></span></label>
         <label>Fonte<input data-i="${i}" data-k="source" value="${escapeHtml(it.source||"")}"></label>
         <label>Equipado<select data-i="${i}" data-k="equipped"><option value="false" ${!it.equipped?"selected":""}>Não</option><option value="true" ${it.equipped?"selected":""}>Sim</option></select></label>
       </div>
+      ${itemPriceBreakdownHtml(it)}
       ${type==="armor"||type==="shield"?`<div class="itemProtectionFields">
         <label>Defesa base<input data-i="${i}" data-k="baseDefense" type="number" min="0" value="${protection.defense}"></label>
         <label>Penalidade base<input data-i="${i}" data-k="baseArmorPenalty" type="number" min="0" value="${protection.armorPenalty}"></label>
@@ -2339,24 +2415,20 @@ function itemDescription(item){
 function itemAllowsCatalogDescription(item){
   return !!String(item?.name||"").trim() && !!String(item?.category||"").trim();
 }
-function catalogInventoryDescription(item){
+function catalogInventoryItem(item){
   if(!itemAllowsCatalogDescription(item)) return "";
   const name=String(item?.name||"").trim().toLowerCase();
   const category=String(item?.category||"").trim().toLowerCase();
   if(!name||!category) return "";
   const source=String(item?.source||"").trim().toLowerCase();
-  const catalogs=[
-    ...(Array.isArray(window.T20_ITEM_CATALOG)?window.T20_ITEM_CATALOG:[]),
-    ...(Array.isArray(window.T20_EXPANSION_ITEM_CATALOG)?window.T20_EXPANSION_ITEM_CATALOG:[]),
-    ...(Array.isArray(window.T20_MAGIC_ITEM_CATALOG)?window.T20_MAGIC_ITEM_CATALOG:[]),
-    ...(Array.isArray(window.T20_EXPANSION_MAGIC_ITEM_CATALOG)?window.T20_EXPANSION_MAGIC_ITEM_CATALOG:[])
-  ];
-  const catalogItem=catalogs.find(entry=>
+  return allInventoryCatalogEntries().find(entry=>
     String(entry.name||"").trim().toLowerCase()===name &&
     String(entry.category||"").trim().toLowerCase()===category &&
     (!source||String(entry.source||"").trim().toLowerCase()===source)
   );
-  return itemDescription(catalogItem);
+}
+function catalogInventoryDescription(item){
+  return itemDescription(catalogInventoryItem(item));
 }
 function normalizeInventoryItemDescription(item){
   const normalized={...(item||{})};
@@ -2373,6 +2445,7 @@ function normalizeInventoryItemDescription(item){
   normalized.customizationType=String(normalized.customizationType||"");
   normalized.chosenSkill=String(normalized.chosenSkill||"");
   normalized.linkedAttackId=String(normalized.linkedAttackId||"");
+  normalized.priceAuto=normalized.priceAuto!==false;
   normalized.manualEffects=normalizedManualItemEffects(normalized.manualEffects);
   const inferredProtection=inferredProtectionBase(normalized);
   normalized.baseDefense=Number.isFinite(Number(normalized.baseDefense))?Math.max(0,Number(normalized.baseDefense)):inferredProtection.defense;

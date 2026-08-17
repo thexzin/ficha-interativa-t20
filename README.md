@@ -135,9 +135,11 @@ Guarda as magias conhecidas pelo personagem. Magias podem ser adicionadas manual
 
 ### Inventário
 
-Controla itens, quantidade, espaço, preço, equipamento e notas. O botão de adicionar abre o catálogo de itens mundanos; o botão de item mágico abre catálogo próprio. Os itens ficam em cards recolhidos, duas entradas por linha, com setas para reorganizar a ordem do inventário.
+Controla itens, quantidade, espaço, preço, equipamento e notas. O botão de adicionar abre o catálogo de itens mundanos; o botão de item mágico abre catálogo próprio. Os itens ficam em cards recolhidos, duas entradas por linha, com setas para reorganizar a ordem do inventário. O resumo recolhido exibe apenas o preço final; ao expandir o item, a ficha mostra a composição entre preço base, melhorias, material especial e encantos.
 
 Armas, armaduras, escudos, esotéricos, ferramentas e vestuário recebem uma área de `Modificações`. Nela é possível escolher melhorias, material especial e encantos do Jogo do Ano. Pré-requisitos diretos, como Certeira para Pungente e Defensor para Guardião, são adicionados em conjunto; o material especial conta no limite de quatro melhorias e cada item aceita até três encantos.
+
+O `Preço automático` usa as tabelas oficiais de melhorias, materiais especiais e encantos para atualizar o valor final sem alterar o preço original cadastrado. Itens únicos que já possuem modificações no catálogo usam o valor listado como ponto de partida e cobram apenas alterações adicionais. Desmarque a opção para manter um preço manual.
 
 Os efeitos numéricos inequívocos são aplicados apenas com `Equipado: Sim`: atributos, perícias, resistências, Defesa, RD, penalidade de armadura, CD de magia, limite de PM, PV/PM máximos e capacidade de carga. Itens mágicos conhecidos, como Amuleto da Robustez, Tiara da Sapiência e Anel da Proteção, já trazem seus efeitos automáticos; bônus diretos e incondicionais presentes nas descrições também são reconhecidos. O quadro de Atributos exibe o total com equipamento, mas revela o valor-base durante a edição para não gravar o bônus duas vezes. Bônus de item para a mesma característica usam o maior valor aplicável, enquanto armadura e escudo mantêm seus grupos próprios de Defesa. Armaduras e escudos também carregam seus valores-base de Defesa e penalidade de armadura: ao equipá-los, ambos passam automaticamente para a ficha e para as perícias afetadas. Esses valores continuam editáveis no item para equipamentos personalizados.
 
