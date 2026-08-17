@@ -23,7 +23,7 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 - Progressão de classe automática: habilidades recebidas por nível entram sozinhas na aba Poderes, com descrições completas.
 - Suporte a multiclasse: marque `Multiclasse` junto ao seletor de classe para abrir o bloco que adiciona classes extras e controla o nível de cada uma. O nível de personagem é calculado pela soma das classes.
 - Poderes em sanfona, duas entradas por linha, mostrando nome e tipo mesmo recolhidos.
-- Grimório, Poderes, Inventário e Ataques usam cards recolhidos/expansíveis para manter a ficha mais limpa.
+- Grimório, Poderes, Inventário, Parceiros e Ataques usam cards recolhidos/expansíveis para manter a ficha mais limpa.
 - PV aceita valores negativos e segue a regra de morte por metade dos PV máximos negativos, morrendo apenas 1 PV abaixo desse limite.
 - PV e PM temporários substituem o antigo campo de bônus máximo e são consumidos antes dos pontos normais.
 - PV e PM possuem campo de aplicação por valor para dano/cura ou gasto/recuperação, consumindo temporarios antes dos pontos normais quando o valor reduz o recurso.
@@ -31,7 +31,9 @@ Abra `index.html` em um navegador moderno. Não é necessário instalar dependê
 - A aba Modificadores reúne atributos temporários e bônus globais de Testes, Ataques, Perícias, Resistências, Dano e Defesa.
 - Perícias permitem trocar o atributo-chave, destacam treinadas, aplicam penalidade de armadura e indicam limitações de treinamento.
 - Defesa possui campos para penalidade de armadura e resistência a dano.
-- Inventário possui menu de itens mundanos e mágicos, com categorias simplificadas.
+- Inventário possui menu de itens mundanos e mágicos, melhorias, materiais especiais e encantos estruturados. Itens equipados alimentam automaticamente os cálculos compatíveis da ficha.
+- Nova aba Parceiros com os 12 tipos gerais e as 6 montarias do Jogo do Ano, benefícios por graduação e limites automáticos por patamar.
+- Parceiros ativos agora aplicam automaticamente bônus passivos compatíveis com a ficha, com indicação na própria opção e sem acumular bônus de múltiplos parceiros.
 - Magias têm filtros por arcanas, divinas, universais e escola de magia.
 - Aba Condições foi simplificada: foco em descrição e aplicação, sem campos de duração/origem.
 - Nova aba Notas para anotações livres.
@@ -133,9 +135,30 @@ Guarda as magias conhecidas pelo personagem. Magias podem ser adicionadas manual
 
 ### Inventário
 
-Controla itens, quantidade, espaço, preço, equipamento e notas. O botão de adicionar abre catálogo de itens mundanos; o botão de item mágico abre catálogo próprio. Os itens ficam em cards recolhidos, duas entradas por linha.
+Controla itens, quantidade, espaço, preço, equipamento e notas. O botão de adicionar abre o catálogo de itens mundanos; o botão de item mágico abre catálogo próprio. Os itens ficam em cards recolhidos, duas entradas por linha.
 
-O limite normal de carga é calculado automaticamente pela regra do Jogo do Ano: 10 espaços, aumentado em 2 por ponto positivo de Força ou reduzido em 1 por ponto negativo. O máximo carregável, exibido ao lado, é o dobro do limite normal. Editar o limite desativa o check `Auto`, preservando ajustes de poderes e outros efeitos; reativá-lo restaura o cálculo pela Força. Ultrapassar o limite normal deixa o personagem sobrecarregado, com penalidade de armadura -5 e deslocamento -3m.
+Armas, armaduras, escudos, esotéricos, ferramentas e vestuário recebem uma área de `Modificações`. Nela é possível escolher melhorias, material especial e encantos do Jogo do Ano. Pré-requisitos diretos, como Certeira para Pungente e Defensor para Guardião, são adicionados em conjunto; o material especial conta no limite de quatro melhorias e cada item aceita até três encantos.
+
+Os efeitos numéricos inequívocos são aplicados apenas com `Equipado: Sim`: atributos, perícias, resistências, Defesa, RD, penalidade de armadura, CD de magia, limite de PM, PV/PM máximos e capacidade de carga. Itens mágicos conhecidos, como Amuleto da Robustez, Tiara da Sapiência e Anel da Proteção, já trazem seus efeitos automáticos; bônus diretos e incondicionais presentes nas descrições também são reconhecidos. O quadro de Atributos exibe o total com equipamento, mas revela o valor-base durante a edição para não gravar o bônus duas vezes. Bônus de item para a mesma característica usam o maior valor aplicável, enquanto armadura e escudo mantêm seus grupos próprios de Defesa. Armaduras e escudos também carregam seus valores-base de Defesa e penalidade de armadura: ao equipá-los, ambos passam automaticamente para a ficha e para as perícias afetadas. Esses valores continuam editáveis no item para equipamentos personalizados.
+
+Para armas, selecione um `Ataque associado` no Inventário ou uma `Arma associada` dentro do próprio ataque. Melhorias e encantos passam a alterar somente esse ataque: Certeira/Pungente modificam o acerto, Cruel/Atroz modificam o dano e outros efeitos podem acrescentar dados, margem de ameaça ou multiplicador. O resumo do ataque mostra a arma, suas modificações e os bônus efetivamente aplicados; uma arma não equipada permanece vinculada, mas não concede seus efeitos. Efeitos condicionais continuam descritos no item para serem aplicados apenas quando sua condição ocorrer. A sanfona `Ajustes automáticos manuais` cobre itens personalizados e opções de outros livros sem forçar bônus condicionais o tempo todo.
+
+O limite normal de carga é calculado automaticamente pela regra do Jogo do Ano: 10 espaços, aumentado em 2 por ponto positivo de Força ou reduzido em 1 por ponto negativo. Força concedida por item equipado e efeitos como Mochila de Carga entram nesse total; itens Discretos ou de mitral ocupam menos espaço. O máximo carregável, exibido ao lado, é o dobro do limite normal. Editar o limite desativa o check `Auto`, preservando ajustes de poderes e outros efeitos; reativá-lo restaura o cálculo pela Força. Ultrapassar o limite normal deixa o personagem sobrecarregado, com penalidade de armadura -5 e deslocamento -3m.
+
+### Parceiros
+
+Registra parceiros em cards sanfonados, duas entradas por linha. O catálogo inclui Adepto, Ajudante, Assassino, Atirador, Combatente, Destruidor, Fortão, Guardião, Magivocador, Médico, Perseguidor e Vigilante, além das montarias Cavalo, Cão de Caça, Lobo-das-Cavernas, Grifo, Gorlogg e Trobo. Cada opção mostra a descrição do livro e os benefícios completos de Iniciante, Veterano e Mestre conforme o Jogo do Ano, p. 260-262.
+
+Quando o parceiro está ativo, a ficha aplica automaticamente os efeitos passivos que possuem um destino inequívoco: bônus em perícias, resistências, ataques, Defesa e CD de magias. O Adepto também reduz o custo mostrado e descontado ao conjurar magias elegíveis, respeitando o custo mínimo de 1 PM. O Ajudante possui seletores para as duas ou três perícias escolhidas. Bônus vindos de parceiros não se acumulam entre si; a ficha usa o maior valor aplicável. Efeitos condicionais ou de uso limitado, como dano uma vez por rodada, flanqueamento e ações especiais, permanecem descritos no card para aplicação no momento correto.
+
+A ficha usa o nível total, inclusive em multiclasse, para determinar o patamar e os limites:
+
+- níveis 1 a 4: patamar Iniciante, até 1 parceiro ativo e graduação máxima Iniciante;
+- níveis 5 a 10: patamar Veterano, até 2 parceiros ativos e graduação máxima Veterano;
+- níveis 11 a 16: patamar Campeão, até 2 parceiros ativos e graduação máxima Mestre;
+- níveis 17 a 20: patamar Lenda, até 3 parceiros ativos e graduação máxima Mestre.
+
+Parceiros acima da graduação permitida são ajustados ao diminuir o nível do personagem. O check `Conta no limite` permite registrar familiares, pajens, escudeiros e outros parceiros especiais que uma habilidade diga não consumir o limite normal. Benefícios e notas continuam editáveis para misturas aprovadas pelo mestre ou opções de outros livros.
 
 ### Notas
 
@@ -156,7 +179,7 @@ Catálogo de magias. Permite pesquisar, filtrar por círculo, tipo e escola de m
 - Nível de personagem: soma dos níveis de todas as classes; é usado em metade do nível, bônus de treinamento, CD e limite de PM.
 - CD de magia: `10 + metade do nível + atributo-chave + bônus`.
 - Limite de PM: nível + bônus + ajuste livre.
-- Defesa: base 10 + Destreza opcional + armadura + escudo + bônus + ajuste + modificador global + condições. Desmarque “Somar Destreza” quando usar armaduras pesadas ou qualquer efeito que remova esse bônus.
+- Defesa: base 10 + atributo opcional + armadura + escudo + bônus + ajuste + modificador global + itens equipados + condições. Desmarque “Somar atributo” quando a armadura ou efeito não permitir esse bônus.
 - Morte: quando os PV atuais ficam negativos, a barra passa a representar o limite negativo. Um personagem com 30 PV máximos tem limite em -15 e morre em -16.
 - Perícias: usam metade do nível, atributo-chave selecionado, treino, ajustes, modificadores globais, penalidade de armadura e condições.
 
@@ -179,6 +202,7 @@ A ficha usa dados locais distribuídos em arquivos JavaScript:
 - `item_catalog.js`: itens mundanos do livro básico.
 - `magic_item_catalog.js`: itens mágicos.
 - `expansion_item_catalog.js`: itens de suplementos.
+- `item_customization_catalog.js`: melhorias, materiais, encantos e efeitos automáticos de itens mágicos.
 
 ## Salvamento
 

@@ -16,11 +16,17 @@ let cloudCharacters=[];
 let cloudCampaigns=[];
 let cloudCampaignRolls=[];
 
+function makeEntryId(prefix="entry"){
+  if(globalThis.crypto?.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
+}
+
 function defaultState(){
-  return {powers:[],spells:[],items:[],attacks:[defaultAttack({name:"Ataque desarmado",damage:"1d3"})],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false};
+  return {powers:[],spells:[],items:[],partners:[],attacks:[defaultAttack({name:"Ataque desarmado",damage:"1d3"})],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false};
 }
 function defaultAttack(overrides={}){
   return {
+    id:makeEntryId("attack"),
     name:"Novo ataque",attackSkill:"Manual",attackAttr:"",bonus:0,
     damage:"1d6",extraDamage:"",damageAttr:"",damageType:"",range:"",
     bestDice:0,worstDice:0,critFlat:false,crit:"20",mult:"x2",notes:"",
@@ -30,6 +36,7 @@ function defaultAttack(overrides={}){
 function normalizeAttack(attack){
   attack=attack&&typeof attack==="object"?attack:{};
   const normalized=defaultAttack(attack);
+  if(!String(normalized.id||"").trim()) normalized.id=makeEntryId("attack");
   if(!["Manual","Luta","Pontaria"].includes(normalized.attackSkill)) normalized.attackSkill="Manual";
   if(!ATTR_KEYS.includes(normalized.attackAttr)) normalized.attackAttr="";
   if(!ATTR_KEYS.includes(normalized.damageAttr)) normalized.damageAttr="";
@@ -58,6 +65,7 @@ function normalizeState(){
   state.classLevels=Array.isArray(state.classLevels)?state.classLevels:[];
   state.spells=state.spells.map(spell=>normalizeSpellDetailFields({...spell}));
   state.items=state.items.map(item=>normalizeInventoryItemDescription(item));
+  state.partners=state.partners.map(normalizePartner);
 }
 
 let state=defaultState();
@@ -66,6 +74,7 @@ let expandedSpellCards=new Set();
 let expandedPowerCards=new Set();
 let expandedItemCards=new Set();
 let expandedAttackCards=new Set();
+let expandedPartnerCards=new Set();
 let activeHubSection="fichas";
 let activeHubCampaignId="";
 let activeCampaignDashboardTab="fichas";
@@ -86,9 +95,536 @@ const GLOBAL_MODIFIER_FIELDS=[
   {id:"globalDamageBonus",label:"Dano"},
   {id:"globalDefenseBonus",label:"Defesa"}
 ];
+const PARTNER_RANKS=["Iniciante","Veterano","Mestre"];
+const PARTNER_CATALOG={
+  adepto:{name:"Adepto",group:"Tipos de parceiro",page:"Jogo do Ano, p. 260",summary:"Conjurador que reduz o custo de magias.",description:"Um conjurador capaz de ajudá-lo a lançar suas magias.",levels:[
+    "O custo para lançar magias de 1º círculo diminui em 1 PM.",
+    "Como Iniciante; também reduz em 1 PM o custo de magias de 2º círculo.",
+    "Como Veterano; a redução fornecida pelo parceiro passa a acumular com outras reduções."
+  ]},
+  ajudante:{name:"Ajudante",group:"Tipos de parceiro",page:"Jogo do Ano, p. 260",summary:"Especialista que concede bônus em perícias.",description:"Um bardo, nobre ou sábio que ajuda com palavras firmes ou encorajadoras.",levels:[
+    "+2 em duas perícias definidas pelo parceiro.",
+    "+2 em três perícias definidas pelo parceiro.",
+    "+4 em três perícias definidas pelo parceiro. Ajudantes não fornecem bônus em Luta ou Pontaria."
+  ]},
+  assassino:{name:"Assassino",group:"Tipos de parceiro",page:"Jogo do Ano, p. 260",summary:"Aliado furtivo que fornece Ataque Furtivo.",description:"Um ladino ou outro tipo furtivo e letal.",note:"Além do bônus de +2 em testes de ataque corpo a corpo, flanquear permite que você use Ataque Furtivo contra o inimigo flanqueado.",levels:[
+    "Você pode usar Ataque Furtivo +1d6; se já possui a habilidade, o bônus é cumulativo.",
+    "Como Iniciante; também fornece o bônus por flanquear contra um inimigo por rodada.",
+    "Como Veterano; o dano fornecido pelo Ataque Furtivo aumenta para +2d6."
+  ]},
+  atirador:{name:"Atirador",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Combatente que aumenta dano à distância.",description:"Um arqueiro, besteiro ou outro combatente à distância.",levels:[
+    "Uma vez por rodada, +1d6 em uma rolagem de dano à distância.",
+    "Uma vez por rodada, +1d10 em uma rolagem de dano à distância.",
+    "Uma vez por rodada, +2d8 em uma rolagem de dano à distância."
+  ]},
+  combatente:{name:"Combatente",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Aliado marcial que melhora seus ataques.",description:"Um bucaneiro, guerreiro, paladino ou animal de caça.",levels:[
+    "+2 em testes de ataque.",
+    "+3 em testes de ataque.",
+    "+4 em testes de ataque; uma vez por rodada, você pode gastar 5 PM para fazer um ataque extra."
+  ]},
+  destruidor:{name:"Destruidor",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Especialista que causa dano elemental.",description:"Um arcanista ou inventor.",levels:[
+    "Uma vez por rodada, como ação livre, gaste 1 PM para causar 2d6 de ácido, eletricidade, fogo ou frio em um alvo em alcance curto.",
+    "Como Iniciante; também pode gastar 2 PM para causar 4d6 do mesmo tipo de dano.",
+    "Como Veterano; também pode gastar 4 PM para causar 6d6 em uma área de 6m de raio em alcance médio."
+  ]},
+  fortao:{name:"Fortão",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Brutamontes que aumenta dano corpo a corpo.",description:"Um bárbaro, lutador ou outro tipo que bate primeiro e pensa depois.",levels:[
+    "Uma vez por rodada, +1d8 em uma rolagem de dano corpo a corpo.",
+    "Uma vez por rodada, +1d12 em uma rolagem de dano corpo a corpo.",
+    "Uma vez por rodada, +3d6 em uma rolagem de dano corpo a corpo."
+  ]},
+  guardiao:{name:"Guardião",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Protetor que aumenta Defesa e resistências.",description:"Um cavaleiro, cão de guarda ou outro NPC cuja função primária é proteger.",levels:[
+    "+2 na Defesa.",
+    "+3 na Defesa.",
+    "+4 na Defesa e +2 em testes de resistência."
+  ]},
+  magivocador:{name:"Magivocador",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Conjurador que fortalece magias ofensivas.",description:"Um conjurador especializado em magias ofensivas.",levels:[
+    "O dano de suas magias aumenta em +1 dado do mesmo tipo.",
+    "Como Iniciante; a CD para resistir a suas magias também aumenta em +1.",
+    "O dano aumenta em +2 dados do mesmo tipo e a CD das magias aumenta em +2."
+  ]},
+  medico:{name:"Médico",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Curandeiro que recupera PV e remove condições.",description:"Um clérigo, druida, herbalista ou outro NPC com capacidades curativas.",levels:[
+    "Uma vez por rodada, gaste 1 PM para curar 1d8+1 PV de uma criatura adjacente.",
+    "Como Iniciante; também pode gastar 3 PM para curar 3d8+3 PV ou remover uma condição prejudicial.",
+    "Como Veterano; também pode gastar 5 PM para curar 6d8+6 PV."
+  ]},
+  perseguidor:{name:"Perseguidor",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Rastreador que melhora percepção e sobrevivência.",description:"Um caçador, animal farejador ou outro especialista em localizar alvos.",levels:[
+    "+2 em Percepção e Sobrevivência.",
+    "Você pode usar Sentidos Aguçados.",
+    "Você pode usar Percepção às Cegas."
+  ]},
+  vigilante:{name:"Vigilante",group:"Tipos de parceiro",page:"Jogo do Ano, p. 261",summary:"Sentinela que percebe ameaças e evita surpresas.",description:"Um vigia ou animal de guarda, sempre atento aos arredores.",levels:[
+    "+2 em Percepção e Iniciativa.",
+    "Você pode usar Esquiva Sobrenatural.",
+    "Você pode usar Olhos nas Costas."
+  ]},
+  cavalo:{name:"Cavalo",group:"Montarias",page:"Jogo do Ano, p. 262",summary:"Montaria Grande veloz e versátil.",description:"A montaria mais comum do Reinado.",note:"Estas estatísticas também se aplicam a pôneis (tamanho Médio).",size:"Grande",mount:true,levels:[
+    "Deslocamento 12m e uma ação de movimento extra por turno, apenas para deslocamento.",
+    "Como Iniciante; deslocamento 15m e +2 em ataques corpo a corpo.",
+    "Como Veterano; recebe uma segunda ação de movimento extra por turno, apenas para deslocamento."
+  ]},
+  cao_caca:{name:"Cão de caça",group:"Montarias",page:"Jogo do Ano, p. 262",summary:"Montaria Média ou Pequena, ágil e farejadora.",description:"Cães de porte adequado são montarias comuns para personagens Pequenos ou Minúsculos.",size:"Médio ou Pequeno",mount:true,levels:[
+    "Deslocamento 9m, pode usar faro e recebe uma ação de movimento extra por turno, apenas para deslocamento.",
+    "Como Iniciante; deslocamento 12m e +2 na Defesa.",
+    "Como Veterano; uma vez por rodada, ao acertar um ataque corpo a corpo, pode derrubar como ação livre."
+  ]},
+  lobo_cavernas:{name:"Lobo-das-cavernas",group:"Montarias",page:"Jogo do Ano, p. 262",summary:"Montaria Grande veloz e agressiva.",description:"Primos primitivos e maiores dos lobos comuns, lobos-das-cavernas são usados como montaria por goblinoides e aventureiros selvagens.",note:"Estas estatísticas também se aplicam a lobos comuns (tamanho Médio).",size:"Grande",mount:true,levels:[
+    "Deslocamento 12m e uma ação de movimento extra por turno, apenas para deslocamento.",
+    "Como Iniciante; deslocamento 15m e, uma vez por rodada, +1d8 em dano corpo a corpo.",
+    "Como Veterano; uma vez por rodada, ao acertar um ataque corpo a corpo, pode derrubar como ação livre."
+  ]},
+  grifo:{name:"Grifo",group:"Montarias",page:"Jogo do Ano, p. 262",summary:"Fera Grande que se torna uma montaria voadora.",description:"Esta fera majestosa é muito cobiçada por heróis.",size:"Grande",mount:true,levels:[
+    "Uma vez por rodada, +1d8 em dano corpo a corpo. Nesta graduação é um filhote e não pode ser montado.",
+    "Como Iniciante; pode ser montado e seu deslocamento muda para voo 18m.",
+    "Como Veterano; recebe uma ação de movimento extra por turno, apenas para deslocamento."
+  ]},
+  gorlogg:{name:"Gorlogg",group:"Montarias",page:"Jogo do Ano, p. 262",summary:"Montaria Grande primitiva e brutal.",description:"Esta besta primitiva é usada como montaria pelos mais selvagens.",size:"Grande",mount:true,levels:[
+    "Deslocamento 12m e, uma vez por rodada, +1d6 em dano corpo a corpo.",
+    "Como Iniciante; o bônus de dano corpo a corpo aumenta para +1d10.",
+    "Deslocamento 15m e o bônus de dano corpo a corpo aumenta para +2d8."
+  ]},
+  trobo:{name:"Trobo",group:"Montarias",page:"Jogo do Ano, p. 262",summary:"Montaria Grande resistente, usada para carga e tração.",description:"Usados como animais de carga e tração, trobos também servem como montarias.",size:"Grande",mount:true,levels:[
+    "Deslocamento 9m, uma ação de movimento extra por turno apenas para deslocamento e +1 em testes de resistência.",
+    "Como Iniciante; deslocamento 12m e o bônus em resistências aumenta para +2.",
+    "Como Veterano; o bônus em testes de resistência aumenta para +5."
+  ]}
+};
+function partnerTierForLevel(level=totalClassLevel()){
+  const total=Math.max(1,Math.min(20,Number(level)||1));
+  if(total<=4) return {name:"Iniciante",rank:"Iniciante",limit:1};
+  if(total<=10) return {name:"Veterano",rank:"Veterano",limit:2};
+  if(total<=16) return {name:"Campeão",rank:"Mestre",limit:2};
+  return {name:"Lenda",rank:"Mestre",limit:3};
+}
+function partnerRankIndex(rank){
+  const index=PARTNER_RANKS.indexOf(rank);
+  return index<0?0:index;
+}
+function allowedPartnerRank(rank,level=totalClassLevel()){
+  const maxIndex=partnerRankIndex(partnerTierForLevel(level).rank);
+  return PARTNER_RANKS[Math.min(partnerRankIndex(rank),maxIndex)];
+}
+function partnerCatalogEntry(type){return PARTNER_CATALOG[type]||null}
+function partnerBenefit(type,rank){
+  const entry=partnerCatalogEntry(type);
+  return entry?.levels?.[partnerRankIndex(rank)]||"";
+}
+function defaultPartner(overrides={}){
+  const type=PARTNER_CATALOG[overrides.type]?overrides.type:"combatente";
+  const rank=allowedPartnerRank(overrides.rank||"Iniciante");
+  const entry=partnerCatalogEntry(type);
+  return {
+    name:overrides.name||entry?.name||"Novo parceiro",
+    type,rank,active:overrides.active!==false,countsTowardLimit:overrides.countsTowardLimit!==false,
+    source:overrides.source||entry?.page||"Jogo do Ano",
+    benefit:overrides.benefit||partnerBenefit(type,rank),benefitCustomized:overrides.benefitCustomized===true,
+    skills:Array.isArray(overrides.skills)?overrides.skills:[],
+    notes:overrides.notes||""
+  };
+}
+function normalizePartner(partner){
+  partner=partner&&typeof partner==="object"?partner:{};
+  const type=PARTNER_CATALOG[partner.type]?partner.type:"custom";
+  const rank=PARTNER_RANKS.includes(partner.rank)?partner.rank:"Iniciante";
+  const entry=partnerCatalogEntry(type);
+  const normalized={
+    name:String(partner.name||entry?.name||"Parceiro"),type,rank,
+    active:partner.active!==false,countsTowardLimit:partner.countsTowardLimit!==false,
+    source:String(partner.source||entry?.page||"Manual"),
+    benefit:String(partner.benefit||partnerBenefit(type,rank)||""),
+    benefitCustomized:partner.benefitCustomized===true,
+    skills:(Array.isArray(partner.skills)?partner.skills:[]).slice(0,3).map(skill=>skill in T20_DATA.pericias&&!['Luta','Pontaria'].includes(skill)?skill:""),
+    notes:String(partner.notes||"")
+  };
+  if(entry&&!normalized.benefitCustomized) normalized.benefit=partnerBenefit(type,rank);
+  return normalized;
+}
+function activePartnerRows(partners=state?.partners||[]){
+  return (Array.isArray(partners)?partners:[]).filter(partner=>partner?.active!==false);
+}
+function partnerEffectMax(partners,getValue){
+  return activePartnerRows(partners).reduce((largest,partner)=>Math.max(largest,Number(getValue(partner)||0)),0);
+}
+function partnerSkillSlots(partner){
+  if(partner?.type!=="ajudante") return 0;
+  return partnerRankIndex(partner.rank)===0?2:3;
+}
+function partnerSkillValue(partner){
+  return partnerRankIndex(partner?.rank)>=2?4:2;
+}
+function partnerSkillBonus(skillName,partners=state?.partners||[]){
+  return partnerEffectMax(partners,partner=>{
+    if(partner.type==="ajudante"&&partner.skills?.slice(0,partnerSkillSlots(partner)).includes(skillName)) return partnerSkillValue(partner);
+    if(partner.type==="perseguidor"&&partner.rank==="Iniciante"&&["Percepção","Sobrevivência"].includes(skillName)) return 2;
+    if(partner.type==="vigilante"&&partner.rank==="Iniciante"&&["Percepção","Iniciativa"].includes(skillName)) return 2;
+    if(partner.type==="guardiao"&&partner.rank==="Mestre"&&RESISTANCE_SKILLS.has(skillName)) return 2;
+    if(partner.type==="trobo"&&RESISTANCE_SKILLS.has(skillName)) return [1,2,5][partnerRankIndex(partner.rank)];
+    return 0;
+  });
+}
+function partnerAttackBonus(attack,partners=state?.partners||[]){
+  const melee=attackSkillName(attack)==="Luta"||/corpo a corpo|adjacente/i.test(String(attack?.range||""));
+  return partnerEffectMax(partners,partner=>{
+    if(partner.type==="combatente") return [2,3,4][partnerRankIndex(partner.rank)];
+    if(partner.type==="cavalo"&&melee&&partnerRankIndex(partner.rank)>=1) return 2;
+    return 0;
+  });
+}
+function partnerDefenseBonus(partners=state?.partners||[]){
+  return partnerEffectMax(partners,partner=>{
+    if(partner.type==="guardiao") return [2,3,4][partnerRankIndex(partner.rank)];
+    if(partner.type==="cao_caca"&&partnerRankIndex(partner.rank)>=1) return 2;
+    return 0;
+  });
+}
+function partnerSpellCdBonus(partners=state?.partners||[]){
+  return partnerEffectMax(partners,partner=>partner.type==="magivocador"?[0,1,2][partnerRankIndex(partner.rank)]:0);
+}
+function partnerSpellCost(spell,partners=state?.partners||[]){
+  const base=Math.max(0,Number(spell?.cost||0));
+  const circle=Math.max(1,Math.min(5,Number(spell?.circle||1)));
+  const reduction=partnerEffectMax(partners,partner=>{
+    if(partner.type!=="adepto") return 0;
+    if(circle===1) return 1;
+    if(circle===2&&partnerRankIndex(partner.rank)>=1) return 1;
+    return 0;
+  });
+  return Math.max(base>0?1:0,base-reduction);
+}
+function partnerAutomationText(partner){
+  if(partner.active===false) return "Inativo: nenhum benefício entra nos cálculos.";
+  const skillList=(partner.skills||[]).slice(0,partnerSkillSlots(partner));
+  if(partner.type==="adepto") return partnerRankIndex(partner.rank)>=1
+    ? "-1 PM no custo de magias de 1º e 2º círculos (custo mínimo 1 PM)."
+    : "-1 PM no custo de magias de 1º círculo (custo mínimo 1 PM).";
+  if(partner.type==="ajudante") return skillList.length
+    ? `${signedNumber(partnerSkillValue(partner))} em ${skillList.join(", ")} (sem acumular com outro parceiro).`
+    : "Escolha as perícias abaixo para aplicar o bônus automaticamente.";
+  if(partner.type==="perseguidor"&&partner.rank==="Iniciante") return "+2 em Percepção e Sobrevivência.";
+  if(partner.type==="vigilante"&&partner.rank==="Iniciante") return "+2 em Percepção e Iniciativa.";
+  if(partner.type==="combatente") return `${signedNumber([2,3,4][partnerRankIndex(partner.rank)])} em todos os testes de ataque.`;
+  if(partner.type==="guardiao") return `${signedNumber([2,3,4][partnerRankIndex(partner.rank)])} na Defesa${partner.rank==="Mestre"?" e +2 em Fortitude, Reflexos e Vontade":""}.`;
+  if(partner.type==="magivocador"&&partner.rank!=="Iniciante") return `${signedNumber(partnerSpellCdBonus([partner]))} na CD de magias; o dano adicional permanece indicado no benefício.`;
+  if(partner.type==="cao_caca"&&partnerRankIndex(partner.rank)>=1) return "+2 na Defesa.";
+  if(partner.type==="cavalo"&&partnerRankIndex(partner.rank)>=1) return "+2 em ataques configurados com Luta ou alcance corpo a corpo.";
+  if(partner.type==="trobo") return `${signedNumber([1,2,5][partnerRankIndex(partner.rank)])} em Fortitude, Reflexos e Vontade.`;
+  return "Efeito condicional ou ativado: consulte o benefício atual durante o uso.";
+}
+function refreshPartnerCalculations(){
+  recalc();
+  renderSpells();
+}
+function foldItemText(text){
+  return String(text||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+}
+function itemCustomizationData(){
+  return window.T20_ITEM_CUSTOMIZATION||{improvements:[],materials:[],enchantments:[],presetEffects:{}};
+}
+function inventoryItemType(item){
+  if(["weapon","armor","shield","esoteric","tool","clothing","accessory","other"].includes(item?.customizationType)) return item.customizationType;
+  const category=foldItemText(item?.category);
+  if(category.includes("armadura")&&category.includes("escudo")){
+    const identity=foldItemText(`${item?.name||""} ${item?.notes||""}`);
+    if(identity.startsWith("escudo")||identity.includes(" escudo ")) return "shield";
+    return "armor";
+  }
+  if(category.includes("escudo")) return "shield";
+  if(category.includes("armadura")) return "armor";
+  if(category.includes("arma")&&!category.includes("armadura")) return "weapon";
+  if(category.includes("esoter")) return "esoteric";
+  if(category.includes("ferrament")) return "tool";
+  if(category.includes("vestuario")) return "clothing";
+  if(category.includes("acessor")) return "accessory";
+  return "other";
+}
+function itemIsHeavyArmor(item){
+  const text=foldItemText(`${item?.category||""} ${item?.name||""} ${item?.notes||""}`);
+  return text.includes("pesada")||["armadura completa","brunea","cota de malha","loriga segmentada","meia armadura"].some(name=>text.includes(name));
+}
+function allInventoryCatalogEntries(){
+  return [
+    ...(Array.isArray(window.T20_ITEM_CATALOG)?window.T20_ITEM_CATALOG:[]),
+    ...(Array.isArray(window.T20_EXPANSION_ITEM_CATALOG)?window.T20_EXPANSION_ITEM_CATALOG:[]),
+    ...(Array.isArray(window.T20_MAGIC_ITEM_CATALOG)?window.T20_MAGIC_ITEM_CATALOG:[]),
+    ...(Array.isArray(window.T20_EXPANSION_MAGIC_ITEM_CATALOG)?window.T20_EXPANSION_MAGIC_ITEM_CATALOG:[])
+  ];
+}
+function parseProtectionRules(text){
+  const normalized=String(text||"").replace(/[−–—]/g,"-");
+  const defenseMatch=normalized.match(/(?:^|[.;\n]\s*)Defesa\s*([+-]?\d+|-)(?=\s|[.;]|$)/i);
+  const penaltyMatch=normalized.match(/penalidade de armadura\s*([+-]?\d+|-)(?=\s|[.;]|$)/i);
+  const numberFrom=match=>{
+    if(!match) return null;
+    if(match[1]==="-") return 0;
+    const parsed=Number(match[1]);
+    return Number.isFinite(parsed)?Math.abs(parsed):null;
+  };
+  return {defense:numberFrom(defenseMatch),armorPenalty:numberFrom(penaltyMatch)};
+}
+function inferredProtectionBase(item){
+  const type=inventoryItemType(item);
+  if(type!=="armor"&&type!=="shield") return {defense:0,armorPenalty:0};
+  const direct=parseProtectionRules(itemDescription(item));
+  if(direct.defense!==null||direct.armorPenalty!==null){
+    return {defense:direct.defense??0,armorPenalty:direct.armorPenalty??0};
+  }
+  const identity=foldItemText(`${item?.name||""} ${itemDescription(item)}`);
+  const candidates=allInventoryCatalogEntries()
+    .filter(entry=>inventoryItemType(entry)===type)
+    .map(entry=>({entry,rules:parseProtectionRules(itemDescription(entry)),name:foldItemText(entry.name)}))
+    .filter(candidate=>candidate.name&&(candidate.rules.defense!==null||candidate.rules.armorPenalty!==null)&&identity.includes(candidate.name))
+    .sort((a,b)=>b.name.length-a.name.length);
+  const match=candidates[0];
+  if(!match) return {defense:0,armorPenalty:0};
+  return {
+    defense:match.rules.defense??0,
+    armorPenalty:/sem penalidade/.test(identity)?0:(match.rules.armorPenalty??0)
+  };
+}
+function baseProtectionStats(item){
+  const inferred=inferredProtectionBase(item);
+  const storedDefense=Number(item?.baseDefense),storedPenalty=Number(item?.baseArmorPenalty);
+  return {
+    defense:Number.isFinite(storedDefense)?Math.max(0,storedDefense):inferred.defense,
+    armorPenalty:Number.isFinite(storedPenalty)?Math.max(0,Math.abs(storedPenalty)):inferred.armorPenalty
+  };
+}
+function emptyItemEffects(){
+  return {attrs:{},skills:{},attack:0,damage:0,extraDamage:[],defense:0,rd:0,resistance:0,armorPenalty:0,spellCd:0,pmLimit:0,pvMax:0,pmMax:0,load:0,spaces:0,critRange:0,critMultiplier:0,doubleThreat:false};
+}
+function normalizedManualItemEffects(value){
+  const source=value&&typeof value==="object"?value:{};
+  const attrs={};
+  ATTR_KEYS.forEach(attr=>attrs[attr]=Number(source.attrs?.[attr]||0));
+  return {
+    attrs,
+    skill:String(source.skill||""),skillBonus:Number(source.skillBonus||0),
+    defense:Number(source.defense||0),rd:Number(source.rd||0),resistance:Number(source.resistance||0),
+    spellCd:Number(source.spellCd||0),pmLimit:Number(source.pmLimit||0),pvMax:Number(source.pvMax||0),pmMax:Number(source.pmMax||0),load:Number(source.load||0)
+  };
+}
+function mergeEffectInto(target,effect={}){
+  for(const attr of ATTR_KEYS) if(effect.attrs?.[attr]) target.attrs[attr]=Number(target.attrs[attr]||0)+Number(effect.attrs[attr]);
+  for(const [skill,bonus] of Object.entries(effect.skills||{})) if(bonus) target.skills[skill]=Number(target.skills[skill]||0)+Number(bonus);
+  for(const key of ["attack","damage","defense","rd","resistance","armorPenalty","spellCd","pmLimit","pvMax","pmMax","load","spaces","critRange","critMultiplier"]){
+    if(effect[key]) target[key]=Number(target[key]||0)+Number(effect[key]);
+  }
+  if(effect.extraDamage) target.extraDamage.push(...(Array.isArray(effect.extraDamage)?effect.extraDamage:[effect.extraDamage]));
+  if(effect.extraDamageFlat) target.extraDamage.push(String(effect.extraDamageFlat));
+  if(effect.doubleThreat) target.doubleThreat=true;
+  return target;
+}
+function mergeDistinctItemEffectInto(target,effect={}){
+  for(const attr of ATTR_KEYS) if(effect.attrs?.[attr]&&!target.attrs[attr]) target.attrs[attr]=Number(effect.attrs[attr]);
+  for(const [skill,bonus] of Object.entries(effect.skills||{})) if(bonus&&!target.skills[skill]) target.skills[skill]=Number(bonus);
+  for(const key of ["defense","rd","resistance","spellCd","pmLimit","pvMax","pmMax","load"]){
+    if(effect[key]&&!target[key]) target[key]=Number(effect[key]);
+  }
+  return target;
+}
+function describedItemEffects(item){
+  const result=emptyItemEffects(),description=itemDescription(item);
+  if(!description) return result;
+  const category=foldItemText(item?.category);
+  if(/aliment|alquim|pocao|consum|pergaminho|servico|veiculo|municao/.test(category)) return result;
+  const attrNames={forca:"FOR",destreza:"DES",constituicao:"CON",inteligencia:"INT",sabedoria:"SAB",carisma:"CAR"};
+  const clauses=description.replace(/\r/g,"").replace(/,\s*(?=(?:mas|porém|permite|pode)\b)/gi,";").split(/[.;\n]+/).map(text=>text.trim()).filter(Boolean);
+  const stronger=(current,next)=>!current||Math.abs(next)>Math.abs(current)?next:current;
+  const isConditional=folded=>/(?:\bse\b|\bcaso\b|\bquando\b|\bdurante\b|\benquanto\b|\bcontra\b|\bpara\b|\bapenas\b|\bpode\b|\bpermite\b|\bdevotos?\b|\bclerigos?\b|\bfrades?\b|\bdesde que\b|\buma vez por\b|\bescolhid|\ba escolha\b|\ba criterio\b|\bao (?:fazer|realizar|usar|atacar|acertar|conjurar|rolar)\b|\bem (?:ambientes?|terrenos?|situacoes?)\b|no terreno|com o capuz|na primeira rodada|apos (?:a )?leitura|depois de ler)/.test(folded);
+  for(const clause of clauses){
+    const folded=foldItemText(clause);
+    if(!folded||isConditional(folded)) continue;
+    if(!/^[+-]\d+\b/.test(folded)&&!/(?:\bfornec\w*|\bconced\w*|\breceb\w*|\bgarant\w*|\boferec\w*)/.test(folded)) continue;
+    for(const [name,attr] of Object.entries(attrNames)){
+      const signedFirst=folded.match(new RegExp(`([+-]\\d+)\\s+(?:em\\s+)?${name}\\b`));
+      const nameFirst=folded.match(new RegExp(`\\b${name}\\s*([+-]\\d+)`));
+      const bonus=Number(signedFirst?.[1]||nameFirst?.[1]||0);
+      if(bonus) result.attrs[attr]=stronger(Number(result.attrs[attr]||0),bonus);
+    }
+    const directValues=[
+      ["defense",[/([+-]\d+)\s+(?:na\s+)?defesa\b/,/\bdefesa\s*([+-]\d+)/]],
+      ["resistance",[/([+-]\d+)\s+(?:em\s+)?(?:testes? de\s+)?resistencia\b/,/\bresistencia\s*([+-]\d+)/]],
+      ["spellCd",[/([+-]\d+)\s+(?:na\s+)?cd(?: de magia| das? magias?)?\b/]],
+      ["pmLimit",[/limite de pm[^\d+-]*([+-]\d+)/]],
+      ["pvMax",[/([+-]\d+)\s+pv\b/]],
+      ["pmMax",[/([+-]\d+)\s+pm\b/]],
+      ["load",[/(?:capacidade de carga|limite de carga)[^\d+]*\+(?:(\d+))\s+espacos?/,/aumenta (?:sua )?capacidade de carga em (\d+) espacos?/]]
+    ];
+    directValues.forEach(([key,patterns])=>{
+      const match=patterns.map(pattern=>folded.match(pattern)).find(Boolean),bonus=Number(match?.[1]||0);
+      if(bonus) result[key]=stronger(Number(result[key]||0),bonus);
+    });
+    Object.keys(T20_DATA.pericias||{}).forEach(skill=>{
+      const skillName=foldItemText(skill).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+      const signedFirst=folded.match(new RegExp(`([+-]\\d+)\\s+(?:em\\s+)?(?:testes? de\\s+)?${skillName}\\b`));
+      const nameFirst=folded.match(new RegExp(`\\b${skillName}\\s*([+-]\\d+)`));
+      const bonus=Number(signedFirst?.[1]||nameFirst?.[1]||0);
+      if(bonus) result.skills[skill]=stronger(Number(result.skills[skill]||0),bonus);
+    });
+  }
+  return result;
+}
+function groupedCustomizationEntries(ids,catalog){
+  const selected=(Array.isArray(ids)?ids:[]).map(id=>catalog.find(entry=>entry.id===id)).filter(Boolean);
+  const grouped=new Map(),plain=[];
+  selected.forEach(entry=>{
+    if(!entry.group){plain.push(entry);return}
+    const current=grouped.get(entry.group);
+    const magnitude=Object.values(entry.effects||{}).filter(value=>typeof value==="number").reduce((sum,value)=>sum+Math.abs(value),0);
+    const currentMagnitude=current?Object.values(current.effects||{}).filter(value=>typeof value==="number").reduce((sum,value)=>sum+Math.abs(value),0):-1;
+    if(magnitude>=currentMagnitude) grouped.set(entry.group,entry);
+  });
+  return [...plain,...grouped.values()];
+}
+function inferItemCustomizations(item){
+  const data=itemCustomizationData(),text=foldItemText(`${item?.notes||""} ${item?.description||""}`);
+  if(!text) return {improvements:[],enchantments:[],material:""};
+  const includesName=entry=>{
+    const name=foldItemText(entry.name);
+    const aliases={defensor:["defensora"],guardiao:["guardia"],protetor:["protetora"],zeloso:["zelosa"],gelido:["gelida"],caustico:["caustica"],acrobatico:["acrobatica"],ameacadora:["ameacador"]};
+    return [name,...(aliases[entry.id]||[])].some(candidate=>candidate.length>4&&new RegExp(`(^|[^a-z])${candidate.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}([^a-z]|$)`).test(text));
+  };
+  const type=inventoryItemType(item);
+  return {
+    improvements:data.improvements.filter(entry=>entry.types.includes(type)&&includesName(entry)).map(entry=>entry.id),
+    enchantments:data.enchantments.filter(entry=>entry.types.includes(type)&&includesName(entry)).map(entry=>entry.id),
+    material:data.materials.find(entry=>entry.id&&entry.types.includes(type)&&includesName(entry))?.id||""
+  };
+}
+function itemOwnEffects(item){
+  const result=emptyItemEffects(),data=itemCustomizationData(),type=inventoryItemType(item);
+  const protection=baseProtectionStats(item);
+  result.defense+=protection.defense;
+  result.armorPenalty+=protection.armorPenalty;
+  groupedCustomizationEntries(item?.improvements,data.improvements).filter(entry=>entry.types.includes(type)).forEach(entry=>mergeEffectInto(result,entry.effects));
+  groupedCustomizationEntries(item?.enchantments,data.enchantments).filter(entry=>entry.types.includes(type)).forEach(entry=>mergeEffectInto(result,entry.effects));
+  const material=data.materials.find(entry=>entry.id===item?.material);
+  if(material) mergeEffectInto(result,material.effects);
+  if(item?.material==="adamante"){
+    if(type==="armor") result.rd+=itemIsHeavyArmor(item)?5:2;
+    if(type==="shield") result.rd+=2;
+  }
+  if(item?.material==="gelo-eterno"&&type!=="weapon") result.extraDamage=[];
+  if(item?.material==="materia-vermelha"){
+    if(type!=="weapon") result.extraDamage=[];
+    Object.entries(T20_DATA.pericias||{}).forEach(([skill,attr])=>{if(attr==="CAR"&&skill!=="Intimidação") result.skills[skill]=Number(result.skills[skill]||0)-2});
+  }
+  if(item?.material==="mitral"){
+    if(type==="weapon") result.critRange+=1;
+    if(type==="armor"||type==="shield") result.armorPenalty-=2;
+  }
+  if((item?.enchantments||[]).includes("invulneravel")) result.rd+=type==="shield"?2:5;
+  if((item?.improvements||[]).includes("aprimorado")&&item.chosenSkill) result.skills[item.chosenSkill]=Number(result.skills[item.chosenSkill]||0)+1;
+  const preset=data.presetEffects[foldItemText(item?.name)];
+  if(preset) mergeEffectInto(result,preset);
+  mergeDistinctItemEffectInto(result,describedItemEffects(item));
+  const manual=normalizedManualItemEffects(item?.manualEffects);
+  mergeEffectInto(result,manual);
+  if(manual.skill&&manual.skillBonus) result.skills[manual.skill]=Number(result.skills[manual.skill]||0)+manual.skillBonus;
+  return result;
+}
+function equippedInventoryItems(items=state?.items||[]){
+  return (items||[]).filter(item=>item?.equipped===true);
+}
+function strongestItemValue(values){
+  const numeric=values.map(Number).filter(Number.isFinite);
+  return Math.max(0,...numeric)+Math.min(0,...numeric);
+}
+function equippedItemEffects(inventory=state?.items||[]){
+  const result=emptyItemEffects(),items=equippedInventoryItems(inventory).map(item=>({item,effects:itemOwnEffects(item),type:inventoryItemType(item)}));
+  for(const attr of ATTR_KEYS) result.attrs[attr]=strongestItemValue(items.map(entry=>entry.effects.attrs[attr]||0));
+  const skillNames=new Set(items.flatMap(entry=>Object.keys(entry.effects.skills||{})));
+  skillNames.forEach(skill=>result.skills[skill]=strongestItemValue(items.map(entry=>entry.effects.skills[skill]||0)));
+  for(const key of ["rd","resistance","spellCd","pmLimit","pvMax","pmMax"]){
+    result[key]=strongestItemValue(items.map(entry=>entry.effects[key]||0));
+  }
+  result.load=items.reduce((sum,entry)=>sum+Number(entry.effects.load||0),0);
+  const defenseGroups={armor:[],shield:[],other:[]};
+  items.forEach(entry=>(defenseGroups[entry.type]||defenseGroups.other).push(entry.effects.defense||0));
+  result.defense=strongestItemValue(defenseGroups.armor)+strongestItemValue(defenseGroups.shield)+strongestItemValue(defenseGroups.other);
+  const penaltyGroups={armor:[],shield:[],other:[]};
+  items.forEach(entry=>(penaltyGroups[entry.type]||penaltyGroups.other).push(Math.max(0,Number(entry.effects.armorPenalty||0))));
+  result.armorPenalty=Math.max(0,...penaltyGroups.armor)+Math.max(0,...penaltyGroups.shield)+Math.max(0,...penaltyGroups.other);
+  return result;
+}
+function equippedProtectionBreakdown(){
+  const groups={armor:[],shield:[],other:[]};
+  equippedInventoryItems().forEach(item=>{
+    const type=inventoryItemType(item),effects=itemOwnEffects(item);
+    (groups[type]||groups.other).push(effects);
+  });
+  const strongestDefense=type=>strongestItemValue(groups[type].map(effect=>effect.defense||0));
+  const strongestPenalty=type=>Math.max(0,...groups[type].map(effect=>Math.max(0,Number(effect.armorPenalty||0))));
+  return {
+    armorDefense:strongestDefense("armor"),
+    shieldDefense:strongestDefense("shield"),
+    otherDefense:strongestDefense("other"),
+    armorPenalty:strongestPenalty("armor"),
+    shieldPenalty:strongestPenalty("shield"),
+    otherPenalty:strongestPenalty("other")
+  };
+}
+function linkedAttackItems(attack,{equippedOnly=false}={}){
+  const attackId=String(attack?.id||"");
+  if(!attackId) return [];
+  return (state?.items||[]).filter(item=>
+    inventoryItemType(item)==="weapon" &&
+    item.linkedAttackId===attackId &&
+    (!equippedOnly||item.equipped===true)
+  );
+}
+function equippedItemAttackEffects(attack){
+  const result=emptyItemEffects();
+  linkedAttackItems(attack,{equippedOnly:true}).forEach(item=>mergeEffectInto(result,itemOwnEffects(item)));
+  return result;
+}
+function attackItemEffectLabels(item){
+  const fx=itemOwnEffects(item),labels=[];
+  if(fx.attack) labels.push(`${signedNumber(fx.attack)} ataque`);
+  if(fx.damage) labels.push(`${signedNumber(fx.damage)} dano`);
+  if(fx.extraDamage?.length) labels.push(`${fx.extraDamage.join(" + ")} extra`);
+  if(fx.critRange) labels.push(`${signedNumber(fx.critRange)} margem`);
+  if(fx.critMultiplier) labels.push(`${signedNumber(fx.critMultiplier)} multiplicador`);
+  if(fx.doubleThreat) labels.push("margem dobrada");
+  return labels;
+}
+function attackItemModificationNames(item){
+  const data=itemCustomizationData();
+  const genericImprovements=new Set(["banhado-ouro","cravejado-gemas","discreto","macabro"]);
+  return [
+    ...(item?.improvements||[]).filter(id=>!genericImprovements.has(id)).map(id=>data.improvements.find(entry=>entry.id===id)?.name),
+    item?.material?data.materials.find(entry=>entry.id===item.material)?.name:"",
+    ...(item?.enchantments||[]).map(id=>data.enchantments.find(entry=>entry.id===id)?.name)
+  ].filter(Boolean);
+}
+function attackLinkedItemSummary(item){
+  const modifications=attackItemModificationNames(item),effects=attackItemEffectLabels(item);
+  if(!item.equipped) return `${item.name||"Arma sem nome"} (não equipada)`;
+  const details=[modifications.join(", "),effects.join(" • ")].filter(Boolean).join(" — ");
+  return `${item.name||"Arma sem nome"}${details?`: ${details}`:""}`;
+}
+function itemAttributeBonus(attr){return Number(equippedItemEffects().attrs[attr]||0)}
+function itemSkillBonus(skill){return Number(equippedItemEffects().skills[skill]||0)+((RESISTANCE_SKILLS.has(skill))?Number(equippedItemEffects().resistance||0):0)}
+function itemEffectiveSpaces(item){
+  const base=Math.max(0,Number(item?.spaces||0)),adjustment=Number(itemOwnEffects(item).spaces||0);
+  if(adjustment<0&&base>0) return Math.max(1,base+adjustment);
+  return Math.max(0,base+adjustment);
+}
+function itemAutomaticEffectLabels(item){
+  const fx=itemOwnEffects(item),labels=[];
+  ATTR_KEYS.forEach(attr=>{if(fx.attrs[attr]) labels.push(`${attr} ${signedNumber(fx.attrs[attr])}`)});
+  Object.entries(fx.skills).forEach(([skill,bonus])=>{if(bonus) labels.push(`${skill} ${signedNumber(bonus)}`)});
+  [["Ataque",fx.attack],["Dano",fx.damage],["Defesa",fx.defense],["RD",fx.rd],["Resistências",fx.resistance],["CD",fx.spellCd],["Limite de PM",fx.pmLimit],["PV máx.",fx.pvMax],["PM máx.",fx.pmMax],["Carga",fx.load],["Espaços",fx.spaces]].forEach(([label,bonus])=>{if(bonus) labels.push(`${label} ${signedNumber(bonus)}`)});
+  if(fx.armorPenalty>0) labels.push(`Penalidade de armadura -${fx.armorPenalty}`);
+  if(fx.extraDamage.length) labels.push(`Dano extra ${fx.extraDamage.join(" + ")}`);
+  if(fx.critRange) labels.push(`Margem ${signedNumber(fx.critRange)}`);
+  if(fx.critMultiplier) labels.push(`Multiplicador ${signedNumber(fx.critMultiplier)}`);
+  if(fx.doubleThreat) labels.push("Margem dobrada");
+  return labels;
+}
 const rawNum=id=>Number($("#"+id)?.value||0);
 const num=id=>rawNum(id);
-const attrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+rawNum(`${id}Temp`):rawNum(id);
+const permanentAttrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+itemAttributeBonus(id):rawNum(id);
+const attrNum=id=>ATTR_KEYS.includes(id)?permanentAttrNum(id)+rawNum(`${id}Temp`):rawNum(id);
 const value=id=>$("#"+id)?.value||"";
 const DELETE_ICON_HTML='<span class="deleteIconGlyph" aria-hidden="true"></span>';
 const ROLL_ICON_HTML='<img src="attack-roll-icon.png" alt="" draggable="false" aria-hidden="true">';
@@ -202,10 +738,13 @@ function attackBonusBreakdown(attack){
   const skillName=attackSkillName(attack);
   const manual=Number(attack?.bonus||0);
   const fx=activeConditionEffects();
-  const attackOnly=num("globalAttackBonus")+Number(fx.attack||0);
+  const partnerBonus=partnerAttackBonus(attack);
+  const itemFx=equippedItemAttackEffects(attack);
+  const itemBonus=Number(itemFx.attack||0);
+  const attackOnly=num("globalAttackBonus")+Number(fx.attack||0)+partnerBonus+itemBonus;
   if(skillName==="Manual"){
     const total=manual+num("globalTestBonus")+attackOnly;
-    return {total,skillName,attr:"",manual};
+    return {total,skillName,attr:"",manual,partnerBonus,itemBonus,itemFx};
   }
   const cls=primaryClass()||{pericias:[]};
   const defaultAttr=T20_DATA.pericias[skillName]||"FOR";
@@ -215,7 +754,7 @@ function attackBonusBreakdown(attack){
   const skillBase=halfLevel()+attrNum(attr)+(trained?trainingBonus():0)+Number(data.adjust||0)
     +num("globalTestBonus")+num("skillGlobalBonus")
     +Number(fx.allSkills||0)+Number(fx.attrs?.[attr]||0)+Number(fx.skills?.[skillName]||0);
-  return {total:skillBase+attackOnly+manual,skillName,attr,manual,trained,skillBase};
+  return {total:skillBase+attackOnly+manual,skillName,attr,manual,trained,skillBase,partnerBonus,itemBonus,itemFx};
 }
 function rollAttackD20(attack){
   const best=Math.max(0,Math.min(5,Math.floor(Number(attack?.bestDice)||0)));
@@ -233,18 +772,26 @@ function rollAttackDamage(attack){
   const attackDice=rollAttackD20(attack);
   const d20=attackDice.selected;
   const totalAttack=d20+bonus;
-  const critical=parseCritical(attack.crit,attack.mult);
+  const itemFx=attackBreakdown.itemFx||emptyItemEffects();
+  const parsedCritical=parseCritical(attack.crit,attack.mult);
+  const originalMargin=21-parsedCritical.threshold;
+  const itemMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?originalMargin:0);
+  const critical={threshold:Math.max(2,parsedCritical.threshold-itemMargin),multiplier:Math.max(1,parsedCritical.multiplier+Number(itemFx.critMultiplier||0))};
   const isCritical=d20>=critical.threshold;
   const isFumble=d20===1;
   const baseDamage=rollDamageExpression(attack.damage,isCritical?critical.multiplier:1,isCritical&&attack.critFlat===true);
-  const extraExpression=String(attack.extraDamage||"").trim();
-  const extraDamage=extraExpression?rollDamageExpression(extraExpression,1):{total:0,details:[]};
+  const extraExpressions=[String(attack.extraDamage||"").trim(),...(itemFx.extraDamage||[])].filter(Boolean);
+  const extraDamage=extraExpressions.reduce((total,expression)=>{
+    const rolled=rollDamageExpression(expression,1);
+    total.total+=rolled.total;total.details.push(...rolled.details);return total;
+  },{total:0,details:[]});
   const damageAttr=ATTR_KEYS.includes(attack.damageAttr)?attack.damageAttr:"";
-  const damageAttrBonus=damageAttr?rawNum(damageAttr):0;
+  const damageAttrBonus=damageAttr?permanentAttrNum(damageAttr):0;
   const globalDamage=num("globalDamageBonus");
+  const itemDamage=Number(itemFx.damage||0);
   const damage={
-    total:baseDamage.total+extraDamage.total+damageAttrBonus+globalDamage,
-    details:[...baseDamage.details,...extraDamage.details,...(damageAttr?[`${damageAttr} ${signedNumber(damageAttrBonus)}`]:[]),...(globalDamage?[signedNumber(globalDamage)]:[])]
+    total:baseDamage.total+extraDamage.total+damageAttrBonus+globalDamage+itemDamage,
+    details:[...baseDamage.details,...extraDamage.details,...(damageAttr?[`${damageAttr} ${signedNumber(damageAttrBonus)}`]:[]),...(globalDamage?[signedNumber(globalDamage)]:[]),...(itemDamage?[`Item ${signedNumber(itemDamage)}`]:[])]
   };
   const attackTotalClass=isFumble?"fumbleTotal":isCritical?"criticalTotal":"";
   const rollLabel=isFumble?"Falha":isCritical?"Cr&iacute;tico":"Ataque";
@@ -253,11 +800,13 @@ function rollAttackDamage(attack){
   const extraDamageLine=extraDamage.details.length?`<br>Dano extra: ${escapeHtml(extraDamage.details.join(" + "))}`:"";
   const damageAttrLine=damageAttr?`<br>Atributo no dano: ${damageAttr} ${signedNumber(damageAttrBonus)}`:"";
   const globalDamageLine=globalDamage?`<br>Dano global: ${signedNumber(globalDamage)}`:"";
+  const itemDamageLine=itemDamage?`<br>Item equipado: ${signedNumber(itemDamage)} dano`:"";
+  const itemAttackLine=attackBreakdown.itemBonus?`<br>Bônus do item: ${signedNumber(attackBreakdown.itemBonus)} ataque`:"";
   const diceLine=attackDice.rolls.length>1?` [${attackDice.rolls.join(", ")}] (${attackDice.mode})`:` [${d20}]`;
   const skillLine=attackBreakdown.skillName==="Manual"?"Manual":`${attackBreakdown.skillName} (${attackBreakdown.attr})`;
   notify(`<div class="combatRollToast">
     <div class="combatRollTop"><strong>${title}</strong><span>${rollLabel}</span></div>
-    <div class="combatRollFormula">Ataque: ${attackDice.rolls.length}d20${diceLine} ${signedNumber(bonus)}<br>Per&iacute;cia: ${skillLine}<br>Dano base: ${baseDamageLine}${extraDamageLine}${damageAttrLine}${globalDamageLine}${isCritical?`<br>Cr&iacute;tico: ${critical.threshold}/x${critical.multiplier}`:""}</div>
+    <div class="combatRollFormula">Ataque: ${attackDice.rolls.length}d20${diceLine} ${signedNumber(bonus)}<br>Per&iacute;cia: ${skillLine}${itemAttackLine}<br>Dano base: ${baseDamageLine}${extraDamageLine}${damageAttrLine}${globalDamageLine}${itemDamageLine}${isCritical?`<br>Cr&iacute;tico: ${critical.threshold}/x${critical.multiplier}`:""}</div>
     <div class="combatRollTotals">
       <div><strong class="${attackTotalClass}">${totalAttack}</strong><small>Ataque</small></div>
       <div><strong>${damage.total}</strong><small>Dano</small></div>
@@ -458,7 +1007,7 @@ function renderClassLevels(){
     if(idx===0) state.skillData={};
     setClassLevels(levels);
     syncClassDefenseAttr();
-    renderPowers();refreshPowerPickerIfOpen();recalc();save(false);
+    renderPowers();renderPartners();refreshPowerPickerIfOpen();recalc();save(false);
   });
   $$("[data-classlevel-level]").forEach(element=>element.onchange=()=>{
     const levels=currentClassLevels();
@@ -466,7 +1015,7 @@ function renderClassLevels(){
     const otherLevels=levels.reduce((sum,entry,entryIndex)=>sum+(entryIndex===idx?0:clampClassLevel(entry.level)),0);
     levels[idx].level=Math.min(clampClassLevel(element.value),Math.max(1,20-otherLevels));
     setClassLevels(levels);
-    renderPowers();refreshPowerPickerIfOpen();recalc();save(false);
+    renderPowers();renderPartners();refreshPowerPickerIfOpen();recalc();save(false);
   });
   $$("[data-classlevel-remove]").forEach(element=>element.onclick=()=>{
     const levels=currentClassLevels();
@@ -474,7 +1023,7 @@ function renderClassLevels(){
     if(idx<=0) return;
     levels.splice(idx,1);
     setClassLevels(levels);
-    renderPowers();refreshPowerPickerIfOpen();recalc();save(false);
+    renderPowers();renderPartners();refreshPowerPickerIfOpen();recalc();save(false);
   });
 }
 function addClassLevel(){
@@ -484,7 +1033,7 @@ function addClassLevel(){
   const id=Object.keys(T20_DATA.classes).find(classId=>!used.has(classId))||firstClassId();
   levels.push({id,level:1});
   setClassLevels(levels);
-  renderPowers();refreshPowerPickerIfOpen();recalc();save(false);
+  renderPowers();renderPartners();refreshPowerPickerIfOpen();recalc();save(false);
 }
 function trainingBonus(){const l=totalClassLevel();return l>=15?6:l>=7?4:2}
 function halfLevel(){return Math.floor(totalClassLevel()/2)}
@@ -587,21 +1136,27 @@ function renderGlobalModifierSummary(){
     : '<span class="emptyModifierState">Nenhum modificador ativo</span>';
 }
 function recalc(){
-  const classLevels=currentClassLevels(), cls=primaryClass()||{nome:"Classe",pv1:0,pvNivel:0,pmNivel:0}, race=T20_DATA.racas[value("raca")], lvl=totalClassLevel(classLevels), con=num("CON");
+  const itemFx=equippedItemEffects();
+  const classLevels=currentClassLevels(), cls=primaryClass()||{nome:"Classe",pv1:0,pvNivel:0,pmNivel:0}, race=T20_DATA.racas[value("raca")], lvl=totalClassLevel(classLevels), con=permanentAttrNum("CON");
   syncPrimaryFieldsFromClassLevels();
-  const bases=classResourceBases(classLevels,{con,spellAttrValue:num(value("spellAttr"))});
+  const bases=classResourceBases(classLevels,{con,spellAttrValue:permanentAttrNum(value("spellAttr"))});
   const pvBase=bases.pvBase, pmBase=bases.pmBase;
   $("#pvBase").value=pvBase;$("#pmBase").value=pmBase;
   const pvTemp=Math.max(0,num("pvBonus")),pmTemp=Math.max(0,num("pmBonus"));
-  const pvMax=pvBase+num("pvAjuste"),pmMax=pmBase+num("pmAjuste");
+  const pvMax=pvBase+num("pvAjuste")+itemFx.pvMax,pmMax=pmBase+num("pmAjuste")+itemFx.pmMax;
   const pvAtual=num("pvAtual"),deathLimit=deathLimitFromPvMax(pvMax),deathThreshold=deathLimit-1,isDying=pvAtual<0,isDead=pvAtual<deathLimit;
   $("#pvMaxView").textContent=isDying?deathLimit:pvMax;$("#pmMaxView").textContent=pmMax;$("#pvAtualView").textContent=pvAtual;$("#pmAtualView").textContent=num("pmAtual");
   $("#pvTempView").textContent=pvTemp?` +${pvTemp} temp`:"";$("#pmTempView").textContent=pmTemp?` +${pmTemp} temp`:"";
   const conditionFx=activeConditionEffects();
   const defenseAttr=ATTR_KEYS.includes(value("defAttr"))?value("defAttr"):"DES";
-  const defenseAttrBonus=$("#defUseDex")?.checked!==false?num(defenseAttr):0;
+  const defenseAttrBonus=$("#defUseDex")?.checked!==false?permanentAttrNum(defenseAttr):0;
   if($("#defUseDexState")) $("#defUseDexState").textContent=$("#defUseDex")?.checked!==false?"Sim":"Não";
-  $("#defView").textContent=10+defenseAttrBonus+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+num("globalDefenseBonus")+conditionFx.defense;
+  $("#defView").textContent=10+defenseAttrBonus+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+num("globalDefenseBonus")+partnerDefenseBonus()+itemFx.defense+conditionFx.defense;
+  const protection=equippedProtectionBreakdown();
+  if($("#armorItemBonus")) $("#armorItemBonus").textContent=protection.armorDefense?`Item ${signedNumber(protection.armorDefense)}`:"";
+  if($("#shieldItemBonus")) $("#shieldItemBonus").textContent=protection.shieldDefense?`Item ${signedNumber(protection.shieldDefense)}`:"";
+  const equippedPenalty=protection.armorPenalty+protection.shieldPenalty+protection.otherPenalty;
+  if($("#armorPenaltyItemBonus")) $("#armorPenaltyItemBonus").textContent=equippedPenalty?`Item -${equippedPenalty}`:"";
   const penalties=[];
   if(conditionFx.defense) penalties.push(`Defesa ${conditionFx.defense}`);
   if(conditionFx.attack) penalties.push(`Ataques ${conditionFx.attack}`);
@@ -611,8 +1166,14 @@ function recalc(){
   const penaltyHtml=penalties.length?`<strong>Condições aplicadas:</strong> ${penalties.join(" • ")}`:"";
   $("#conditionPenaltySummary").innerHTML=penaltyHtml;
   $("#combatPenaltySummary").innerHTML=penaltyHtml;
-  $("#spellCd").textContent=10+halfLevel()+attrNum(value("spellAttr"))+num("spellCdBonus");
-  $("#pmLimit").textContent=Math.max(0,lvl+num("pmLimitBonus")+num("pmLimitAdjust"));
+  $("#spellCd").textContent=10+halfLevel()+attrNum(value("spellAttr"))+num("spellCdBonus")+partnerSpellCdBonus()+itemFx.spellCd;
+  $("#pmLimit").textContent=Math.max(0,lvl+num("pmLimitBonus")+num("pmLimitAdjust")+itemFx.pmLimit);
+  ATTR_KEYS.forEach(attr=>{
+    const indicator=$(`[data-itemattr="${attr}"]`),total=$(`[data-attrtotal="${attr}"]`),bonus=itemAttributeBonus(attr);
+    if(total) total.textContent=permanentAttrNum(attr);
+    if(indicator){indicator.textContent=bonus?`item ${signedNumber(bonus)}`:"";indicator.classList.toggle("active",!!bonus)}
+  });
+  if($("#rdItemBonus")) $("#rdItemBonus").textContent=itemFx.rd?`Item ${signedNumber(itemFx.rd)}`:"";
   const pvScaleMax=Math.max(1,pvMax+(isDying?0:pvTemp)),pmScaleMax=Math.max(1,pmMax+pmTemp);
   const pvPct=isDying?Math.max(0,Math.min(100,Math.abs(pvAtual)/Math.abs(deathLimit)*100)):Math.max(0,Math.min(100,Math.min(Math.max(pvAtual,0),pvMax)/pvScaleMax*100));
   const pvTempPct=!isDying&&pvTemp?Math.max(0,Math.min(100-pvPct,pvTemp/pvScaleMax*100)):0;
@@ -706,7 +1267,7 @@ function renderSkillsLegacy(){
     if(name==="Ofício"){
       state.offices=Array.isArray(state.offices)&&state.offices.length?state.offices:[{name:"",trained:false,adjust:0}];
       state.offices.forEach((office,idx)=>{
-        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+itemSkillBonus(name)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
         rows.push(`<div class="skill office-skill">
           <span>Ofício <small>(${attr})</small></span>
           <input class="officeName" data-officename="${idx}" value="${office.name||""}" placeholder="Ex.: Alquimia">
@@ -720,7 +1281,7 @@ function renderSkillsLegacy(){
       continue;
     }
     const d=state.skillData[name]||{trained:cls.pericias.includes(name),adjust:0};state.skillData[name]=d;
-    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+itemSkillBonus(name)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
     rows.push(`<div class="skill"><span>${name} <small>(${attr})</small></span><label><input type="checkbox" data-sktrain="${name}" ${d.trained?"checked":""}> Treino</label><input type="number" data-skadj="${name}" value="${d.adjust||0}"><span class="total">${total>=0?"+":""}${total}</span><button type="button" class="skillRollButton iconImageButton" data-skroll="${name}" data-bonus="${total}" title="Rolar ${name}" aria-label="Rolar ${name}">${ROLL_ICON_HTML}</button></div>`);
   }
   $("#skillsList").innerHTML=rows.join("");
@@ -742,7 +1303,7 @@ function skillAttrOptions(selected){
 function validSkillAttr(attr, fallback){
   return ATTR_KEYS.includes(attr)?attr:fallback;
 }
-function armorPenaltyValue(){return -Math.abs(num("armorPenalty"))}
+function armorPenaltyValue(){return -Math.max(0,Math.abs(num("armorPenalty"))+Number(equippedItemEffects().armorPenalty||0))}
 function skillIsLocked(name, trained){return TRAINED_ONLY_SKILLS.has(name)&&!trained}
 function skillTotalText(total, locked){return locked?"—":`${total>=0?"+":""}${total}`}
 function skillBadges(name){
@@ -750,6 +1311,9 @@ function skillBadges(name){
   if(TRAINED_ONLY_SKILLS.has(name)) badges.push(`<span class="skillBadge trainedOnly">Só treinada</span>`);
   if(ARMOR_PENALTY_SKILLS.has(name)) badges.push(`<span class="skillBadge armorPenalty">Armadura</span>`);
   return badges.length?`<span class="skillBadges">${badges.join("")}</span>`:"";
+}
+function partnerSkillBadge(bonus){
+  return bonus?`<span class="skillBadge partnerBonus">Parceiro ${signedNumber(bonus)}</span>`:"";
 }
 function renderSkills(){
   const cls=primaryClass()||{pericias:[]}, fx=activeConditionEffects();
@@ -764,9 +1328,10 @@ function renderSkills(){
         const attr=validSkillAttr(office.attr,defaultAttr);
         office.attr=attr;
         const locked=skillIsLocked(name,office.trained);
-        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+globalTestBonus+globalSkillBonus+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+        const partnerBonus=partnerSkillBonus(name);
+        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+globalTestBonus+globalSkillBonus+partnerBonus+itemSkillBonus(name)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
         rows.push(`<div class="skill office-skill ${office.trained?"trained":""} ${locked?"locked":""}">
-          <span class="skillName">Ofício <select class="skillAttrSelect" data-officeattr="${idx}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}</span>
+          <span class="skillName">Ofício <select class="skillAttrSelect" data-officeattr="${idx}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}${partnerSkillBadge(partnerBonus)}</span>
           <input class="officeName" data-officename="${idx}" value="${escapeHtml(office.name||"")}" placeholder="Ex.: Alquimia">
           <label><input type="checkbox" data-officetrain="${idx}" ${office.trained?"checked":""}> Treino</label>
           <input type="number" data-officeadj="${idx}" value="${office.adjust||0}">
@@ -784,9 +1349,10 @@ function renderSkills(){
     const armorPenalty=ARMOR_PENALTY_SKILLS.has(name)?armorPenaltyValue():0;
     const locked=skillIsLocked(name,d.trained);
     const resistanceBonus=RESISTANCE_SKILLS.has(name)?globalResistanceBonus:0;
-    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+globalTestBonus+globalSkillBonus+resistanceBonus+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+    const partnerBonus=partnerSkillBonus(name);
+    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+globalTestBonus+globalSkillBonus+resistanceBonus+partnerBonus+itemSkillBonus(name)+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
     rows.push(`<div class="skill ${d.trained?"trained":""} ${locked?"locked":""} ${armorPenalty?"hasArmorPenalty":""}">
-      <span class="skillName">${escapeHtml(name)} <select class="skillAttrSelect" data-skattr="${escapeHtml(name)}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}</span>
+      <span class="skillName">${escapeHtml(name)} <select class="skillAttrSelect" data-skattr="${escapeHtml(name)}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}${partnerSkillBadge(partnerBonus)}</span>
       <label><input type="checkbox" data-sktrain="${escapeHtml(name)}" ${d.trained?"checked":""}> Treino</label>
       <input type="number" data-skadj="${escapeHtml(name)}" value="${d.adjust||0}">
       <span class="total">${skillTotalText(total,locked)}</span>
@@ -1493,17 +2059,18 @@ function renderSpellsLegacy(){
   $('#spellsList').innerHTML=[1,2,3,4,5].map(circle=>{
     const list=groups[circle];
     if(!list.length) return '';
-    return `<div class="grimoireGroup"><div class="grimoireDivider">${circle}º círculo</div>${list.map(({spell:s,index:i})=>`<div class="card"><div class="cardHead"><input data-s="${i}" data-k="name" value="${s.name||''}" placeholder="Nome da magia"><input data-s="${i}" data-k="school" value="${s.school||''}" placeholder="Escola"><button type="button" class="remove deleteIconButton" data-sdel="${i}" title="Excluir magia" aria-label="Excluir magia">${DELETE_ICON_HTML}</button></div><div class="spellMeta"><input data-s="${i}" data-k="circle" type="number" min="1" max="5" value="${s.circle||1}" title="Círculo"><input data-s="${i}" data-k="cost" type="number" min="0" value="${s.cost||1}" title="PM"><input data-s="${i}" data-k="execution" value="${s.execution||''}" placeholder="Execução"><input data-s="${i}" data-k="range" value="${s.range||''}" placeholder="Alcance/alvo"><input data-s="${i}" data-k="resistance" value="${s.resistance||''}" placeholder="Resistência"></div><textarea data-s="${i}" data-k="desc" rows="4" placeholder="Descrição e aprimoramentos">${s.desc||''}</textarea><div class="smallActions"><button class="cast" data-cast="${i}">Conjurar (−${s.cost||1} PM)</button></div></div>`).join('')}</div>`;
+    return `<div class="grimoireGroup"><div class="grimoireDivider">${circle}º círculo</div>${list.map(({spell:s,index:i})=>`<div class="card"><div class="cardHead"><input data-s="${i}" data-k="name" value="${s.name||''}" placeholder="Nome da magia"><input data-s="${i}" data-k="school" value="${s.school||''}" placeholder="Escola"><button type="button" class="remove deleteIconButton" data-sdel="${i}" title="Excluir magia" aria-label="Excluir magia">${DELETE_ICON_HTML}</button></div><div class="spellMeta"><input data-s="${i}" data-k="circle" type="number" min="1" max="5" value="${s.circle||1}" title="Círculo"><input data-s="${i}" data-k="cost" type="number" min="0" value="${s.cost||1}" title="PM"><input data-s="${i}" data-k="execution" value="${s.execution||''}" placeholder="Execução"><input data-s="${i}" data-k="range" value="${s.range||''}" placeholder="Alcance/alvo"><input data-s="${i}" data-k="resistance" value="${s.resistance||''}" placeholder="Resistência"></div><textarea data-s="${i}" data-k="desc" rows="4" placeholder="Descrição e aprimoramentos">${s.desc||''}</textarea><div class="smallActions"><button class="cast" data-cast="${i}">Conjurar (−${partnerSpellCost(s)} PM)</button></div></div>`).join('')}</div>`;
   }).join('') || '<p class="muted">Nenhuma magia no Grimório ainda. Vá até a aba Magias para adicionar.</p>';
   bindCollection('s',state.spells,renderSpells);
   $$('[data-sdel]').forEach(e=>e.onclick=()=>{state.spells.splice(+e.dataset.sdel,1);renderSpells();save(false)});
-  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=Math.max(0,Number(spell.cost||0));applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||'Magia'} conjurada: −${cost} PM`)});
+  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=partnerSpellCost(spell);applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||'Magia'} conjurada: −${cost} PM`)});
 }
 function renderGrimoireSpellCard(s,i){
   const isOpen=expandedSpellCards.has(i);
   const circle=Math.max(1,Math.min(5,Number(s.circle||1)));
-  const cost=Number(s.cost||1);
-  const summary=[`${circle}º círculo`,`${cost} PM`,s.type,s.school,s.execution].filter(Boolean).map(escapeHtml).join(" &bull; ");
+  const cost=Number(s.cost||1),castCost=partnerSpellCost(s);
+  const costSummary=castCost===cost?`${cost} PM`:`${castCost} PM com parceiro`;
+  const summary=[`${circle}º círculo`,costSummary,s.type,s.school,s.execution].filter(Boolean).map(escapeHtml).join(" &bull; ");
   return `<div class="card grimoireSpellCard ${isOpen?"expanded":""}">
     <button type="button" class="grimoireSpellToggle" data-spelltoggle="${i}" aria-expanded="${isOpen}">
       <span class="grimoireSpellTitle"><strong>${escapeHtml(s.name||"Magia sem nome")}</strong><small>${summary||"Sem detalhes"}</small></span>
@@ -1526,7 +2093,7 @@ function renderGrimoireSpellCard(s,i){
         <label>Resistência<input data-s="${i}" data-k="resistance" value="${escapeHtml(s.resistance||"")}" placeholder="Vontade anula"></label>
       </div>
       <label>Descrição e aprimoramentos<textarea data-s="${i}" data-k="desc" rows="7" placeholder="Descricao e aprimoramentos">${escapeHtml(s.desc||"")}</textarea></label>
-      <div class="smallActions grimoireSpellActions"><button type="button" class="cast" data-cast="${i}">Conjurar (-${cost} PM)</button><button type="button" class="remove iconRemove deleteIconButton" data-sdel="${i}" aria-label="Excluir magia ${escapeHtml(s.name||"")}" title="Excluir">${DELETE_ICON_HTML}</button></div>
+      <div class="smallActions grimoireSpellActions"><button type="button" class="cast" data-cast="${i}">Conjurar (-${castCost} PM)</button><button type="button" class="remove iconRemove deleteIconButton" data-sdel="${i}" aria-label="Excluir magia ${escapeHtml(s.name||"")}" title="Excluir">${DELETE_ICON_HTML}</button></div>
     </div>
   </div>`;
 }
@@ -1545,19 +2112,56 @@ function renderSpells(){
   $$('[data-spelltoggle]').forEach(e=>e.onclick=()=>{const idx=+e.dataset.spelltoggle;if(expandedSpellCards.has(idx))expandedSpellCards.delete(idx);else expandedSpellCards.add(idx);renderSpells()});
   bindCollection('s',state.spells,renderSpells);
   $$('[data-sdel]').forEach(e=>e.onclick=()=>{const idx=+e.dataset.sdel;state.spells.splice(idx,1);expandedSpellCards=new Set([...expandedSpellCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderSpells();save(false)});
-  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=Math.max(0,Number(spell.cost||0));applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||'Magia'} conjurada: -${cost} PM`)});
+  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=partnerSpellCost(spell);applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||'Magia'} conjurada: -${cost} PM`)});
+}
+function itemCustomizationOptions(entries,selected,type){
+  const selectedSet=new Set(selected||[]);
+  const available=entries.filter(entry=>entry.types.includes(type)&&!selectedSet.has(entry.id));
+  return '<option value="">Escolha...</option>'+available.map(entry=>`<option value="${entry.id}" title="${escapeHtml(entry.description)}">${escapeHtml(entry.name)}</option>`).join("");
+}
+function itemMaterialOptions(item,type){
+  return itemCustomizationData().materials.filter(entry=>entry.types.includes(type)).map(entry=>`<option value="${entry.id}" ${entry.id===item.material?"selected":""}>${escapeHtml(entry.name)}</option>`).join("");
+}
+function itemCustomizationChips(item,kind,index){
+  const entries=kind==="improvement"?itemCustomizationData().improvements:itemCustomizationData().enchantments;
+  const ids=kind==="improvement"?item.improvements:item.enchantments;
+  return (ids||[]).map(id=>{
+    const entry=entries.find(option=>option.id===id);
+    return entry?`<span class="itemModChip" title="${escapeHtml(entry.description)}">${escapeHtml(entry.name)}<button type="button" data-removeitemmod="${kind}" data-itemindex="${index}" data-modid="${id}" aria-label="Remover ${escapeHtml(entry.name)}">&times;</button></span>`:"";
+  }).join("");
+}
+function linkedAttackOptions(selected=""){
+  return `<option value="" ${selected?"":"selected"}>Nenhum ataque</option>${state.attacks.map(attack=>`<option value="${escapeHtml(attack.id)}" ${attack.id===selected?"selected":""}>${escapeHtml(attack.name||"Ataque sem nome")}</option>`).join("")}`;
+}
+function inventorySkillOptions(selected=""){
+  return `<option value="" ${selected?"":"selected"}>Nenhuma</option>${Object.keys(T20_DATA.pericias||{}).sort((a,b)=>a.localeCompare(b,"pt-BR")).map(skill=>`<option value="${escapeHtml(skill)}" ${skill===selected?"selected":""}>${escapeHtml(skill)}</option>`).join("")}`;
+}
+function manualItemEffectFields(item,i){
+  const manual=normalizedManualItemEffects(item.manualEffects);
+  const attrs=ATTR_KEYS.map(attr=>`<label>${attr}<input data-itemmanual="${i}" data-effectattr="${attr}" type="number" value="${manual.attrs[attr]||0}"></label>`).join("");
+  const numeric=[["defense","Defesa"],["rd","RD"],["resistance","Resistências"],["spellCd","CD de magia"],["pmLimit","Limite de PM"],["pvMax","PV máx."],["pmMax","PM máx."],["load","Carga"]]
+    .map(([key,label])=>`<label>${label}<input data-itemmanual="${i}" data-effectkey="${key}" type="number" value="${manual[key]||0}"></label>`).join("");
+  return `<details class="itemManualEffects"><summary>Ajustes automáticos manuais</summary><div class="itemManualEffectGrid">${attrs}${numeric}<label>Perícia<select data-itemmanual="${i}" data-effectkey="skill">${inventorySkillOptions(manual.skill)}</select></label><label>Bônus da perícia<input data-itemmanual="${i}" data-effectkey="skillBonus" type="number" value="${manual.skillBonus||0}"></label></div><small>Use para efeitos permanentes enquanto o item estiver equipado. Efeitos condicionais podem continuar nas notas.</small></details>`;
 }
 function renderItemCard(it,i){
   const isOpen=expandedItemCards.has(i);
   const rawQty=Number(it.qty??1),rawSpaces=Number(it.spaces||0);
-  const qty=Number.isFinite(rawQty)?rawQty:0,spaces=Number.isFinite(rawSpaces)?rawSpaces:0,totalSpaces=qty*spaces;
+  const qty=Number.isFinite(rawQty)?rawQty:0,spaces=Number.isFinite(rawSpaces)?rawSpaces:0,effectiveSpaces=itemEffectiveSpaces(it),totalSpaces=qty*effectiveSpaces;
   const description=itemDescription(it);
+  const type=inventoryItemType(it),data=itemCustomizationData(),protection=baseProtectionStats(it);
+  const foldedCategory=foldItemText(it.category),ambiguousProtection=foldedCategory.includes("armadura")&&foldedCategory.includes("escudo");
+  const effectLabels=itemAutomaticEffectLabels(it);
+  const improvementCount=(it.improvements||[]).length,enchantmentCount=(it.enchantments||[]).length,superiorCount=improvementCount+(it.material?1:0);
+  const materialName=it.material?data.materials.find(entry=>entry.id===it.material)?.name:"";
   const summary=[
     qty?`${qty}x`:null,
     it.category,
     it.price,
     it.source,
-    spaces?`${totalSpaces.toFixed(totalSpaces%1?1:0)} espaços`:null,
+    effectiveSpaces?`${totalSpaces.toFixed(totalSpaces%1?1:0)} espaços`:null,
+    improvementCount?`${improvementCount} melhoria${improvementCount===1?"":"s"}`:null,
+    materialName,
+    enchantmentCount?`${enchantmentCount} encanto${enchantmentCount===1?"":"s"}`:null,
     it.equipped?"Equipado":null
   ].filter(Boolean).map(escapeHtml).join(" &bull; ");
   return `<div class="card itemAccordionCard ${isOpen?"expanded":""} ${it.equipped?"equipped":""}">
@@ -1578,7 +2182,26 @@ function renderItemCard(it,i){
         <label>Fonte<input data-i="${i}" data-k="source" value="${escapeHtml(it.source||"")}"></label>
         <label>Equipado<select data-i="${i}" data-k="equipped"><option value="false" ${!it.equipped?"selected":""}>Não</option><option value="true" ${it.equipped?"selected":""}>Sim</option></select></label>
       </div>
-      <label>Descri&ccedil;&atilde;o, melhorias e efeitos<textarea data-i="${i}" data-k="notes" rows="5" placeholder="Descricao, melhorias, encantos e efeitos especiais">${escapeHtml(description)}</textarea></label>
+      ${type==="armor"||type==="shield"?`<div class="itemProtectionFields">
+        <label>Defesa base<input data-i="${i}" data-k="baseDefense" type="number" min="0" value="${protection.defense}"></label>
+        <label>Penalidade base<input data-i="${i}" data-k="baseArmorPenalty" type="number" min="0" value="${protection.armorPenalty}"></label>
+        <div class="itemProtectionStatus"><small>Aplicação</small><strong>${it.equipped?(type==="shield"?"Escudo equipado":"Armadura equipada"):"Item não equipado"}</strong></div>
+      </div>`:""}
+      <section class="itemCustomization">
+        <div class="itemCustomizationTitle"><div><strong>Modificações</strong><small>Ativas apenas quando o item estiver equipado</small></div><span class="${superiorCount>4||enchantmentCount>3?"limitExceeded":""}">${superiorCount}/4 melhorias &bull; ${enchantmentCount}/3 encantos</span></div>
+        <div class="itemCustomizationControls">
+          ${itemMaterialOptions(it,type)?`<label>Material<select data-i="${i}" data-k="material">${itemMaterialOptions(it,type)}</select></label>`:""}
+          ${ambiguousProtection?`<label>Aplicar como<select data-i="${i}" data-k="customizationType"><option value="" ${it.customizationType?"":"selected"}>Automático</option><option value="armor" ${it.customizationType==="armor"?"selected":""}>Armadura</option><option value="shield" ${it.customizationType==="shield"?"selected":""}>Escudo</option></select></label>`:""}
+          ${data.improvements.some(entry=>entry.types.includes(type))?`<label>Adicionar melhoria<span class="itemAddControl"><select id="item-improvement-${i}">${itemCustomizationOptions(data.improvements,it.improvements,type)}</select><button type="button" data-additemmod="improvement" data-itemindex="${i}" aria-label="Adicionar melhoria">+</button></span></label>`:""}
+          ${data.enchantments.some(entry=>entry.types.includes(type))?`<label>Adicionar encanto<span class="itemAddControl"><select id="item-enchantment-${i}">${itemCustomizationOptions(data.enchantments,it.enchantments,type)}</select><button type="button" data-additemmod="enchantment" data-itemindex="${i}" aria-label="Adicionar encanto">+</button></span></label>`:""}
+          ${type==="weapon"?`<label>Ataque associado<select data-i="${i}" data-k="linkedAttackId">${linkedAttackOptions(it.linkedAttackId)}</select></label>`:""}
+          ${(it.improvements||[]).includes("aprimorado")?`<label>Perícia aprimorada<select data-i="${i}" data-k="chosenSkill">${inventorySkillOptions(it.chosenSkill)}</select></label>`:""}
+        </div>
+        ${improvementCount||enchantmentCount?`<div class="itemModChips">${itemCustomizationChips(it,"improvement",i)}${itemCustomizationChips(it,"enchantment",i)}</div>`:""}
+        <div class="itemAutomaticEffects ${effectLabels.length?"":"empty"}">${effectLabels.length?effectLabels.map(label=>`<span>${escapeHtml(label)}</span>`).join(""):"Nenhum efeito numérico automático"}</div>
+        ${manualItemEffectFields(it,i)}
+      </section>
+      <label>Descri&ccedil;&atilde;o e efeitos condicionais<textarea data-i="${i}" data-k="notes" rows="5" placeholder="Descrição, condições de uso e efeitos especiais">${escapeHtml(description)}</textarea></label>
     </div>
   </div>`;
 }
@@ -1586,17 +2209,42 @@ function renderItems(){
   $("#itemsList").innerHTML=state.items.map((it,i)=>renderItemCard(it,i)).join("") || '<p class="muted">Nenhum item registrado ainda.</p>';
   $$("[data-itemtoggle]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.itemtoggle;if(expandedItemCards.has(idx))expandedItemCards.delete(idx);else expandedItemCards.add(idx);renderItems()});
   bindCollection("i",state.items,renderItems);
-  $$("[data-idel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.idel;state.items.splice(idx,1);expandedItemCards=new Set([...expandedItemCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderItems();renderInventorySummary();save(false)});
+  $$("[data-additemmod]").forEach(button=>button.onclick=()=>{
+    const index=Number(button.dataset.itemindex),kind=button.dataset.additemmod,select=$(`#item-${kind}-${index}`),id=select?.value;
+    if(!id) return;
+    const key=kind==="improvement"?"improvements":"enchantments";
+    const prerequisites={pungente:"certeira",atroz:"cruel","sob-medida":"ajustada",energetica:"formidavel",magnifica:"formidavel",lancinante:"dilacerante",guardiao:"defensor"};
+    const additions=[prerequisites[id],id].filter(Boolean),current=state.items[index][key]||[];
+    const next=[...new Set([...current,...additions])],limit=kind==="improvement"?4-(state.items[index].material?1:0):3;
+    if(next.length>limit){notify(`Limite de ${kind==="improvement"?"4 melhorias (incluindo material especial)":"3 encantos"} atingido.`);return}
+    state.items[index][key]=next;
+    refreshInventoryEffects();
+  });
+  $$("[data-removeitemmod]").forEach(button=>button.onclick=()=>{
+    const index=Number(button.dataset.itemindex),key=button.dataset.removeitemmod==="improvement"?"improvements":"enchantments";
+    state.items[index][key]=(state.items[index][key]||[]).filter(id=>id!==button.dataset.modid);
+    refreshInventoryEffects();
+  });
+  $$("[data-itemmanual]").forEach(control=>control.onchange=()=>{
+    const item=state.items[Number(control.dataset.itemmanual)];
+    item.manualEffects=normalizedManualItemEffects(item.manualEffects);
+    const fieldValue=control.type==="number"?Number(control.value||0):control.value;
+    if(control.dataset.effectattr) item.manualEffects.attrs[control.dataset.effectattr]=fieldValue;
+    else item.manualEffects[control.dataset.effectkey]=fieldValue;
+    refreshInventoryEffects();
+  });
+  $$("[data-idel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.idel;state.items.splice(idx,1);expandedItemCards=new Set([...expandedItemCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));refreshInventoryEffects()});
 }
+function refreshInventoryEffects(){renderItems();renderInventorySummary();recalc();renderAttacks();save(false)}
 function baseLoadLimitForStrength(strength){
   strength=Number(strength)||0;
   return Math.max(0,10+(strength>=0?strength*2:strength));
 }
-function baseLoadLimitFromStrength(){return baseLoadLimitForStrength(rawNum("FOR"))}
+function baseLoadLimitFromStrength(){return baseLoadLimitForStrength(permanentAttrNum("FOR"))}
 function renderInventorySummary(){
-  const used=state.items.reduce((sum,it)=>sum+Number(it.qty||0)*Number(it.spaces||0),0);
+  const used=state.items.reduce((sum,it)=>sum+Number(it.qty||0)*itemEffectiveSpaces(it),0);
   const auto=$("#spacesLimitAuto")?.checked!==false;
-  const calculatedLimit=baseLoadLimitFromStrength();
+  const calculatedLimit=baseLoadLimitFromStrength()+Number(equippedItemEffects().load||0);
   if(auto&&$("#spacesLimit")) $("#spacesLimit").value=calculatedLimit;
   const limit=Math.max(0,num("spacesLimit"));
   const absoluteMax=limit*2;
@@ -1662,11 +2310,22 @@ function catalogInventoryDescription(item){
 function normalizeInventoryItemDescription(item){
   const normalized={...(item||{})};
   const catalogDescription=catalogInventoryDescription(normalized);
-  if(!catalogDescription) return normalized;
   const current=itemDescription(normalized);
-  if(!current || catalogDescription.startsWith(`${current}\n\n`)){
+  if(catalogDescription&&(!current || catalogDescription.startsWith(`${current}\n\n`))){
     normalized.notes=catalogDescription;
   }
+  const inferred=inferItemCustomizations(normalized);
+  normalized.id=String(normalized.id||"").trim()||makeEntryId("item");
+  normalized.improvements=Array.isArray(normalized.improvements)?normalized.improvements:inferred.improvements;
+  normalized.enchantments=Array.isArray(normalized.enchantments)?normalized.enchantments:inferred.enchantments;
+  normalized.material=typeof normalized.material==="string"?normalized.material:inferred.material;
+  normalized.customizationType=String(normalized.customizationType||"");
+  normalized.chosenSkill=String(normalized.chosenSkill||"");
+  normalized.linkedAttackId=String(normalized.linkedAttackId||"");
+  normalized.manualEffects=normalizedManualItemEffects(normalized.manualEffects);
+  const inferredProtection=inferredProtectionBase(normalized);
+  normalized.baseDefense=Number.isFinite(Number(normalized.baseDefense))?Math.max(0,Number(normalized.baseDefense)):inferredProtection.defense;
+  normalized.baseArmorPenalty=Number.isFinite(Number(normalized.baseArmorPenalty))?Math.max(0,Math.abs(Number(normalized.baseArmorPenalty))):inferredProtection.armorPenalty;
   return normalized;
 }
 function fillItemCatalogCategories(){
@@ -1732,7 +2391,9 @@ function closeItemPicker(){
 }
 function addItemEntry(item={}){
   const qty=Number(item.qty??1),spaces=Number(item.spaces??0);
-  state.items.push({
+  state.items.push(normalizeInventoryItemDescription({
+    ...item,
+    id:item.id||makeEntryId("item"),
     name:item.name||"Novo item",
     qty:Number.isFinite(qty)?qty:1,
     spaces:Number.isFinite(spaces)?spaces:0,
@@ -1741,7 +2402,7 @@ function addItemEntry(item={}){
     equipped:!!item.equipped,
     notes:itemDescription(item),
     source:item.source||""
-  });
+  }));
   expandedItemCards.add(state.items.length-1);
   renderItems();
   renderInventorySummary();
@@ -1767,6 +2428,11 @@ function attackAttributeOptions(selected,skillName){
 function damageAttributeOptions(selected){
   return `<option value="" ${selected?"":"selected"}>Nenhum</option>${ATTR_KEYS.map(attr=>`<option value="${attr}" ${attr===selected?"selected":""}>${attr}</option>`).join("")}`;
 }
+function attackLinkedItemOptions(attack){
+  const linked=linkedAttackItems(attack),selected=linked[0]?.id||"";
+  const weapons=(state.items||[]).filter(item=>inventoryItemType(item)==="weapon");
+  return `<option value="" ${selected?"":"selected"}>Nenhuma</option>${weapons.map(item=>`<option value="${escapeHtml(item.id)}" ${item.id===selected?"selected":""}>${escapeHtml(item.name||"Arma sem nome")}${item.equipped?"":" (não equipada)"}</option>`).join("")}`;
+}
 function attackDiceModeText(attack){
   const balance=(Number(attack.bestDice)||0)-(Number(attack.worstDice)||0);
   if(balance>0) return `${balance+1}d20, melhor`;
@@ -1779,14 +2445,18 @@ function refreshAttackSummaries(){
     if(!root) return;
     const normalized=normalizeAttack(attack);
     const breakdown=attackBonusBreakdown(normalized);
+    const itemFx=breakdown.itemFx||emptyItemEffects();
     const damageAttr=ATTR_KEYS.includes(normalized.damageAttr)?normalized.damageAttr:"";
-    const extra=[String(normalized.extraDamage||""),damageAttr?`${damageAttr} ${signedNumber(rawNum(damageAttr))}`:""].filter(Boolean).join(" + ")||"-";
+    const extra=[String(normalized.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} ${signedNumber(permanentAttrNum(damageAttr))}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
+    const parsed=parseCritical(normalized.crit,normalized.mult),margin=21-parsed.threshold;
+    const itemMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?margin:0);
+    const linkedItems=linkedAttackItems(normalized),linkedNames=linkedItems.map(item=>item.name||"Arma sem nome").join(", ");
     const set=(selector,text)=>{const element=root.querySelector(selector);if(element) element.textContent=text};
-    set(".js-attack-source",breakdown.skillName==="Manual"?"Manual":`${breakdown.skillName} / ${breakdown.attr}`);
+    set(".js-attack-source",`${breakdown.skillName==="Manual"?"Manual":`${breakdown.skillName} / ${breakdown.attr}`}${linkedNames?` • ${linkedNames}`:""}`);
     set(".js-attack-bonus",signedNumber(breakdown.total));
     set(".js-attack-damage",normalized.damage||"sem dano");
     set(".js-attack-extra",extra);
-    set(".js-attack-crit",`${normalized.crit||"20"}/${normalized.mult||"x2"}`);
+    set(".js-attack-crit",`${Math.max(2,parsed.threshold-itemMargin)}/x${parsed.multiplier+Number(itemFx.critMultiplier||0)}`);
     set(".js-attack-dice",attackDiceModeText(normalized));
   });
 }
@@ -1797,14 +2467,18 @@ function renderAttackCard(a,i){
   const name=escapeHtml(a.name||"Ataque sem nome");
   const bonus=Number(a.bonus||0);
   const attackBreakdown=attackBonusBreakdown(a);
+  const itemFx=attackBreakdown.itemFx||emptyItemEffects();
   const bonusText=signedNumber(attackBreakdown.total);
   const damage=escapeHtml(a.damage||"sem dano");
   const extraDamage=escapeHtml(a.extraDamage||"");
   const damageAttr=ATTR_KEYS.includes(a.damageAttr)?a.damageAttr:"";
-  const extraSummary=[String(a.extraDamage||""),damageAttr?`${damageAttr} ${signedNumber(rawNum(damageAttr))}`:""].filter(Boolean).join(" + ")||"-";
+  const extraSummary=[String(a.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} ${signedNumber(permanentAttrNum(damageAttr))}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
   const critFlat=a.critFlat===true;
-  const crit=escapeHtml(a.crit||"20");
-  const mult=escapeHtml(a.mult||"x2");
+  const parsedCrit=parseCritical(a.crit,a.mult),baseMargin=21-parsedCrit.threshold;
+  const itemCritMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?baseMargin:0);
+  const effectiveCrit=escapeHtml(String(Math.max(2,parsedCrit.threshold-itemCritMargin)));
+  const effectiveMult=escapeHtml(`x${parsedCrit.multiplier+Number(itemFx.critMultiplier||0)}`);
+  const crit=escapeHtml(a.crit||"20"),mult=escapeHtml(a.mult||"x2");
   const attackSkill=attackSkillName(a);
   const attackAttr=ATTR_KEYS.includes(a.attackAttr)?a.attackAttr:"";
   const skillSummary=attackSkill==="Manual"?"Manual":`${attackSkill} / ${attackBreakdown.attr}`;
@@ -1813,17 +2487,19 @@ function renderAttackCard(a,i){
   const damageType=escapeHtml(a.damageType||"");
   const range=escapeHtml(a.range||"");
   const notes=escapeHtml(a.notes||"");
+  const linkedItems=linkedAttackItems(a),linkedNames=linkedItems.map(item=>item.name||"Arma sem nome").join(", ");
+  const linkedSummary=linkedItems.length?linkedItems.map(item=>attackLinkedItemSummary(item)).join(" • "):"Nenhuma arma associada";
   const toggleLabel=isOpen?"Recolher detalhes do ataque":"Expandir detalhes do ataque";
   return `<div class="card combatAttackCard ${isOpen?"expanded":""}">
     <div class="combatAttackHeader">
       <button type="button" class="attackDamageRoll" data-combatroll="${i}" aria-label="Rolar ataque e dano" title="Rolar ataque e dano"><img src="attack-roll-icon.png" alt="" draggable="false"></button>
       <button type="button" class="combatAttackToggle" data-attacktoggle="${i}" aria-expanded="${isOpen}" aria-label="${toggleLabel}" title="${toggleLabel}">
         <span class="combatAttackOverview" data-attacksummary="${i}">
-          <span class="combatAttackTitle"><strong>${name}</strong><small class="js-attack-source">${skillSummary}</small></span>
+          <span class="combatAttackTitle"><strong>${name}</strong><small class="js-attack-source">${skillSummary}${linkedNames?` &bull; ${escapeHtml(linkedNames)}`:""}</small></span>
           <span class="combatAttackStat"><small>Ataque</small><strong class="js-attack-bonus">${bonusText}</strong></span>
           <span class="combatAttackStat"><small>Dano base</small><strong class="js-attack-damage">${damage}</strong></span>
           <span class="combatAttackStat"><small>Dano extra</small><strong class="js-attack-extra">${escapeHtml(extraSummary)}</strong></span>
-          <span class="combatAttackStat"><small>Cr&iacute;tico</small><strong class="js-attack-crit">${crit}/${mult}</strong></span>
+          <span class="combatAttackStat"><small>Cr&iacute;tico</small><strong class="js-attack-crit">${effectiveCrit}/${effectiveMult}</strong></span>
           <span class="combatAttackStat combatDiceStat"><small>Dados</small><strong class="js-attack-dice">${attackDiceModeText(a)}</strong></span>
           <span class="combatAttackChevron" aria-hidden="true">${isOpen?"&#9650;":"&#9660;"}</span>
         </span>
@@ -1849,6 +2525,10 @@ function renderAttackCard(a,i){
         <label class="attackCritFlat">Bônus numérico<span class="attackCritFlatControl"><input data-a="${i}" data-k="critFlat" type="checkbox" ${critFlat?"checked":""}><span>Crita</span></span></label>
         <button type="button" class="remove combatRemove deleteIconButton" data-adel="${i}" title="Excluir ataque" aria-label="Excluir ataque">${DELETE_ICON_HTML}</button>
       </div>
+      <div class="attackLinkedEquipment">
+        <label>Arma associada<select data-attackitem="${i}">${attackLinkedItemOptions(a)}</select></label>
+        <div class="attackLinkedSummary ${linkedItems.some(item=>!item.equipped)?"inactive":""}"><small>Efeitos do inventário</small><strong class="js-attack-itemeffects">${escapeHtml(linkedSummary)}</strong></div>
+      </div>
       <label class="attackNotes">Notas<textarea data-a="${i}" data-k="notes" rows="2" placeholder="Munição, melhorias, efeitos especiais...">${notes}</textarea></label>
     </div>
   </div>`;
@@ -1863,6 +2543,16 @@ function renderAttacks(){
     renderAttacks();
   });
   bindCollection("a",state.attacks,renderAttacks);
+  $$('[data-attackitem]').forEach(select=>select.onchange=()=>{
+    const attack=state.attacks[Number(select.dataset.attackitem)],selectedId=select.value;
+    if(!attack) return;
+    state.items.forEach(item=>{
+      if(inventoryItemType(item)!=="weapon") return;
+      if(item.linkedAttackId===attack.id) item.linkedAttackId="";
+      if(item.id===selectedId) item.linkedAttackId=attack.id;
+    });
+    refreshInventoryEffects();
+  });
   $$("[data-adel]").forEach(e=>e.onclick=()=>{
     const idx=+e.dataset.adel;
     state.attacks.splice(idx,1);
@@ -1879,7 +2569,229 @@ function renderAttacks(){
     }
   });
 }
-function bindCollection(prefix,arr,rerender){$$(`[data-${prefix}]`).forEach(e=>e.onchange=()=>{let v=e.type==="checkbox"?e.checked:e.value;if(e.type==="number")v=Number(v||0);if(e.tagName==="SELECT"&&(v==="true"||v==="false"))v=v==="true";arr[+e.dataset[prefix]][e.dataset.k]=v;if(prefix==="i")renderInventorySummary();save(false);if(prefix==="s"||prefix==="p"||prefix==="i"||prefix==="a")rerender()})}
+function bindCollection(prefix,arr,rerender){
+  $$(`[data-${prefix}]`).forEach(element=>element.onchange=()=>{
+    let newValue=element.type==="checkbox"?element.checked:element.value;
+    if(element.type==="number") newValue=Number(newValue||0);
+    if(element.tagName==="SELECT"&&(newValue==="true"||newValue==="false")) newValue=newValue==="true";
+    const entry=arr[Number(element.dataset[prefix])],key=element.dataset.k;
+    if(prefix==="i"&&key==="material"&&newValue&&!entry.material&&(entry.improvements||[]).length>=4){
+      notify("O material especial conta no limite de 4 melhorias.");rerender();return;
+    }
+    entry[key]=newValue;
+    if(prefix==="i"){renderInventorySummary();recalc();renderAttacks()}
+    save(false);
+    if(prefix==="s"||prefix==="p"||prefix==="i"||prefix==="a") rerender();
+  });
+}
+function partnerTypeOptions(selected=""){
+  const groups={};
+  Object.entries(PARTNER_CATALOG).forEach(([id,entry])=>(groups[entry.group]??=[]).push([id,entry]));
+  const catalog=Object.entries(groups).map(([group,items])=>`<optgroup label="${escapeHtml(group)}">${items.map(([id,entry])=>`<option value="${id}" ${id===selected?"selected":""}>${escapeHtml(entry.name)}</option>`).join("")}</optgroup>`).join("");
+  return `${catalog}<option value="custom" ${selected==="custom"?"selected":""}>Personalizado</option>`;
+}
+function partnerRankOptions(selected="Iniciante",level=totalClassLevel()){
+  const maxIndex=partnerRankIndex(partnerTierForLevel(level).rank);
+  return PARTNER_RANKS.map((rank,index)=>`<option value="${rank}" ${rank===selected?"selected":""} ${index>maxIndex?"disabled":""}>${rank}${index>maxIndex?" (patamar insuficiente)":""}</option>`).join("");
+}
+function activeCountedPartners(){return state.partners.filter(partner=>partner.active&&partner.countsTowardLimit).length}
+function updatePartnerSummary(){
+  const total=totalClassLevel();
+  const tier=partnerTierForLevel(total);
+  const activeCount=activeCountedPartners();
+  $("#partnerTier").textContent=tier.name;
+  $("#partnerTierLevel").textContent=`Nível total ${total}`;
+  $("#partnerActiveCount").textContent=activeCount;
+  $("#partnerLimit").textContent=tier.limit;
+  $("#partnerMaxRank").textContent=tier.rank;
+  const notice=$("#partnerLimitNotice");
+  const remaining=tier.limit-activeCount;
+  notice.classList.toggle("warning",remaining<0);
+  notice.classList.toggle("full",remaining===0);
+  notice.innerHTML=remaining<0
+    ? `<strong>Limite excedido:</strong> ${Math.abs(remaining)} parceiro${Math.abs(remaining)===1?"":"s"} ativo${Math.abs(remaining)===1?"":"s"} além do permitido.`
+    : remaining===0
+      ? `<strong>Limite preenchido.</strong> Parceiros especiais ainda podem ser registrados sem contar no limite.`
+      : `${remaining} vaga${remaining===1?"":"s"} disponível${remaining===1?"":"is"} para parceiros ativos que contam no limite.`;
+}
+function partnerProgressionHtml(partner){
+  const entry=partnerCatalogEntry(partner.type);
+  if(!entry) return `<div class="partnerManualHint">Parceiro personalizado: use o campo de benefício para registrar suas regras.</div>`;
+  const maxIndex=partnerRankIndex(partnerTierForLevel().rank);
+  return `<div class="partnerProgression">${PARTNER_RANKS.map((rank,index)=>`
+    <div class="partnerProgressionStep ${rank===partner.rank?"selected":""} ${index>maxIndex?"locked":""}">
+      <strong>${rank}</strong><span>${escapeHtml(entry.levels[index])}</span>
+    </div>`).join("")}</div>`;
+}
+function partnerSkillChoicesHtml(partner,index){
+  const slots=partnerSkillSlots(partner);
+  if(!slots) return "";
+  const available=Object.keys(T20_DATA.pericias).filter(skill=>!["Luta","Pontaria"].includes(skill));
+  return `<div class="partnerSkillChoiceBlock">
+    <div><strong>Perícias do Ajudante</strong><span>Escolha ${slots}; Luta e Pontaria não são permitidas.</span></div>
+    <div class="partnerSkillChoices">${Array.from({length:slots},(_,slot)=>{
+      const selected=partner.skills?.[slot]||"";
+      return `<label>Perícia ${slot+1}<select data-partner-skill="${index}" data-slot="${slot}"><option value="">Escolher...</option>${available.map(skill=>`<option value="${escapeHtml(skill)}" ${skill===selected?"selected":""}>${escapeHtml(skill)}</option>`).join("")}</select></label>`;
+    }).join("")}</div>
+  </div>`;
+}
+function partnerBookDescriptionHtml(entry){
+  if(!entry) return "";
+  return `<div class="partnerBookDescription">
+    <strong>Descrição do livro</strong>
+    <p>${escapeHtml(entry.description||entry.summary||"")}</p>
+    ${entry.note?`<p class="partnerBookNote">${escapeHtml(entry.note)}</p>`:""}
+  </div>`;
+}
+function renderPartnerCard(partner,index){
+  const entry=partnerCatalogEntry(partner.type);
+  const isOpen=expandedPartnerCards.has(index);
+  const maxRank=allowedPartnerRank(partner.rank);
+  if(partner.rank!==maxRank){
+    partner.rank=maxRank;
+    if(entry&&!partner.benefitCustomized) partner.benefit=partnerBenefit(partner.type,maxRank);
+  }
+  if(entry&&!partner.benefitCustomized) partner.benefit=partnerBenefit(partner.type,partner.rank);
+  const size=entry?.size?` • ${entry.size}`:"";
+  const limitLabel=partner.countsTowardLimit?"conta no limite":"fora do limite";
+  return `<article class="card partnerAccordionCard ${isOpen?"expanded":""} ${partner.active?"active":"inactive"}">
+    <button type="button" class="partnerAccordionToggle" data-partnertoggle="${index}" aria-expanded="${isOpen}">
+      <span class="partnerAccordionTitle"><strong>${escapeHtml(partner.name||entry?.name||"Parceiro")}</strong><small>${escapeHtml(entry?.name||"Personalizado")} • ${escapeHtml(partner.rank)}${escapeHtml(size)} • ${partner.active?"ativo":"inativo"} • ${limitLabel}</small><span>${escapeHtml(partner.benefit||"Benefício não informado")}</span></span>
+      <span class="partnerAccordionCue">${isOpen?"Recolher":"Expandir"}</span>
+    </button>
+    <div class="partnerAccordionBody ${isOpen?"":"hidden"}">
+      <div class="partnerMainFields">
+        <label>Nome<input data-partner="${index}" data-k="name" value="${escapeHtml(partner.name)}" placeholder="Nome do parceiro"></label>
+        <label>Tipo<select data-partner-type="${index}">${partnerTypeOptions(partner.type)}</select></label>
+        <label>Graduação<select data-partner-rank="${index}">${partnerRankOptions(partner.rank)}</select></label>
+        <label>Fonte/página<input data-partner="${index}" data-k="source" value="${escapeHtml(partner.source)}"></label>
+      </div>
+      <div class="partnerStatusFields">
+        <label class="partnerCheck"><span>Ativo</span><input data-partner-active="${index}" type="checkbox" ${partner.active?"checked":""}></label>
+        <label class="partnerCheck"><span>Conta no limite</span><input data-partner-counts="${index}" type="checkbox" ${partner.countsTowardLimit?"checked":""}></label>
+        <span class="partnerSourceBadge">${escapeHtml(entry?.group||"Personalizado")}${entry?.mount?" • Montaria":""}</span>
+        <button type="button" class="remove deleteIconButton" data-partnerdel="${index}" title="Excluir parceiro" aria-label="Excluir parceiro">${DELETE_ICON_HTML}</button>
+      </div>
+      ${partnerBookDescriptionHtml(entry)}
+      <div class="partnerAppliedEffect"><strong>Aplicado pela ficha</strong><span>${escapeHtml(partnerAutomationText(partner))}</span></div>
+      ${partnerSkillChoicesHtml(partner,index)}
+      <label>Benefício atual<textarea data-partner="${index}" data-k="benefit" rows="3" placeholder="Benefício do parceiro">${escapeHtml(partner.benefit)}</textarea></label>
+      ${entry?`<div class="partnerBenefitActions"><button type="button" data-partnerreset="${index}">Restaurar benefício do catálogo</button></div>`:""}
+      <label>Descrição e anotações<textarea data-partner="${index}" data-k="notes" rows="3" placeholder="Aparência, personalidade, duração, origem e outros detalhes...">${escapeHtml(partner.notes)}</textarea></label>
+      <div class="partnerProgressionTitle"><strong>Progressão do tipo</strong><span>Jogo do Ano</span></div>
+      ${partnerProgressionHtml(partner)}
+    </div>
+  </article>`;
+}
+function renderPartners(){
+  state.partners=Array.isArray(state.partners)?state.partners.map(normalizePartner):[];
+  expandedPartnerCards=new Set([...expandedPartnerCards].filter(index=>index<state.partners.length));
+  $("#partnersList").innerHTML=state.partners.map(renderPartnerCard).join("")||'<p class="muted">Nenhum parceiro registrado ainda.</p>';
+  updatePartnerSummary();
+  updatePartnerPicker();
+  $$("[data-partnertoggle]").forEach(element=>element.onclick=()=>{
+    const index=Number(element.dataset.partnertoggle);
+    if(expandedPartnerCards.has(index)) expandedPartnerCards.delete(index); else expandedPartnerCards.add(index);
+    renderPartners();
+  });
+  $$("[data-partner]").forEach(element=>element.oninput=()=>{
+    const partner=state.partners[Number(element.dataset.partner)];
+    partner[element.dataset.k]=element.value;
+    if(element.dataset.k==="benefit") partner.benefitCustomized=true;
+    save(false);
+  });
+  $$("[data-partner-type]").forEach(element=>element.onchange=()=>{
+    const partner=state.partners[Number(element.dataset.partnerType)];
+    const oldEntry=partnerCatalogEntry(partner.type);
+    const newEntry=partnerCatalogEntry(element.value);
+    if(oldEntry&&partner.name===oldEntry.name&&newEntry) partner.name=newEntry.name;
+    partner.type=element.value;
+    partner.benefitCustomized=false;
+    partner.benefit=newEntry?partnerBenefit(partner.type,partner.rank):"";
+    if(partner.type==="ajudante"&&!Array.isArray(partner.skills)) partner.skills=[];
+    if(newEntry) partner.source=newEntry.page;
+    renderPartners();refreshPartnerCalculations();save(false);
+  });
+  $$("[data-partner-rank]").forEach(element=>element.onchange=()=>{
+    const partner=state.partners[Number(element.dataset.partnerRank)];
+    partner.rank=allowedPartnerRank(element.value);
+    partner.benefitCustomized=false;
+    partner.benefit=partnerBenefit(partner.type,partner.rank)||partner.benefit;
+    renderPartners();refreshPartnerCalculations();save(false);
+  });
+  $$("[data-partner-active]").forEach(element=>element.onchange=()=>{
+    const partner=state.partners[Number(element.dataset.partnerActive)];
+    const tier=partnerTierForLevel();
+    if(element.checked&&partner.countsTowardLimit&&activeCountedPartners()>=tier.limit){
+      element.checked=false;
+      notify(`O patamar ${tier.name} permite até ${tier.limit} parceiro${tier.limit===1?"":"s"} ativo${tier.limit===1?"":"s"}.`);
+      return;
+    }
+    partner.active=element.checked;renderPartners();refreshPartnerCalculations();save(false);
+  });
+  $$("[data-partner-counts]").forEach(element=>element.onchange=()=>{
+    const partner=state.partners[Number(element.dataset.partnerCounts)];
+    const tier=partnerTierForLevel();
+    if(element.checked&&partner.active&&activeCountedPartners()>=tier.limit){
+      element.checked=false;
+      notify(`O limite de parceiros ativos do patamar ${tier.name} já foi preenchido.`);
+      return;
+    }
+    partner.countsTowardLimit=element.checked;renderPartners();save(false);
+  });
+  $$("[data-partnerreset]").forEach(element=>element.onclick=()=>{
+    const partner=state.partners[Number(element.dataset.partnerreset)];
+    partner.benefitCustomized=false;
+    partner.benefit=partnerBenefit(partner.type,partner.rank);
+    renderPartners();save(false);
+  });
+  $$("[data-partner-skill]").forEach(element=>element.onchange=()=>{
+    const partner=state.partners[Number(element.dataset.partnerSkill)];
+    const slot=Number(element.dataset.slot);
+    const selected=element.value;
+    if(selected&&partner.skills.some((skill,index)=>index!==slot&&skill===selected)){
+      notify("Escolha perícias diferentes para o Ajudante.");
+      renderPartners();
+      return;
+    }
+    partner.skills[slot]=selected;
+    renderPartners();refreshPartnerCalculations();save(false);
+  });
+  $$("[data-partnerdel]").forEach(element=>element.onclick=()=>{
+    const index=Number(element.dataset.partnerdel);
+    state.partners.splice(index,1);
+    expandedPartnerCards=new Set([...expandedPartnerCards].filter(openIndex=>openIndex!==index).map(openIndex=>openIndex>index?openIndex-1:openIndex));
+    renderPartners();refreshPartnerCalculations();save(false);
+  });
+}
+function updatePartnerPicker(){
+  const typeSelect=$("#partnerCatalogType"),rankSelect=$("#partnerCatalogRank");
+  if(!typeSelect||!rankSelect) return;
+  const selectedType=PARTNER_CATALOG[typeSelect.value]?typeSelect.value:"combatente";
+  typeSelect.innerHTML=partnerTypeOptions(selectedType).replace('<option value="custom" >Personalizado</option>',"");
+  if(PARTNER_CATALOG[selectedType]) typeSelect.value=selectedType;
+  const selectedRank=allowedPartnerRank(rankSelect.value||"Iniciante");
+  rankSelect.innerHTML=partnerRankOptions(selectedRank);
+  rankSelect.value=selectedRank;
+}
+function openPartnerPicker(){
+  $("#partnerPicker").classList.remove("hidden");
+  updatePartnerPicker();
+  $("#partnerCatalogName").focus();
+}
+function closePartnerPicker(){$("#partnerPicker").classList.add("hidden")}
+function addPartnerEntry(partner){
+  const tier=partnerTierForLevel();
+  const row=normalizePartner(partner);
+  row.rank=allowedPartnerRank(row.rank);
+  if(row.active&&row.countsTowardLimit&&activeCountedPartners()>=tier.limit){
+    row.active=false;
+    notify("Parceiro adicionado como inativo porque o limite do patamar já foi preenchido.");
+  }
+  state.partners.push(row);
+  expandedPartnerCards.add(state.partners.length-1);
+  renderPartners();refreshPartnerCalculations();save(false);
+}
 function savedFieldValue(element){
   return element.type==="checkbox"?element.checked:element.value;
 }
@@ -1918,6 +2830,7 @@ function normalizeLoadedState(saved){
     powers:Array.isArray(saved.powers)?saved.powers:base.powers,
     spells:Array.isArray(saved.spells)?saved.spells:base.spells,
     items:Array.isArray(saved.items)?saved.items:base.items,
+    partners:Array.isArray(saved.partners)?saved.partners:base.partners,
     attacks:Array.isArray(saved.attacks)&&saved.attacks.length?saved.attacks:base.attacks,
     skillData:saved.skillData&&typeof saved.skillData==="object"?saved.skillData:base.skillData,
     conditions:saved.conditions&&typeof saved.conditions==="object"?saved.conditions:base.conditions,
@@ -1965,6 +2878,7 @@ function applySheetData(data){
   expandedPowerCards.clear();
   expandedItemCards.clear();
   expandedAttackCards.clear();
+  expandedPartnerCards.clear();
 }
 function characterKey(id){return `${CHARACTER_PREFIX}${id}`}
 function newCharacterId(){return `char_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`}
@@ -2458,20 +3372,21 @@ function activeConditionNamesFromSheet(data){
 function sheetSummaryFromCloudCharacter(character){
   const data=normalizeSheetData(character.sheet_data||{});
   const fields=data.fields||{},savedState=data.state||{};
+  const itemFx=equippedItemEffects(savedState.items||[]);
   const classLevels=classLevelsForSheet(fields,savedState);
   const race=T20_DATA.racas[fields.raca]||{};
   const lvl=totalClassLevel(classLevels);
-  const con=sheetNum(fields,"CON");
+  const con=sheetNum(fields,"CON")+Number(itemFx.attrs.CON||0);
   const spellAttr=ATTR_KEYS.includes(fields.spellAttr)?fields.spellAttr:"INT";
-  const bases=classResourceBases(classLevels,{con,spellAttrValue:sheetNum(fields,spellAttr)});
+  const bases=classResourceBases(classLevels,{con,spellAttrValue:sheetNum(fields,spellAttr)+Number(itemFx.attrs[spellAttr]||0)});
   const pvBase=bases.pvBase;
   const pmBase=bases.pmBase;
-  const pvMax=pvBase+sheetNum(fields,"pvAjuste");
-  const pmMax=pmBase+sheetNum(fields,"pmAjuste");
+  const pvMax=pvBase+sheetNum(fields,"pvAjuste")+itemFx.pvMax;
+  const pmMax=pmBase+sheetNum(fields,"pmAjuste")+itemFx.pmMax;
   const defenseAttr=ATTR_KEYS.includes(fields.defAttr)?fields.defAttr:"DES";
-  const defenseAttrBonus=sheetBool(fields,"defUseDex",true)?sheetNum(fields,defenseAttr):0;
+  const defenseAttrBonus=sheetBool(fields,"defUseDex",true)?sheetNum(fields,defenseAttr)+Number(itemFx.attrs[defenseAttr]||0):0;
   const conditionFx=sheetConditionEffects(savedState);
-  const defense=10+defenseAttrBonus+sheetNum(fields,"armadura")+sheetNum(fields,"escudo")+sheetNum(fields,"defBonus")+sheetNum(fields,"defAjuste")+sheetNum(fields,"globalDefenseBonus")+conditionFx.defense;
+  const defense=10+defenseAttrBonus+sheetNum(fields,"armadura")+sheetNum(fields,"escudo")+sheetNum(fields,"defBonus")+sheetNum(fields,"defAjuste")+sheetNum(fields,"globalDefenseBonus")+partnerDefenseBonus(savedState.partners)+itemFx.defense+conditionFx.defense;
   const activeConditions=activeConditionNamesFromSheet(data);
   const deathLimit=deathLimitFromPvMax(pvMax);
   const pvAtual=sheetNum(fields,"pvAtual");
@@ -2483,7 +3398,7 @@ function sheetSummaryFromCloudCharacter(character){
     className:classListLabel(classLevels),
     raceName:race.nome||fields.raca||"Raca nao definida",
     level:lvl,
-    attrs:Object.fromEntries(ATTR_KEYS.map(key=>[key,sheetNum(fields,key)])),
+    attrs:Object.fromEntries(ATTR_KEYS.map(key=>[key,sheetNum(fields,key)+Number(itemFx.attrs[key]||0)])),
     pvAtual,
     pvMax,
     pvTemp:Math.max(0,sheetNum(fields,"pvBonus")),
@@ -2491,7 +3406,7 @@ function sheetSummaryFromCloudCharacter(character){
     pmMax,
     pmTemp:Math.max(0,sheetNum(fields,"pmBonus")),
     defense,
-    rd:sheetNum(fields,"rd"),
+    rd:sheetNum(fields,"rd")+itemFx.rd,
     deslocamento:sheetNum(fields,"deslocamento")||race.deslocamento||9,
     tamanho:fields.tamanho||race.tamanho||"Medio",
     conditions:activeConditions,
@@ -3968,7 +4883,7 @@ function renderOriginBenefits(){
   $$("[data-ob]").forEach(e=>e.oninput=()=>{state.originBenefits[+e.dataset.ob]=e.value;save(false)});
   $$("[data-obdel]").forEach(e=>e.onclick=()=>{state.originBenefits.splice(+e.dataset.obdel,1);renderOriginBenefits();save(false)});
 }
-function renderAll(){normalizeState();renderClassLevels();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();recalc();syncCloudReadOnlyControls()}
+function renderAll(){normalizeState();renderClassLevels();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderPartners();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();recalc();syncCloudReadOnlyControls()}
 function showFatalError(error){
   console.error(error);
   const banner=document.createElement("div");
@@ -3996,7 +4911,7 @@ $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
       levels[0].level=clampClassLevel(e.value);
       setClassLevels(levels);
     }
-    renderPowers();refreshPowerPickerIfOpen();
+    renderPowers();renderPartners();refreshPowerPickerIfOpen();
   }
   if(e.id==="portraitUrl") renderCharacterPortrait();
   if(e.id==="spacesLimit"&&$("#spacesLimitAuto")?.checked) $("#spacesLimitAuto").checked=false;
@@ -4051,6 +4966,24 @@ $("#itemCatalogSearch").oninput=updateItemPicker;
 $("#itemCatalogCategory").onchange=updateItemPicker;
 $("#addSelectedItem").onclick=addSelectedCatalogItem;
 $("#addBlankItem").onclick=()=>{addItemEntry();closeItemPicker()};
+$("#addPartner")?.addEventListener("click",openPartnerPicker);
+$("#closePartnerPicker")?.addEventListener("click",closePartnerPicker);
+$("#partnerCatalogType")?.addEventListener("change",updatePartnerPicker);
+$("#partnerCatalogRank")?.addEventListener("change",updatePartnerPicker);
+$("#addSelectedPartner")?.addEventListener("click",()=>{
+  const type=value("partnerCatalogType");
+  const entry=partnerCatalogEntry(type);
+  if(!entry){notify("Escolha um tipo de parceiro do catálogo.");return}
+  const rank=allowedPartnerRank(value("partnerCatalogRank"));
+  addPartnerEntry(defaultPartner({type,rank,name:value("partnerCatalogName")||entry.name}));
+  $("#partnerCatalogName").value="";
+  closePartnerPicker();
+});
+$("#addBlankPartner")?.addEventListener("click",()=>{
+  addPartnerEntry({name:value("partnerCatalogName")||"Novo parceiro",type:"custom",rank:allowedPartnerRank(value("partnerCatalogRank")),source:"Manual",benefit:"",benefitCustomized:true});
+  $("#partnerCatalogName").value="";
+  closePartnerPicker();
+});
 $("#applyOriginBtn").onclick=applyOrigin;$("#addOriginBenefit").onclick=()=>{state.originBenefits.push("");renderOriginBenefits();save(false)};$("#addCustomCondition").onclick=()=>{state.customConditions.push({name:"Nova condição",active:true,effect:""});renderCustomConditions();renderConditionMini();save(false)};
 $("#addAttack").onclick=()=>{state.attacks.push(defaultAttack());expandedAttackCards.add(state.attacks.length-1);renderAttacks();save(false)};
 $("#characterSelect").onchange=e=>switchCharacter(e.target.value);
