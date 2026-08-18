@@ -599,13 +599,24 @@ function itemOwnEffects(item){
 function equippedInventoryItems(items=state?.items||[]){
   return (items||[]).filter(item=>item?.equipped===true);
 }
+function equippedItemAttributeContributions(inventory=state?.items||[]){
+  const result=Object.fromEntries(ATTR_KEYS.map(attr=>[attr,[]]));
+  equippedInventoryItems(inventory).forEach(item=>{
+    const effects=itemOwnEffects(item);
+    ATTR_KEYS.forEach(attr=>{
+      const value=Number(effects.attrs[attr]||0);
+      if(value) result[attr].push({name:String(item.name||"Item sem nome"),value});
+    });
+  });
+  return result;
+}
 function strongestItemValue(values){
   const numeric=values.map(Number).filter(Number.isFinite);
   return Math.max(0,...numeric)+Math.min(0,...numeric);
 }
 function equippedItemEffects(inventory=state?.items||[]){
   const result=emptyItemEffects(),items=equippedInventoryItems(inventory).map(item=>({item,effects:itemOwnEffects(item),type:inventoryItemType(item)}));
-  for(const attr of ATTR_KEYS) result.attrs[attr]=strongestItemValue(items.map(entry=>entry.effects.attrs[attr]||0));
+  for(const attr of ATTR_KEYS) result.attrs[attr]=items.reduce((sum,entry)=>sum+Number(entry.effects.attrs[attr]||0),0);
   const skillNames=new Set(items.flatMap(entry=>Object.keys(entry.effects.skills||{})));
   skillNames.forEach(skill=>result.skills[skill]=strongestItemValue(items.map(entry=>entry.effects.skills[skill]||0)));
   for(const key of ["rd","resistance","spellCd","pmLimit","pvMax","pmMax"]){
@@ -1211,6 +1222,7 @@ function renderGlobalModifierSummary(){
 }
 function recalc(){
   const itemFx=equippedItemEffects();
+  const itemAttributeSources=equippedItemAttributeContributions();
   const classLevels=currentClassLevels(), cls=primaryClass()||{nome:"Classe",pv1:0,pvNivel:0,pmNivel:0}, race=T20_DATA.racas[value("raca")], lvl=totalClassLevel(classLevels), con=permanentAttrNum("CON");
   syncPrimaryFieldsFromClassLevels();
   const bases=classResourceBases(classLevels,{con,spellAttrValue:permanentAttrNum(value("spellAttr"))});
@@ -1243,9 +1255,22 @@ function recalc(){
   $("#spellCd").textContent=10+halfLevel()+attrNum(value("spellAttr"))+num("spellCdBonus")+partnerSpellCdBonus()+itemFx.spellCd;
   $("#pmLimit").textContent=Math.max(0,lvl+num("pmLimitBonus")+num("pmLimitAdjust")+itemFx.pmLimit);
   ATTR_KEYS.forEach(attr=>{
-    const indicator=$(`[data-itemattr="${attr}"]`),total=$(`[data-attrtotal="${attr}"]`),bonus=itemAttributeBonus(attr);
-    if(total) total.textContent=permanentAttrNum(attr);
-    if(indicator){indicator.textContent=bonus?`item ${signedNumber(bonus)}`:"";indicator.classList.toggle("active",!!bonus)}
+    const indicator=$(`[data-itemattr="${attr}"]`),total=$(`[data-attrtotal="${attr}"]`),bonus=Number(itemFx.attrs[attr]||0),sources=itemAttributeSources[attr]||[];
+    if(total) total.textContent=rawNum(attr)+bonus;
+    if(indicator){
+      const detail=sources.map(source=>`${source.name} ${signedNumber(source.value)}`).join("; ");
+      indicator.textContent=sources.length?`Itens ${signedNumber(bonus)}`:"";
+      indicator.classList.toggle("active",sources.length>0);
+      indicator.title=detail;
+      indicator.setAttribute("aria-label",sources.length?`Origem do modificador de ${attr}: ${detail}`:"");
+      indicator.onclick=sources.length?event=>{
+        event.preventDefault();event.stopPropagation();
+        notify(`<strong>Itens em ${attr}:</strong> ${sources.map(source=>`${escapeHtml(source.name)} ${signedNumber(source.value)}`).join(" • ")}`,5500);
+      }:null;
+      indicator.onkeydown=sources.length?event=>{
+        if(event.key==="Enter"||event.key===" "){event.preventDefault();indicator.click()}
+      }:null;
+    }
   });
   if($("#rdItemBonus")) $("#rdItemBonus").textContent=itemFx.rd?`Item ${signedNumber(itemFx.rd)}`:"";
   const pvScaleMax=Math.max(1,pvMax+(isDying?0:pvTemp)),pmScaleMax=Math.max(1,pmMax+pmTemp);

@@ -80,9 +80,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Auditoria e segurança da nuvem:** mudanças de campanha agora têm histórico privado; políticas, permissões e índices do Supabase foram revisados.
-2. **Vínculos de campanha protegidos:** salvamentos e autosaves não alteram mais `campaign_id`; o vínculo só muda por ações explícitas de campanha.
-3. **Filtros de magia:** os filtros de Arcanas e Divinas também exibem magias universais, enquanto `Só universais` mantém a consulta exclusiva.
+1. **Origem dos atributos:** os atributos agora detalham quais itens equipados fornecem cada bônus ou penalidade.
+2. **Atributos de itens acumuláveis:** bônus e penalidades de atributo de todos os itens equipados agora são somados.
+3. **Auditoria e segurança da nuvem:** mudanças de campanha agora têm histórico privado; políticas, permissões e índices do Supabase foram revisados.
 
 ## Aviso
 
