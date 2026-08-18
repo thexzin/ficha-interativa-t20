@@ -1802,27 +1802,63 @@ function bindAccordionReorder({kind,collection,cardSelector,getExpanded,setExpan
       event.preventDefault();
       const card=handle.closest(cardSelector),from=Number(handle.dataset.reorderIndex);
       if(!card||!Number.isInteger(from)) return;
-      let moved=false;
+      const startX=event.clientX,startY=event.clientY,originalStyle=card.getAttribute("style");
+      let dragging=false,placeholder=null,offsetX=0,offsetY=0;
       handle.setPointerCapture?.(event.pointerId);
-      card.classList.add("dragging");
-      document.body.classList.add("accordionDragging");
-      const cards=()=>[...container.children].filter(child=>child.matches?.(cardSelector));
+      const startDragging=moveEvent=>{
+        const rect=card.getBoundingClientRect();
+        offsetX=startX-rect.left;offsetY=startY-rect.top;
+        placeholder=document.createElement("div");
+        placeholder.className="accordionDropPlaceholder";
+        placeholder.style.height=`${rect.height}px`;
+        container.insertBefore(placeholder,card);
+        Object.assign(card.style,{position:"fixed",left:`${rect.left}px`,top:`${rect.top}px`,width:`${rect.width}px`,margin:"0",pointerEvents:"none"});
+        card.classList.add("dragging");
+        document.body.classList.add("accordionDragging");
+        dragging=true;
+        positionFloatingCard(moveEvent);
+      };
+      const positionFloatingCard=moveEvent=>{
+        card.style.left=`${moveEvent.clientX-offsetX}px`;
+        card.style.top=`${moveEvent.clientY-offsetY}px`;
+      };
+      const placePlaceholder=moveEvent=>{
+        const candidates=[...container.children].filter(child=>child!==card&&child!==placeholder&&child.matches?.(cardSelector));
+        if(!candidates.length) return;
+        let target=null,bestDistance=Infinity;
+        candidates.forEach(candidate=>{
+          const rect=candidate.getBoundingClientRect(),centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
+          const distance=((moveEvent.clientX-centerX)/Math.max(1,rect.width))**2+((moveEvent.clientY-centerY)/Math.max(1,Math.min(rect.height,180)))**2;
+          if(distance<bestDistance){bestDistance=distance;target=candidate}
+        });
+        if(!target) return;
+        const rect=target.getBoundingClientRect(),centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
+        const sameRow=Math.abs(moveEvent.clientY-centerY)<Math.min(rect.height*.42,90);
+        const before=sameRow?moveEvent.clientX<centerX:moveEvent.clientY<centerY;
+        container.insertBefore(placeholder,before?target:target.nextSibling);
+      };
       const onMove=moveEvent=>{
-        const target=document.elementFromPoint(moveEvent.clientX,moveEvent.clientY)?.closest(cardSelector);
-        if(!target||target===card||!container.contains(target)) return;
-        const rect=target.getBoundingClientRect(),sameRow=Math.abs(moveEvent.clientY-(rect.top+rect.height/2))<rect.height*.28;
-        const before=sameRow?moveEvent.clientX<rect.left+rect.width/2:moveEvent.clientY<rect.top+rect.height/2;
-        container.insertBefore(card,before?target:target.nextSibling);
-        moved=true;
+        if(!dragging&&Math.hypot(moveEvent.clientX-startX,moveEvent.clientY-startY)<6) return;
+        if(!dragging) startDragging(moveEvent);
+        positionFloatingCard(moveEvent);
+        placePlaceholder(moveEvent);
+        const edge=72,scrollStep=14;
+        if(moveEvent.clientY<edge) window.scrollBy(0,-scrollStep);
+        else if(moveEvent.clientY>window.innerHeight-edge) window.scrollBy(0,scrollStep);
       };
       const finish=shouldCommit=>{
         handle.removeEventListener("pointermove",onMove);
         handle.removeEventListener("pointerup",onUp);
         handle.removeEventListener("pointercancel",onCancel);
+        handle.releasePointerCapture?.(event.pointerId);
         card.classList.remove("dragging");
         document.body.classList.remove("accordionDragging");
-        if(!shouldCommit||!moved){render();return}
-        const to=cards().indexOf(card);
+        if(originalStyle===null) card.removeAttribute("style");else card.setAttribute("style",originalStyle);
+        if(!dragging){return}
+        const order=[...container.children].filter(child=>child!==card&&(child===placeholder||child.matches?.(cardSelector)));
+        const to=order.indexOf(placeholder);
+        placeholder?.remove();
+        if(!shouldCommit){return}
         if(!moveCollectionEntryTo(collection,from,to)){render();return}
         setExpanded(moveExpandedIndex(getExpanded(),from,to));
         commit();
