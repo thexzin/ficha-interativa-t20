@@ -2143,7 +2143,7 @@ function renderSpellCatalog(){
   const filtered=(window.T20_SPELL_CATALOG||[]).filter(spell=>{
     const matchesSearch=!search || spell.name.toLowerCase().includes(search);
     const matchesCircle=!circle || String(spell.circle)===String(circle);
-    const matchesType=!type || spell.type===type;
+    const matchesType=!type || spell.type===type || (spell.type==="Universal"&&(type==="Arcana"||type==="Divina"));
     const matchesSchool=!school || spell.school===school;
     return matchesSearch && matchesCircle && matchesType && matchesSchool;
   });

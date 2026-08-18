@@ -80,9 +80,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Rodapé estável:** permanece no final da janela em páginas curtas e depois do conteúdo em páginas longas, sem sobrepor a ficha.
-2. **Preços automáticos no Inventário:** melhorias, materiais e encantos atualizam o preço final; a composição aparece apenas com o item expandido.
-3. **Reordenação de cards:** Poderes e Inventário receberam controles para alterar e preservar a ordem das entradas.
+1. **Filtros de magia:** os filtros de Arcanas e Divinas também exibem magias universais, enquanto `Só universais` mantém a consulta exclusiva.
+2. **Rodapé estável:** permanece no final da janela em páginas curtas e depois do conteúdo em páginas longas, sem sobrepor a ficha.
+3. **Preços automáticos no Inventário:** melhorias, materiais e encantos atualizam o preço final; a composição aparece apenas com o item expandido.
 
 ## Aviso
 
