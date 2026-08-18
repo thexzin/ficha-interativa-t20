@@ -80,9 +80,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Poderes renomeáveis:** a automação de Aumento de Atributo agora permanece ativa mesmo após alterar o nome do poder.
-2. **Aumento de Atributo automático:** cada aquisição do poder permite escolher um atributo, aplica `+1` e identifica a origem na caixa correspondente.
-3. **Origem dos atributos:** os atributos agora detalham quais itens equipados fornecem cada bônus ou penalidade.
+1. **Reordenação por arraste:** poderes e itens agora podem ser movidos livremente pela alça de três linhas, inclusive em telas de toque.
+2. **Poderes renomeáveis:** a automação de Aumento de Atributo agora permanece ativa mesmo após alterar o nome do poder.
+3. **Aumento de Atributo automático:** cada aquisição do poder permite escolher um atributo, aplica `+1` e identifica a origem na caixa correspondente.
 
 ## Aviso
 

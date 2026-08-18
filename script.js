@@ -1763,11 +1763,76 @@ function moveCollectionEntry(collection,index,direction){
 function swapExpandedIndexes(indexes,first,second){
   return new Set([...indexes].map(index=>index===first?second:index===second?first:index));
 }
-function accordionOrderControls(kind,index,total){
-  return `<div class="accordionOrderControls" role="group" aria-label="Reordenar">
-    <button type="button" data-${kind}move="-1" data-${kind}index="${index}" title="Mover para cima" aria-label="Mover para cima" ${index===0?"disabled":""}>&uarr;</button>
-    <button type="button" data-${kind}move="1" data-${kind}index="${index}" title="Mover para baixo" aria-label="Mover para baixo" ${index===total-1?"disabled":""}>&darr;</button>
-  </div>`;
+function moveCollectionEntryTo(collection,from,to){
+  if(!Array.isArray(collection)||from===to||from<0||to<0||from>=collection.length||to>=collection.length) return false;
+  const [entry]=collection.splice(from,1);
+  collection.splice(to,0,entry);
+  return true;
+}
+function moveExpandedIndex(indexes,from,to){
+  return new Set([...indexes].map(index=>{
+    if(index===from) return to;
+    if(from<to&&index>from&&index<=to) return index-1;
+    if(to<from&&index>=to&&index<from) return index+1;
+    return index;
+  }));
+}
+function accordionDragHandle(kind,index){
+  return `<button type="button" class="accordionDragHandle" data-reorder-kind="${kind}" data-reorder-index="${index}" title="Arraste para reordenar" aria-label="Arraste para reordenar; use as setas do teclado"><span aria-hidden="true"></span></button>`;
+}
+function bindAccordionReorder({kind,collection,cardSelector,getExpanded,setExpanded,render,commit}){
+  const container=kind==="power"?$("#powersList"):$("#itemsList");
+  if(!container) return;
+  const handles=[...container.querySelectorAll(`[data-reorder-kind="${kind}"]`)];
+  const moveByKeyboard=(from,direction)=>{
+    const to=from+direction;
+    if(!moveCollectionEntry(collection,from,direction)) return;
+    setExpanded(swapExpandedIndexes(getExpanded(),from,to));
+    commit();
+  };
+  handles.forEach(handle=>{
+    handle.onkeydown=event=>{
+      const direction=["ArrowUp","ArrowLeft"].includes(event.key)?-1:["ArrowDown","ArrowRight"].includes(event.key)?1:0;
+      if(!direction) return;
+      event.preventDefault();
+      moveByKeyboard(Number(handle.dataset.reorderIndex),direction);
+    };
+    handle.onpointerdown=event=>{
+      if(event.button!==0) return;
+      event.preventDefault();
+      const card=handle.closest(cardSelector),from=Number(handle.dataset.reorderIndex);
+      if(!card||!Number.isInteger(from)) return;
+      let moved=false;
+      handle.setPointerCapture?.(event.pointerId);
+      card.classList.add("dragging");
+      document.body.classList.add("accordionDragging");
+      const cards=()=>[...container.children].filter(child=>child.matches?.(cardSelector));
+      const onMove=moveEvent=>{
+        const target=document.elementFromPoint(moveEvent.clientX,moveEvent.clientY)?.closest(cardSelector);
+        if(!target||target===card||!container.contains(target)) return;
+        const rect=target.getBoundingClientRect(),sameRow=Math.abs(moveEvent.clientY-(rect.top+rect.height/2))<rect.height*.28;
+        const before=sameRow?moveEvent.clientX<rect.left+rect.width/2:moveEvent.clientY<rect.top+rect.height/2;
+        container.insertBefore(card,before?target:target.nextSibling);
+        moved=true;
+      };
+      const finish=shouldCommit=>{
+        handle.removeEventListener("pointermove",onMove);
+        handle.removeEventListener("pointerup",onUp);
+        handle.removeEventListener("pointercancel",onCancel);
+        card.classList.remove("dragging");
+        document.body.classList.remove("accordionDragging");
+        if(!shouldCommit||!moved){render();return}
+        const to=cards().indexOf(card);
+        if(!moveCollectionEntryTo(collection,from,to)){render();return}
+        setExpanded(moveExpandedIndex(getExpanded(),from,to));
+        commit();
+      };
+      const onUp=()=>finish(true),onCancel=()=>finish(false);
+      handle.addEventListener("pointermove",onMove);
+      handle.addEventListener("pointerup",onUp);
+      handle.addEventListener("pointercancel",onCancel);
+    };
+  });
 }
 function renderPowerCard(p,i){
   const isOpen=expandedPowerCards.has(i);
@@ -1790,7 +1855,7 @@ function renderPowerCard(p,i){
         <span class="powerAccordionTitle"><strong>${escapeHtml(p.name||"Poder sem nome")}</strong><small>${autoText}</small></span>
         <span class="powerAccordionCue">${isOpen?"Recolher":"Expandir"}</span>
       </button>
-      ${accordionOrderControls("power",i,state.powers.length)}
+      ${accordionDragHandle("power",i)}
     </div>
     <div class="powerAccordionBody ${isOpen?"":"hidden"}">
       <div class="powerMainFields">
@@ -1818,12 +1883,10 @@ function renderPowers(){
   syncAutoClassFeatures();
   $("#powersList").innerHTML=state.powers.map((p,i)=>renderPowerCard(p,i)).join("") || '<p class="muted">Nenhum poder registrado ainda.</p>';
   $$("[data-powertoggle]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.powertoggle;if(expandedPowerCards.has(idx))expandedPowerCards.delete(idx);else expandedPowerCards.add(idx);renderPowers()});
-  $$("[data-powermove]").forEach(button=>button.onclick=()=>{
-    const index=Number(button.dataset.powerindex),direction=Number(button.dataset.powermove),target=index+direction;
-    if(!moveCollectionEntry(state.powers,index,direction)) return;
-    expandedPowerCards=swapExpandedIndexes(expandedPowerCards,index,target);
-    renderPowers();
-    save(false);
+  bindAccordionReorder({
+    kind:"power",collection:state.powers,cardSelector:".powerAccordionCard",
+    getExpanded:()=>expandedPowerCards,setExpanded:value=>{expandedPowerCards=value},
+    render:renderPowers,commit:()=>{renderPowers();save(false)}
   });
   bindCollection("p",state.powers,renderPowers);
   $$("[data-pautodel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pautodel;suppressAutoPower(state.powers[idx]);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();recalc();save(false)});
@@ -2352,7 +2415,7 @@ function renderItemCard(it,i){
         <span class="itemAccordionTitle"><strong>${escapeHtml(it.name||"Item sem nome")}</strong><small>${summary||"Sem detalhes"}</small></span>
         <span class="itemAccordionCue">${isOpen?"Recolher":"Expandir"}</span>
       </button>
-      ${accordionOrderControls("item",i,state.items.length)}
+      ${accordionDragHandle("item",i)}
     </div>
     <div class="itemAccordionBody ${isOpen?"":"hidden"}">
       <div class="itemMainFields">
@@ -2395,11 +2458,10 @@ function renderItemCard(it,i){
 function renderItems(){
   $("#itemsList").innerHTML=state.items.map((it,i)=>renderItemCard(it,i)).join("") || '<p class="muted">Nenhum item registrado ainda.</p>';
   $$("[data-itemtoggle]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.itemtoggle;if(expandedItemCards.has(idx))expandedItemCards.delete(idx);else expandedItemCards.add(idx);renderItems()});
-  $$("[data-itemmove]").forEach(button=>button.onclick=()=>{
-    const index=Number(button.dataset.itemindex),direction=Number(button.dataset.itemmove),target=index+direction;
-    if(!moveCollectionEntry(state.items,index,direction)) return;
-    expandedItemCards=swapExpandedIndexes(expandedItemCards,index,target);
-    refreshInventoryEffects();
+  bindAccordionReorder({
+    kind:"item",collection:state.items,cardSelector:".itemAccordionCard",
+    getExpanded:()=>expandedItemCards,setExpanded:value=>{expandedItemCards=value},
+    render:renderItems,commit:refreshInventoryEffects
   });
   bindCollection("i",state.items,renderItems);
   $$("[data-additemmod]").forEach(button=>button.onclick=()=>{
