@@ -80,9 +80,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Filtros de magia:** os filtros de Arcanas e Divinas também exibem magias universais, enquanto `Só universais` mantém a consulta exclusiva.
-2. **Rodapé estável:** permanece no final da janela em páginas curtas e depois do conteúdo em páginas longas, sem sobrepor a ficha.
-3. **Preços automáticos no Inventário:** melhorias, materiais e encantos atualizam o preço final; a composição aparece apenas com o item expandido.
+1. **Auditoria e segurança da nuvem:** mudanças de campanha agora têm histórico privado; políticas, permissões e índices do Supabase foram revisados.
+2. **Vínculos de campanha protegidos:** salvamentos e autosaves não alteram mais `campaign_id`; o vínculo só muda por ações explícitas de campanha.
+3. **Filtros de magia:** os filtros de Arcanas e Divinas também exibem magias universais, enquanto `Só universais` mantém a consulta exclusiva.
 
 ## Aviso
 

@@ -3082,10 +3082,8 @@ function queueCloudAutosave(){
   const snapshot={
     localId:currentCharacterId,
     remoteId:mappedCloudCharacterId(),
-    data:sheetDataFromCurrent(),
-    campaignId:null
+    data:sheetDataFromCurrent()
   };
-  snapshot.campaignId=cloudCampaignIdForSave(snapshot.remoteId)||null;
   if(!snapshot.remoteId) return;
   markSaving("Salvando...");
   cacheLocalCharacterData(snapshot.localId,snapshot.data,characterNameFromData(snapshot.data),new Date().toISOString());
@@ -3105,12 +3103,12 @@ async function saveCloudCharacterSnapshot(snapshot){
   if(!supabaseClient||!cloudUser||!snapshot?.remoteId||!snapshot?.data) return;
   const selectedMeta=cloudCharacters.find(character=>character.id===snapshot.remoteId);
   if(isCloudCharacterReadOnly(selectedMeta)) return;
-  const preservedCampaignId=snapshot.campaignId||selectedMeta?.campaign_id||null;
-  const payload=cloudPayloadFromSheetData(snapshot.data,preservedCampaignId);
+  const payload=cloudCharacterUpdatePayload(snapshot.data);
   const {data,error}=await supabaseClient
     .from("characters")
     .update(payload)
     .eq("id",snapshot.remoteId)
+    .eq("owner_id",cloudUser.id)
     .select("id,name,campaign_id,updated_at")
     .single();
   if(error) throw error;
@@ -4499,6 +4497,17 @@ function cloudPayloadFromCurrent(remoteId=""){
     updated_at:new Date().toISOString()
   };
 }
+// Salvar a ficha nunca altera sua campanha; vinculos e remocoes usam fluxos explicitos.
+function cloudCharacterUpdatePayload(data){
+  const normalized=normalizeSheetData(data);
+  return {
+    owner_id:cloudUser.id,
+    name:characterNameFromData(normalized),
+    player_name:normalized.fields?.jogador||null,
+    sheet_data:normalized,
+    updated_at:new Date().toISOString()
+  };
+}
 async function saveCloudCharacter(show=true){
   if(!cloudRequireLogin()) return;
   if(!currentCharacterId){
@@ -4519,9 +4528,9 @@ async function saveCloudCharacter(show=true){
     return;
   }
   markSaving("Salvando...");
-  const payload=cloudPayloadFromCurrent(selected);
+  const payload=selected?cloudCharacterUpdatePayload(sheetDataFromCurrent()):cloudPayloadFromCurrent();
   const request=selected
-    ? supabaseClient.from("characters").update(payload).eq("id",selected).select("id,name,campaign_id,updated_at").single()
+    ? supabaseClient.from("characters").update(payload).eq("id",selected).eq("owner_id",cloudUser.id).select("id,name,campaign_id,updated_at").single()
     : supabaseClient.from("characters").insert(payload).select("id,name,campaign_id,updated_at").single();
   const {data,error}=await request;
   if(error) throw error;
@@ -4742,8 +4751,14 @@ async function unlinkSelectedOwnCharacterFromCampaign(){
 }
 async function linkCloudCampaign(){
   if(!cloudRequireLogin()) return;
-  if(!value("cloudCampaignSelect")){notify("Escolha uma campanha para vincular.");return}
+  const campaignId=value("cloudCampaignSelect");
+  if(!campaignId){notify("Escolha uma campanha para vincular.");return}
   await saveCloudCharacter(false);
+  const remoteId=mappedCloudCharacterId();
+  if(!remoteId){notify("Salve a ficha na nuvem antes de vincular.");return}
+  await persistCloudCharacterCampaign(remoteId,campaignId);
+  await loadCloudData({syncCurrent:true});
+  if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
   notify("Ficha vinculada à campanha e salva na nuvem.");
 }
 function promptCampaignCode(){
@@ -4788,6 +4803,20 @@ function setCloudMappingForLocal(localId,remoteId){
   map[localId]=remoteId;
   writeCloudCharacterMap(map);
 }
+async function persistCloudCharacterCampaign(remoteId,campaignId){
+  if(!remoteId||!campaignId) throw new Error("Ficha ou campanha invalida para vinculacao.");
+  clearCloudAutosaveTimer(remoteId);
+  const {data,error}=await supabaseClient
+    .from("characters")
+    .update({campaign_id:campaignId,updated_at:new Date().toISOString()})
+    .eq("id",remoteId)
+    .eq("owner_id",cloudUser.id)
+    .select("id,campaign_id,updated_at")
+    .single();
+  if(error) throw error;
+  if(data?.campaign_id!==campaignId) throw new Error("O vinculo com a campanha nao foi persistido.");
+  return data;
+}
 async function linkLocalCharacterToCampaign(localId,campaignId){
   const data=localId===currentCharacterId?sheetDataFromCurrent():localCharacterData(localId);
   if(!data){notify("Ficha local nao encontrada.");return}
@@ -4795,10 +4824,11 @@ async function linkLocalCharacterToCampaign(localId,campaignId){
   const remoteId=readCloudCharacterMap()[localId]||"";
   clearCloudAutosaveTimer(remoteId);
   const request=remoteId
-    ? supabaseClient.from("characters").update(payload).eq("id",remoteId).select("id,name,campaign_id,updated_at").single()
+    ? supabaseClient.from("characters").update(payload).eq("id",remoteId).eq("owner_id",cloudUser.id).select("id,name,campaign_id,updated_at").single()
     : supabaseClient.from("characters").insert(payload).select("id,name,campaign_id,updated_at").single();
   const {data:cloudData,error}=await request;
   if(error) throw error;
+  if(cloudData?.campaign_id!==campaignId) throw new Error("O vinculo com a campanha nao foi persistido.");
   setCloudMappingForLocal(localId,cloudData.id);
   if(localId===currentCharacterId){
     if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
@@ -4808,9 +4838,7 @@ async function linkLocalCharacterToCampaign(localId,campaignId){
 async function linkCloudCharacterToCampaign(remoteId,campaignId){
   const character=cloudCharacters.find(entry=>entry.id===remoteId);
   if(!character||character.owner_id!==cloudUser.id){notify("Voce so pode vincular fichas da sua conta.");return}
-  clearCloudAutosaveTimer(remoteId);
-  const {error}=await supabaseClient.from("characters").update({campaign_id:campaignId,updated_at:new Date().toISOString()}).eq("id",remoteId);
-  if(error) throw error;
+  await persistCloudCharacterCampaign(remoteId,campaignId);
   if(mappedCloudCharacterId()===remoteId && $("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
 }
 async function linkSelectedCharacterToCampaign(){
@@ -4848,12 +4876,7 @@ async function linkCurrentCharacterToCampaignByCode(){
   }
   if(campaignId){
     if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
-    clearCloudAutosaveTimer(remoteId);
-    const {error:updateError}=await supabaseClient
-      .from("characters")
-      .update({campaign_id:campaignId,updated_at:new Date().toISOString()})
-      .eq("id",remoteId);
-    if(updateError) throw updateError;
+    await persistCloudCharacterCampaign(remoteId,campaignId);
   }else{
     throw new Error("Nao foi possivel localizar a campanha pelo codigo informado.");
   }
