@@ -63,7 +63,8 @@ function normalizeState(){
   state.attacks=state.attacks.map(normalizeAttack);
   state.powers=state.powers.map(power=>{
     power=power&&typeof power==="object"?power:{};
-    return {...power,attributeIncrease:ATTR_KEYS.includes(power.attributeIncrease)?power.attributeIncrease:""};
+    const attributeIncrease=ATTR_KEYS.includes(power.attributeIncrease)?power.attributeIncrease:"";
+    return {...power,attributeIncrease,attributeIncreasePower:isAttributeIncreasePower({...power,attributeIncrease})};
   });
   if(!state.offices.length) state.offices=defaultState().offices;
   state.classLevels=Array.isArray(state.classLevels)?state.classLevels:[];
@@ -616,7 +617,11 @@ function equippedItemAttributeContributions(inventory=state?.items||[]){
   return result;
 }
 function isAttributeIncreasePower(power){
-  return normalizePowerType(power?.type)==="Classe"&&powerCatalogKey(power?.name)==="aumentodeatributo";
+  const descriptionKey=powerCatalogKey(power?.desc);
+  return power?.attributeIncreasePower===true
+    || ATTR_KEYS.includes(power?.attributeIncrease)
+    || (normalizePowerType(power?.type)==="Classe"&&powerCatalogKey(power?.name)==="aumentodeatributo")
+    || (descriptionKey.includes("vocerecebe1emumatributo")&&descriptionKey.includes("umavezporpatamar"));
 }
 function powerAttributeContributions(powers=state?.powers||[]){
   const result=Object.fromEntries(ATTR_KEYS.map(attr=>[attr,[]]));
@@ -1971,7 +1976,8 @@ function addPowerEntry(power={}){
     action:power.action||"",
     source:power.source||"",
     desc:power.desc||"",
-    attributeIncrease:ATTR_KEYS.includes(power.attributeIncrease)?power.attributeIncrease:""
+    attributeIncrease:ATTR_KEYS.includes(power.attributeIncrease)?power.attributeIncrease:"",
+    attributeIncreasePower:isAttributeIncreasePower(power)
   });
   expandedPowerCards.add(state.powers.length-1);
   renderPowers();
@@ -2763,6 +2769,7 @@ function bindCollection(prefix,arr,rerender){
       notify("O material especial conta no limite de 4 melhorias.");rerender();return;
     }
     entry[key]=newValue;
+    if(prefix==="p"&&isAttributeIncreasePower(entry)) entry.attributeIncreasePower=true;
     if(prefix==="i"){renderInventorySummary();recalc();renderAttacks()}
     if(prefix==="p") recalc();
     save(false);
