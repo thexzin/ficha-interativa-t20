@@ -61,6 +61,10 @@ function normalizeState(){
   }
   if(!state.attacks.length) state.attacks=defaultState().attacks;
   state.attacks=state.attacks.map(normalizeAttack);
+  state.powers=state.powers.map(power=>{
+    power=power&&typeof power==="object"?power:{};
+    return {...power,attributeIncrease:ATTR_KEYS.includes(power.attributeIncrease)?power.attributeIncrease:""};
+  });
   if(!state.offices.length) state.offices=defaultState().offices;
   state.classLevels=Array.isArray(state.classLevels)?state.classLevels:[];
   state.spells=state.spells.map(spell=>normalizeSpellDetailFields({...spell}));
@@ -86,6 +90,7 @@ let cloudAutosaveTimers=new Map();
 let saveStatusTimer=null;
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
+const ATTR_NAMES={FOR:"Força",DES:"Destreza",CON:"Constituição",INT:"Inteligência",SAB:"Sabedoria",CAR:"Carisma"};
 const RESISTANCE_SKILLS=new Set(["Fortitude","Reflexos","Vontade"]);
 const GLOBAL_MODIFIER_FIELDS=[
   {id:"globalTestBonus",label:"Testes"},
@@ -610,6 +615,20 @@ function equippedItemAttributeContributions(inventory=state?.items||[]){
   });
   return result;
 }
+function isAttributeIncreasePower(power){
+  return normalizePowerType(power?.type)==="Classe"&&powerCatalogKey(power?.name)==="aumentodeatributo";
+}
+function powerAttributeContributions(powers=state?.powers||[]){
+  const result=Object.fromEntries(ATTR_KEYS.map(attr=>[attr,[]]));
+  (powers||[]).forEach(power=>{
+    if(!isAttributeIncreasePower(power)||!ATTR_KEYS.includes(power.attributeIncrease)) return;
+    result[power.attributeIncrease].push({name:String(power.name||"Aumento de Atributo"),value:1});
+  });
+  return result;
+}
+function powerAttributeBonus(attr){
+  return (powerAttributeContributions()[attr]||[]).reduce((sum,source)=>sum+source.value,0);
+}
 function strongestItemValue(values){
   const numeric=values.map(Number).filter(Number.isFinite);
   return Math.max(0,...numeric)+Math.min(0,...numeric);
@@ -708,7 +727,7 @@ function itemAutomaticEffectLabels(item){
 }
 const rawNum=id=>Number($("#"+id)?.value||0);
 const num=id=>rawNum(id);
-const permanentAttrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+itemAttributeBonus(id):rawNum(id);
+const permanentAttrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+itemAttributeBonus(id)+powerAttributeBonus(id):rawNum(id);
 const attrNum=id=>ATTR_KEYS.includes(id)?permanentAttrNum(id)+rawNum(`${id}Temp`):rawNum(id);
 const value=id=>$("#"+id)?.value||"";
 const DELETE_ICON_HTML='<span class="deleteIconGlyph" aria-hidden="true"></span>';
@@ -1223,6 +1242,7 @@ function renderGlobalModifierSummary(){
 function recalc(){
   const itemFx=equippedItemEffects();
   const itemAttributeSources=equippedItemAttributeContributions();
+  const powerAttributeSources=powerAttributeContributions();
   const classLevels=currentClassLevels(), cls=primaryClass()||{nome:"Classe",pv1:0,pvNivel:0,pmNivel:0}, race=T20_DATA.racas[value("raca")], lvl=totalClassLevel(classLevels), con=permanentAttrNum("CON");
   syncPrimaryFieldsFromClassLevels();
   const bases=classResourceBases(classLevels,{con,spellAttrValue:permanentAttrNum(value("spellAttr"))});
@@ -1255,17 +1275,21 @@ function recalc(){
   $("#spellCd").textContent=10+halfLevel()+attrNum(value("spellAttr"))+num("spellCdBonus")+partnerSpellCdBonus()+itemFx.spellCd;
   $("#pmLimit").textContent=Math.max(0,lvl+num("pmLimitBonus")+num("pmLimitAdjust")+itemFx.pmLimit);
   ATTR_KEYS.forEach(attr=>{
-    const indicator=$(`[data-itemattr="${attr}"]`),total=$(`[data-attrtotal="${attr}"]`),bonus=Number(itemFx.attrs[attr]||0),sources=itemAttributeSources[attr]||[];
+    const indicator=$(`[data-itemattr="${attr}"]`),total=$(`[data-attrtotal="${attr}"]`),itemBonus=Number(itemFx.attrs[attr]||0),powerBonus=(powerAttributeSources[attr]||[]).reduce((sum,source)=>sum+source.value,0),bonus=itemBonus+powerBonus;
+    const itemSources=(itemAttributeSources[attr]||[]).map(source=>({...source,kind:"Item"}));
+    const powerSources=(powerAttributeSources[attr]||[]).map(source=>({...source,kind:"Poder"}));
+    const sources=[...itemSources,...powerSources];
     if(total) total.textContent=rawNum(attr)+bonus;
     if(indicator){
-      const detail=sources.map(source=>`${source.name} ${signedNumber(source.value)}`).join("; ");
-      indicator.textContent=sources.length?`Itens ${signedNumber(bonus)}`:"";
+      const detail=sources.map(source=>`${source.kind}: ${source.name} ${signedNumber(source.value)}`).join("; ");
+      const originLabel=itemSources.length&&powerSources.length?"Bônus":powerSources.length?"Poderes":"Itens";
+      indicator.textContent=sources.length?`${originLabel} ${signedNumber(bonus)}`:"";
       indicator.classList.toggle("active",sources.length>0);
       indicator.title=detail;
       indicator.setAttribute("aria-label",sources.length?`Origem do modificador de ${attr}: ${detail}`:"");
       indicator.onclick=sources.length?event=>{
         event.preventDefault();event.stopPropagation();
-        notify(`<strong>Itens em ${attr}:</strong> ${sources.map(source=>`${escapeHtml(source.name)} ${signedNumber(source.value)}`).join(" • ")}`,5500);
+        notify(`<strong>Origens de ${attr}:</strong> ${sources.map(source=>`${source.kind}: ${escapeHtml(source.name)} ${signedNumber(source.value)}`).join(" • ")}`,5500);
       }:null;
       indicator.onkeydown=sources.length?event=>{
         if(event.key==="Enter"||event.key===" "){event.preventDefault();indicator.click()}
@@ -1743,10 +1767,13 @@ function accordionOrderControls(kind,index,total){
 function renderPowerCard(p,i){
   const isOpen=expandedPowerCards.has(i);
   p.type=normalizePowerType(p.type||"Classe");
+  const isAttributeIncrease=isAttributeIncreasePower(p);
+  const chosenAttribute=ATTR_KEYS.includes(p.attributeIncrease)?p.attributeIncrease:"";
   const isAutoClass=p.autoClassFeature===AUTO_CLASS_FEATURE_FLAG;
   const isAutoRace=p.autoRaceAbility===AUTO_RACE_ABILITY_FLAG;
   const isAuto=isAutoClass||isAutoRace;
-  const autoText=isAutoClass?`Automático • nível ${p.autoLevel||"?"}`:isAutoRace?"Automático • raça":escapeHtml(p.type);
+  const baseMeta=isAutoClass?`Automático • nível ${p.autoLevel||"?"}`:isAutoRace?"Automático • raça":escapeHtml(p.type);
+  const autoText=`${baseMeta}${isAttributeIncrease?` • ${chosenAttribute?`${chosenAttribute} +1`:"atributo pendente"}`:""}`;
   const lockAttr=isAuto?" readonly":"";
   const disabledAttr=isAuto?" disabled":"";
   const autoActions=isAuto
@@ -1766,6 +1793,13 @@ function renderPowerCard(p,i){
         <label>Tipo<select data-p="${i}" data-k="type"${disabledAttr}>${powerTypeOptions(p.type||"Classe")}</select></label>
         ${autoActions}
       </div>
+      ${isAttributeIncrease?`<div class="powerAttributeIncrease">
+        <label>Atributo aumentado<select data-p="${i}" data-k="attributeIncrease" aria-label="Atributo aumentado por este poder">
+          <option value="">Escolha um atributo</option>
+          ${ATTR_KEYS.map(attr=>`<option value="${attr}" ${attr===chosenAttribute?"selected":""}>${attr} — ${ATTR_NAMES[attr]}</option>`).join("")}
+        </select></label>
+        <span><strong>+1</strong><small>Aplicado automaticamente aos cálculos do atributo.</small></span>
+      </div>`:""}
       <div class="powerMeta">
         <label>Custo/uso<input data-p="${i}" data-k="cost" value="${escapeHtml(p.cost||"")}" placeholder="Custo/uso"${lockAttr}></label>
         <label>Ação<input data-p="${i}" data-k="action" value="${escapeHtml(p.action||"")}" placeholder="Ação"${lockAttr}></label>
@@ -1787,8 +1821,8 @@ function renderPowers(){
     save(false);
   });
   bindCollection("p",state.powers,renderPowers);
-  $$("[data-pautodel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pautodel;suppressAutoPower(state.powers[idx]);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();save(false)});
-  $$("[data-pdel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pdel;state.powers.splice(idx,1);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();save(false)});
+  $$("[data-pautodel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pautodel;suppressAutoPower(state.powers[idx]);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();recalc();save(false)});
+  $$("[data-pdel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pdel;state.powers.splice(idx,1);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();recalc();save(false)});
 }
 function currentClassPowerIds(){
   return [...new Set(currentClassLevels().flatMap(entry=>{
@@ -1936,7 +1970,8 @@ function addPowerEntry(power={}){
     cost:power.cost||"",
     action:power.action||"",
     source:power.source||"",
-    desc:power.desc||""
+    desc:power.desc||"",
+    attributeIncrease:ATTR_KEYS.includes(power.attributeIncrease)?power.attributeIncrease:""
   });
   expandedPowerCards.add(state.powers.length-1);
   renderPowers();
@@ -2729,6 +2764,7 @@ function bindCollection(prefix,arr,rerender){
     }
     entry[key]=newValue;
     if(prefix==="i"){renderInventorySummary();recalc();renderAttacks()}
+    if(prefix==="p") recalc();
     save(false);
     if(prefix==="s"||prefix==="p"||prefix==="i"||prefix==="a") rerender();
   });

@@ -80,9 +80,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Origem dos atributos:** os atributos agora detalham quais itens equipados fornecem cada bônus ou penalidade.
-2. **Atributos de itens acumuláveis:** bônus e penalidades de atributo de todos os itens equipados agora são somados.
-3. **Auditoria e segurança da nuvem:** mudanças de campanha agora têm histórico privado; políticas, permissões e índices do Supabase foram revisados.
+1. **Aumento de Atributo automático:** cada aquisição do poder permite escolher um atributo, aplica `+1` e identifica a origem na caixa correspondente.
+2. **Origem dos atributos:** os atributos agora detalham quais itens equipados fornecem cada bônus ou penalidade.
+3. **Atributos de itens acumuláveis:** bônus e penalidades de atributo de todos os itens equipados agora são somados.
 
 ## Aviso
 
