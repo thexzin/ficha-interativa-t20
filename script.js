@@ -560,19 +560,100 @@ function groupedCustomizationEntries(ids,catalog){
   return [...plain,...grouped.values()];
 }
 function inferItemCustomizations(item){
-  const data=itemCustomizationData(),text=foldItemText(`${item?.notes||""} ${item?.description||""}`);
-  if(!text) return {improvements:[],enchantments:[],material:""};
+  const empty={improvements:[],enchantments:[],material:""};
+  const catalogItem=catalogInventoryItem(item);
+  const magicCatalogs=[
+    window.T20_MAGIC_ITEM_CATALOG,
+    window.T20_EXPANSION_MAGIC_ITEM_CATALOG
+  ].filter(Array.isArray);
+  const isMagicCatalogItem=!!catalogItem&&magicCatalogs.some(catalog=>catalog.includes(catalogItem));
+  if(!isMagicCatalogItem) return empty;
+
+  const hasExplicitImprovements=Array.isArray(catalogItem.improvements);
+  const hasExplicitEnchantments=Array.isArray(catalogItem.enchantments);
+  const hasExplicitMaterial=Object.prototype.hasOwnProperty.call(catalogItem,"material");
+  if(hasExplicitImprovements||hasExplicitEnchantments||hasExplicitMaterial){
+    return {
+      improvements:hasExplicitImprovements?[...catalogItem.improvements]:[],
+      enchantments:hasExplicitEnchantments?[...catalogItem.enchantments]:[],
+      material:hasExplicitMaterial?String(catalogItem.material||""):""
+    };
+  }
+
+  const sentences=itemDescription(catalogItem).split(/\.(?:\s|$)/).map(sentence=>sentence.trim()).filter(Boolean);
+  const formula=sentences[0]?.length<20?sentences.slice(0,2).join(". "):sentences[0];
+  const data=itemCustomizationData(),text=foldItemText(formula);
+  if(!text) return empty;
   const includesName=entry=>{
     const name=foldItemText(entry.name);
-    const aliases={defensor:["defensora"],guardiao:["guardia"],protetor:["protetora"],zeloso:["zelosa"],gelido:["gelida"],caustico:["caustica"],acrobatico:["acrobatica"],ameacadora:["ameacador"]};
+    const aliases={
+      "banhado-ouro":["banhada a ouro"],
+      "cravejado-gemas":["cravejada de gemas"],
+      macabro:["macabra"],
+      precisa:["preciso"],
+      ajustada:["ajustado"],
+      defensor:["defensora"],
+      defensora:["defensor"],
+      guardiao:["guardia"],
+      protetor:["protetora"],
+      zeloso:["zelosa"],
+      gelido:["gelida"],
+      caustico:["caustica"],
+      acrobatico:["acrobatica"],
+      ameacadora:["ameacador"],
+      magnifica:["magnifico"]
+    };
+    if(entry.id==="precisa"&&/(?:\bnao\s+precisa\b|\bnunca\s+precisa\b|\bprecisa\s+de\b)/.test(text)) return false;
     return [name,...(aliases[entry.id]||[])].some(candidate=>candidate.length>4&&new RegExp(`(^|[^a-z])${candidate.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}([^a-z]|$)`).test(text));
   };
   const type=inventoryItemType(item);
+  const withPrerequisites=(ids,prerequisites)=>{
+    const result=new Set(ids);
+    let changed=true;
+    while(changed){
+      changed=false;
+      [...result].forEach(id=>{
+        const prerequisite=prerequisites[id];
+        if(prerequisite&&!result.has(prerequisite)){result.add(prerequisite);changed=true}
+      });
+    }
+    return [...result];
+  };
+  const improvements=data.improvements.filter(entry=>entry.types.includes(type)&&includesName(entry)).map(entry=>entry.id);
+  const enchantments=data.enchantments.filter(entry=>entry.types.includes(type)&&includesName(entry)).map(entry=>entry.id);
   return {
-    improvements:data.improvements.filter(entry=>entry.types.includes(type)&&includesName(entry)).map(entry=>entry.id),
-    enchantments:data.enchantments.filter(entry=>entry.types.includes(type)&&includesName(entry)).map(entry=>entry.id),
+    improvements:withPrerequisites(improvements,{pungente:"certeira",atroz:"cruel","sob-medida":"ajustada"}),
+    enchantments:withPrerequisites(enchantments,{energetica:"formidavel",magnifica:"formidavel",lancinante:"dilacerante",guardiao:"defensor"}),
     material:data.materials.find(entry=>entry.id&&entry.types.includes(type)&&includesName(entry))?.id||""
   };
+}
+function repairLegacyCatalogCustomization(item){
+  if(Number(item?.customizationInferenceVersion||0)>=2) return item;
+  const key=`${foldItemText(item?.source)}|${foldItemText(item?.name)}`;
+  const falseDefaults={
+    "jogo do ano|couro batido":{improvements:["reforcada"]},
+    "jogo do ano|armadura completa":{improvements:["sob-medida"]},
+    "jogo do ano|meia armadura":{improvements:["reforcada"]},
+    "jogo do ano|florete":{improvements:["precisa"]},
+    "jogo do ano|azagaia":{enchantments:["arremesso"]},
+    "herois de arton|armadura de justa":{improvements:["reforcada"]},
+    "herois de arton|boleadeira":{enchantments:["arremesso"]},
+    "herois de arton|montante cinetico":{material:"adamante"},
+    "herois de arton|rapieira":{improvements:["precisa"]},
+    "herois de arton|martelo leve":{enchantments:["arremesso"]},
+    "herois de arton|bastao ludico":{enchantments:["arremesso"]},
+    "herois de arton|escudo torre":{improvements:["reforcada"]}
+  };
+  const legacy=falseDefaults[key];
+  const sameIds=(current,expected)=>{
+    const a=[...(Array.isArray(current)?current:[])].sort(),b=[...(expected||[])].sort();
+    return a.length===b.length&&a.every((id,index)=>id===b[index]);
+  };
+  if(legacy?.improvements&&sameIds(item.improvements,legacy.improvements)) item.improvements=[];
+  if(legacy?.enchantments&&sameIds(item.enchantments,legacy.enchantments)) item.enchantments=[];
+  if(legacy?.material&&item.material===legacy.material) item.material="";
+  item.customizationInferenceVersion=2;
+  return item;
 }
 function itemOwnEffects(item){
   const result=emptyItemEffects(),data=itemCustomizationData(),type=inventoryItemType(item);
@@ -2610,6 +2691,7 @@ function normalizeInventoryItemDescription(item){
   normalized.improvements=Array.isArray(normalized.improvements)?normalized.improvements:inferred.improvements;
   normalized.enchantments=Array.isArray(normalized.enchantments)?normalized.enchantments:inferred.enchantments;
   normalized.material=typeof normalized.material==="string"?normalized.material:inferred.material;
+  repairLegacyCatalogCustomization(normalized);
   normalized.customizationType=String(normalized.customizationType||"");
   normalized.chosenSkill=String(normalized.chosenSkill||"");
   normalized.linkedAttackId=String(normalized.linkedAttackId||"");
