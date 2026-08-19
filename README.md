@@ -11,6 +11,7 @@ Ficha digital não oficial para **Tormenta20**, feita para uso durante sessões.
 - Suporte a multiclasse, progressão de nível e habilidades raciais automáticas.
 - Importação e exportação de fichas em JSON.
 - Interface responsiva com cards recolhíveis e organização em abas.
+- Endereços próprios para início, fichas, campanhas e abas da ficha, com suporte aos botões voltar e avançar do navegador.
 
 ## Funcionalidades
 
@@ -57,6 +58,8 @@ python -m http.server 8765
 
 Depois, acesse `http://127.0.0.1:8765/`.
 
+No Netlify, o arquivo `_redirects` já encaminha endereços como `/fichas/...` e `/campanhas/...` para a aplicação. Assim, links internos também funcionam quando abertos diretamente ou após atualizar a página.
+
 ## Salvamento
 
 - **Offline:** os personagens ficam no armazenamento do navegador.
@@ -80,9 +83,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Reordenação por arraste:** poderes e itens agora podem ser movidos livremente pela alça de três linhas, inclusive em telas de toque.
-2. **Poderes renomeáveis:** a automação de Aumento de Atributo agora permanece ativa mesmo após alterar o nome do poder.
-3. **Aumento de Atributo automático:** cada aquisição do poder permite escolher um atributo, aplica `+1` e identifica a origem na caixa correspondente.
+1. **Navegação por endereço:** início, listas, campanhas e fichas possuem URLs próprias; voltar e avançar no navegador agora percorrem essas telas normalmente.
+2. **Salvamento durante a navegação:** alterações pendentes são preservadas localmente e enviadas à nuvem antes de trocar de tela pelo histórico.
+3. **Reordenação por arraste:** poderes e itens podem ser movidos livremente pela alça de três linhas, inclusive em telas de toque.
 
 ## Aviso
 

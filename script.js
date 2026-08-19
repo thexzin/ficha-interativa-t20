@@ -89,6 +89,9 @@ let shieldSortMode="risco";
 let currentCloudReadOnly=false;
 let cloudAutosaveTimers=new Map();
 let saveStatusTimer=null;
+let browserRoutingReady=false;
+let applyingBrowserRoute=false;
+let browserRouteRequest=0;
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
 const ATTR_NAMES={FOR:"Força",DES:"Destreza",CON:"Constituição",INT:"Inteligência",SAB:"Sabedoria",CAR:"Carisma"};
@@ -3387,6 +3390,107 @@ function renderHubHome(){
     : "Exportar e importar JSON continua disponivel.";
   if($("#homeCloudActionBtn")) $("#homeCloudActionBtn").textContent=cloudUser?"Abrir fichas":"Entrar na nuvem";
 }
+function browserRouteLocation(){
+  const raw=location.protocol==="file:"&&location.hash.startsWith("#/")?location.hash.slice(1):`${location.pathname}${location.search}`;
+  return new URL(raw||"/","https://ficha.local");
+}
+function normalizedRoutePath(path="/"){
+  path=String(path||"/").trim();
+  if(!path.startsWith("/")) path=`/${path}`;
+  return path.replace(/\/{2,}/g,"/");
+}
+function writeBrowserRoute(path,{replace=false}={}){
+  if(!browserRoutingReady||applyingBrowserRoute) return;
+  const normalized=normalizedRoutePath(path),current=browserRouteLocation();
+  if(`${current.pathname}${current.search}`===normalized) return;
+  const target=location.protocol==="file:"?`#${normalized}`:normalized;
+  history[replace?"replaceState":"pushState"]({appRoute:true},"",target);
+}
+function hubRoute(section){
+  if(section==="campanhas"||section==="campanha") return "/campanhas";
+  if(section==="fichas") return "/fichas";
+  return "/";
+}
+function activeSheetTab(){
+  return $$('[data-tab]').find(button=>button.classList.contains("active"))?.dataset.tab||"resumo";
+}
+function currentSheetRoute(){
+  const remoteId=mappedCloudCharacterId();
+  const base=remoteId?`/fichas/${encodeURIComponent(remoteId)}`:currentCharacterId?`/fichas/local/${encodeURIComponent(currentCharacterId)}`:"/fichas";
+  const tab=activeSheetTab();
+  return tab&&tab!=="resumo"?`${base}?aba=${encodeURIComponent(tab)}`:base;
+}
+function activateSheetTab(tab="resumo"){
+  const safeTab=globalThis.CSS?.escape?CSS.escape(tab):String(tab).replace(/[^a-z0-9_-]/gi,"");
+  const button=$(`[data-tab="${safeTab}"]`)||$('[data-tab="resumo"]');
+  if(!button) return;
+  $$('[data-tab]').forEach(candidate=>candidate.classList.toggle("active",candidate===button));
+  $$(".tab").forEach(section=>section.classList.toggle("active",section.id===`tab-${button.dataset.tab}`));
+}
+async function flushPendingRouteSave(){
+  const remoteId=mappedCloudCharacterId();
+  if(!remoteId||!cloudAutosaveTimers.has(remoteId)||currentCloudReadOnly) return;
+  const snapshot={localId:currentCharacterId,remoteId,data:sheetDataFromCurrent()};
+  clearCloudAutosaveTimer(remoteId);
+  await saveCloudCharacterSnapshot(snapshot);
+}
+async function applyBrowserRoute({flush=false}={}){
+  if(!browserRoutingReady||document.body.classList.contains("auth-gated")) return;
+  const request=++browserRouteRequest,route=browserRouteLocation();
+  applyingBrowserRoute=true;
+  let fallback="",message="";
+  try{
+    if(flush){
+      try{
+        await flushPendingRouteSave();
+      }catch(error){
+        console.error("Falha ao salvar antes da navegação:",error);
+        markSaveWarning("Pendente na nuvem");
+        notify("A navegação continuou, mas a última alteração ainda está pendente na nuvem.");
+      }
+    }
+    if(request!==browserRouteRequest) return;
+    const pathname=route.pathname.replace(/\/+$/g,"")||"/";
+    const parts=pathname.split("/").filter(Boolean).map(part=>decodeURIComponent(part));
+    if(pathname==="/"||pathname==="/index.html"){
+      openHub("inicio",{updateRoute:false});
+    }else if(parts.length===1&&parts[0]==="fichas"){
+      openHub("fichas",{updateRoute:false});
+    }else if(parts[0]==="fichas"&&parts[1]==="local"&&parts[2]){
+      if(!localCharacterData(parts[2])) throw new Error("Ficha local não encontrada neste navegador.");
+      if(currentCharacterId!==parts[2]) switchCharacter(parts[2]);
+      openSheetView({updateRoute:false});
+      activateSheetTab(route.searchParams.get("aba")||"resumo");
+    }else if(parts[0]==="fichas"&&parts[1]&&parts.length===2){
+      if(!cloudUser) throw new Error("Entre na nuvem para abrir esta ficha.");
+      await openCloudCharacter(parts[1],{updateRoute:false});
+      activateSheetTab(route.searchParams.get("aba")||"resumo");
+    }else if(parts.length===1&&parts[0]==="campanhas"){
+      openHub("campanhas",{updateRoute:false});
+    }else if(parts[0]==="campanhas"&&parts[1]&&parts.length===2){
+      if(!cloudUser) throw new Error("Entre na nuvem para abrir esta campanha.");
+      if(!cloudCampaigns.some(campaign=>campaign.id===parts[1])) throw new Error("Campanha não encontrada ou sem permissão de acesso.");
+      openCampaignDashboard(parts[1],{updateRoute:false});
+    }else{
+      fallback="/";
+      openHub("inicio",{updateRoute:false});
+    }
+  }catch(error){
+    console.error("Falha ao abrir rota:",error);
+    const campaignRoute=route.pathname.startsWith("/campanhas/");
+    fallback=campaignRoute?"/campanhas":"/fichas";
+    message=error.message||"Não foi possível abrir este endereço.";
+    openHub(campaignRoute?"campanhas":"fichas",{updateRoute:false});
+  }finally{
+    if(request===browserRouteRequest) applyingBrowserRoute=false;
+  }
+  if(fallback) writeBrowserRoute(fallback,{replace:true});
+  if(message) notify(escapeHtml(message));
+}
+async function initializeBrowserRouting(){
+  browserRoutingReady=true;
+  await applyBrowserRoute({flush:false});
+}
 function setHubSection(section="fichas"){
   activeHubSection=section==="campanha"?"campanha":(section==="campanhas"?"campanhas":(section==="inicio"?"inicio":"fichas"));
   $("#hubHome")?.classList.toggle("hidden",activeHubSection!=="inicio");
@@ -3395,7 +3499,7 @@ function setHubSection(section="fichas"){
   $("#hubCampaignDashboard")?.classList.toggle("hidden",activeHubSection!=="campanha");
   $$("[data-hub-section]").forEach(button=>button.classList.toggle("active",button.dataset.hubSection===(activeHubSection==="campanha"?"campanhas":activeHubSection)));
 }
-function openSheetView(){
+function openSheetView(options={}){
   closeProfileMenu();
   closeSheetActionMenu();
   stopCampaignRollPolling();
@@ -3404,13 +3508,15 @@ function openSheetView(){
     setHubSection("fichas");
     renderCloudPanel();
     renderHub();
+    if(options.updateRoute!==false) writeBrowserRoute("/fichas");
     notify("Crie ou abra uma ficha para editar.");
     return;
   }
   document.body.classList.remove("hub-open");
   renderCloudPanel();
+  if(options.updateRoute!==false) writeBrowserRoute(currentSheetRoute());
 }
-function openHub(section="fichas"){
+function openHub(section="fichas",options={}){
   closeProfileMenu();
   closeSheetActionMenu();
   if(section!=="campanha") stopCampaignRollPolling();
@@ -3420,6 +3526,7 @@ function openHub(section="fichas"){
   setHubSection(section);
   renderCloudPanel();
   renderHub();
+  if(options.updateRoute!==false) writeBrowserRoute(hubRoute(section));
 }
 function hubCharacterMatches(record,query){
   if(!query) return true;
@@ -3610,7 +3717,7 @@ function renderCampaignCharacterRemovePicker(campaignOwner=false){
   select.disabled=!records.length;
   button.disabled=!records.length||!activeHubCampaignId;
 }
-function openCampaignDashboard(campaignId){
+function openCampaignDashboard(campaignId,options={}){
   if(!campaignId) return;
   closeProfileMenu();
   closeSheetActionMenu();
@@ -3624,6 +3731,7 @@ function openCampaignDashboard(campaignId){
   setHubSection("campanha");
   renderCloudPanel();
   renderHub();
+  if(options.updateRoute!==false) writeBrowserRoute(`/campanhas/${encodeURIComponent(campaignId)}`);
 }
 function sheetNum(fields,id){
   const value=Number(fields?.[id]||0);
@@ -4152,7 +4260,7 @@ async function deleteHubLocalCharacter(localId,remoteId=""){
   renderHub();
   notify("Ficha excluida.");
 }
-async function openCloudCharacter(remoteId){
+async function openCloudCharacter(remoteId,options={}){
   if(!cloudRequireLogin()) return;
   const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
@@ -4174,7 +4282,7 @@ async function openCloudCharacter(remoteId){
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id||"";
   renderAll();
-  openSheetView();
+  openSheetView({updateRoute:options.updateRoute});
   notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
 }
 function createCharacter(data,name){
@@ -4372,6 +4480,7 @@ function deleteCharacter(){
   applySheetData(raw?JSON.parse(raw):blankSheetData(""));
   renderAll();
   save(false);
+  writeBrowserRoute(currentSheetRoute(),{replace:true});
   notify("Personagem excluído.");
 }
 function resetCurrentCharacter(){
@@ -4553,7 +4662,7 @@ function enterApp(mode="offline"){
   }
   document.body.classList.remove("auth-gated");
   setSaveStatus(mode==="cloud"?"Nuvem pronta":"Modo local","idle");
-  if(wasGated) openHub("inicio");
+  if(wasGated) openHub("inicio",{updateRoute:!browserRoutingReady});
   else{renderCloudPanel();renderHub()}
 }
 function showAuthGate(){
@@ -4703,6 +4812,7 @@ async function saveCloudCharacter(show=true){
   setMappedCloudCharacterId(data.id);
   cacheLocalCharacterData(currentCharacterId,payload.sheet_data,data.name||payload.name,data.updated_at);
   await loadCloudData();
+  if(!document.body.classList.contains("hub-open")) writeBrowserRoute(currentSheetRoute(),{replace:true});
   markSaved("Salvo na nuvem");
   if(show) notify(`Ficha salva na nuvem: <b>${escapeHtml(data.name||payload.name)}</b>`);
 }
@@ -4723,6 +4833,7 @@ async function loadSelectedCloudCharacter(){
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id||"";
   renderAll();
+  openSheetView();
   notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
 }
 async function createCloudCampaign(){
@@ -5059,6 +5170,7 @@ async function cloudSignIn(){
   cloudUser=data.user||data.session?.user||null;
   enterApp("cloud");
   await loadCloudData({syncCurrent:true});
+  await initializeBrowserRouting();
   notify("Login realizado.");
 }
 async function cloudSignUp(){
@@ -5071,6 +5183,7 @@ async function cloudSignUp(){
   if(cloudUser){
     enterApp("cloud");
     await loadCloudData({syncCurrent:true});
+    await initializeBrowserRouting();
     notify("Conta criada e conectada.");
   }else{
     renderCloudPanel();
@@ -5088,6 +5201,7 @@ async function cloudSignOut(){
   setCurrentCloudReadOnly(false);
   localStorage.removeItem(AUTH_MODE_KEY);
   sessionStorage.removeItem(AUTH_MODE_KEY);
+  writeBrowserRoute("/",{replace:true});
   showAuthGate();
   notify("Saiu da nuvem.");
 }
@@ -5095,6 +5209,7 @@ async function initCloud(){
   if(!SUPABASE_URL||!SUPABASE_PUBLISHABLE_KEY||!window.supabase?.createClient){
     setCloudStatus("Indisponivel");
     if(sessionStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
+    await initializeBrowserRouting();
     return;
   }
   supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -5106,10 +5221,15 @@ async function initCloud(){
     else if(sessionStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
     else showAuthGate();
     await loadCloudData({syncCurrent:true});
+    browserRoutingReady=true;
+    if(cloudUser||sessionStorage.getItem(AUTH_MODE_KEY)==="offline") await applyBrowserRoute({flush:false});
     supabaseClient.auth.onAuthStateChange(async(_event,session)=>{
       cloudUser=session?.user||null;
       if(cloudUser) enterApp("cloud");
-      try{await loadCloudData({syncCurrent:!!cloudUser})}catch(err){console.error(err);renderCloudPanel()}
+      try{
+        await loadCloudData({syncCurrent:!!cloudUser});
+        if(cloudUser) await initializeBrowserRouting();
+      }catch(err){console.error(err);renderCloudPanel()}
     });
   }catch(err){
     console.error("Falha ao iniciar Supabase:",err);
@@ -5252,7 +5372,10 @@ $("#addClassLevelBtn")?.addEventListener("click",addClassLevel);
 $("#raca").addEventListener("change",()=>{renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
 $("#origem").addEventListener("change",()=>{refreshPowerPickerIfOpen();recalc();save(false)});
 $("#origemTab").addEventListener("change",()=>{$("#origem").value=$("#origemTab").value;refreshPowerPickerIfOpen();recalc();save(false)});
-$$("[data-tab]").forEach(b=>b.onclick=()=>{$$("[data-tab]").forEach(x=>x.classList.toggle("active",x===b));$$(".tab").forEach(t=>t.classList.toggle("active",t.id===`tab-${b.dataset.tab}`))});
+$$("[data-tab]").forEach(b=>b.onclick=()=>{
+  activateSheetTab(b.dataset.tab);
+  if(!document.body.classList.contains("hub-open")) writeBrowserRoute(currentSheetRoute(),{replace:true});
+});
 $("#activeModifiersSummary")?.addEventListener("click",()=>{$('[data-tab="modificadores"]')?.click()});
 $("#clearGlobalModifiers")?.addEventListener("click",()=>{
   if(!confirm("Zerar todos os modificadores temporários e globais?")) return;
@@ -5299,9 +5422,9 @@ $("#addBlankPartner")?.addEventListener("click",()=>{
 });
 $("#applyOriginBtn").onclick=applyOrigin;$("#addOriginBenefit").onclick=()=>{state.originBenefits.push("");renderOriginBenefits();save(false)};$("#addCustomCondition").onclick=()=>{state.customConditions.push({name:"Nova condição",active:true,effect:""});renderCustomConditions();renderConditionMini();save(false)};
 $("#addAttack").onclick=()=>{state.attacks.push(defaultAttack());expandedAttackCards.add(state.attacks.length-1);renderAttacks();save(false)};
-$("#characterSelect").onchange=e=>switchCharacter(e.target.value);
-$("#newCharacterBtn").onclick=newCharacter;
-$("#duplicateCharacterBtn").onclick=duplicateCharacter;
+$("#characterSelect").onchange=e=>{switchCharacter(e.target.value);openSheetView()};
+$("#newCharacterBtn").onclick=()=>{newCharacter();openSheetView()};
+$("#duplicateCharacterBtn").onclick=()=>{duplicateCharacter();openSheetView()};
 $("#renameCharacterBtn").onclick=renameCharacter;
 $("#deleteCharacterBtn").onclick=deleteCharacter;
 function saveFromHeader(){
@@ -5310,7 +5433,7 @@ function saveFromHeader(){
 $("#saveBtn").onclick=saveFromHeader;
 $("#cloudSignInBtn")?.addEventListener("click",()=>runCloudAction(cloudSignIn));
 $("#cloudSignUpBtn")?.addEventListener("click",()=>runCloudAction(cloudSignUp));
-$("#offlineModeBtn")?.addEventListener("click",()=>enterApp("offline"));
+$("#offlineModeBtn")?.addEventListener("click",async()=>{enterApp("offline");await initializeBrowserRouting()});
 $("#cloudOpenLoginBtn")?.addEventListener("click",()=>{
   localStorage.removeItem(AUTH_MODE_KEY);
   sessionStorage.removeItem(AUTH_MODE_KEY);
@@ -5489,4 +5612,10 @@ $("#importInput").onchange=e=>{
   };
   r.readAsText(f);
 };
+window.addEventListener("popstate",()=>{
+  applyBrowserRoute({flush:true}).catch(error=>{
+    console.error("Falha ao navegar pelo histórico:",error);
+    notify("Não foi possível abrir a página anterior.");
+  });
+});
 initCloud();
