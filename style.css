@@ -23,6 +23,8 @@ body.hub-open .sheetActionMenu{display:none}
 button,.fileBtn,input,select,textarea{font:inherit}button,.fileBtn{border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:.65rem .85rem;border-radius:9px;cursor:pointer}button:hover,.fileBtn:hover{border-color:var(--gold)}.danger{background:var(--red)}
 input,select,textarea{width:100%;border:1px solid var(--line);background:#17130f;color:var(--text);border-radius:8px;padding:.68rem}textarea{resize:vertical}label{display:grid;gap:.35rem;color:var(--muted);font-size:.84rem}
 body.cloud-readonly .wrap input:disabled,body.cloud-readonly .wrap select:disabled,body.cloud-readonly .wrap textarea:disabled{opacity:.78;background:#120f0c;color:#d7c8ae;cursor:not-allowed}
+body.public-view .sheetActionMenu{display:none}
+body.public-view .saveStatus span{color:var(--gold)}
 .authGate{min-height:100vh;display:grid;align-items:center;background:radial-gradient(circle at 50% 0,rgba(141,43,40,.24),transparent 34%),linear-gradient(180deg,#100d0b,var(--bg));padding:3rem 4vw}
 .authShell{width:min(1180px,100%);margin:0 auto;display:grid}
 .authLayout{display:grid;grid-template-columns:minmax(320px,1fr) minmax(340px,460px);gap:2rem;align-items:start}

@@ -44,6 +44,8 @@ Armas, armaduras, escudos e esotéricos aceitam melhorias, materiais especiais e
 
 Com Supabase configurado, cada usuário pode salvar fichas na nuvem, criar ou entrar em campanhas por convite e vincular personagens. O mestre pode gerenciar fichas da campanha, criar fichas ocultas e acompanhar PV, PM, Defesa, condições e rolagens pelo Escudo do Mestre.
 
+O dono também pode ativar um link público para uma ficha. Visitantes abrem esse endereço sem conta em modo somente leitura, e o mesmo link pode ser revogado a qualquer momento. Fichas ocultas de campanha nunca entram nesse compartilhamento.
+
 As permissões usam Row-Level Security. O dono edita sua ficha, outros jogadores acessam fichas permitidas em modo somente leitura e recursos do mestre ficam restritos ao criador da campanha.
 
 ## Como executar
@@ -66,7 +68,7 @@ No Netlify, o arquivo `_redirects` já encaminha endereços como `/fichas/...` e
 - **Nuvem:** após o login, o Supabase se torna o destino principal.
 - **Backup:** `Exportar JSON` e `Importar JSON` funcionam nos dois modos.
 
-Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e deixe `supabase_permissions.sql` por último.
+Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas e pelo compartilhamento público. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e deixe `supabase_permissions.sql` por último.
 
 ## Arquivos principais
 
@@ -83,9 +85,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Navegação por endereço:** início, listas, campanhas e fichas possuem URLs próprias; voltar e avançar no navegador agora percorrem essas telas normalmente.
-2. **Salvamento durante a navegação:** alterações pendentes são preservadas localmente e enviadas à nuvem antes de trocar de tela pelo histórico.
-3. **Reordenação por arraste:** poderes e itens podem ser movidos livremente pela alça de três linhas, inclusive em telas de toque.
+1. **Compartilhamento público:** o dono pode ativar, copiar e revogar um link anônimo de visualização somente leitura para uma ficha.
+2. **Links internos corrigidos:** fichas e campanhas abertas por URL carregam estilos, scripts e imagens normalmente em rotas profundas do Netlify.
+3. **Navegação por endereço:** início, listas, campanhas e fichas possuem URLs próprias; voltar e avançar no navegador agora percorrem essas telas normalmente.
 
 ## Aviso
 

@@ -92,6 +92,7 @@ let saveStatusTimer=null;
 let browserRoutingReady=false;
 let applyingBrowserRoute=false;
 let browserRouteRequest=0;
+let publicViewCharacter=null;
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
 const ATTR_NAMES={FOR:"Força",DES:"Destreza",CON:"Constituição",INT:"Inteligência",SAB:"Sabedoria",CAR:"Carisma"};
@@ -3242,7 +3243,7 @@ function renderSheetCampaignShortcut(){
   const button=$("#actionOpenCampaignBtn");
   if(!button) return;
   const campaignId=currentLinkedCampaignId();
-  button.classList.toggle("hidden",!cloudFirstMode());
+  button.classList.toggle("hidden",!cloudFirstMode()||publicViewActive());
   button.disabled=!campaignId;
   button.textContent=campaignId?"Abrir campanha vinculada":"Sem campanha vinculada";
 }
@@ -3394,6 +3395,12 @@ function browserRouteLocation(){
   const raw=location.protocol==="file:"&&location.hash.startsWith("#/")?location.hash.slice(1):`${location.pathname}${location.search}`;
   return new URL(raw||"/","https://ficha.local");
 }
+function publicViewActive(){return !!publicViewCharacter?.id}
+function routedCloudCharacterId(route=browserRouteLocation()){
+  const parts=route.pathname.replace(/\/+$/g,"").split("/").filter(Boolean);
+  if(parts.length!==2||parts[0]!=="fichas"||parts[1]==="local") return "";
+  try{return decodeURIComponent(parts[1])}catch{return ""}
+}
 function normalizedRoutePath(path="/"){
   path=String(path||"/").trim();
   if(!path.startsWith("/")) path=`/${path}`;
@@ -3415,6 +3422,11 @@ function activeSheetTab(){
   return $$('[data-tab]').find(button=>button.classList.contains("active"))?.dataset.tab||"resumo";
 }
 function currentSheetRoute(){
+  if(publicViewActive()){
+    const base=`/fichas/${encodeURIComponent(publicViewCharacter.id)}`;
+    const tab=activeSheetTab();
+    return tab&&tab!=="resumo"?`${base}?aba=${encodeURIComponent(tab)}`:base;
+  }
   const remoteId=mappedCloudCharacterId();
   const base=remoteId?`/fichas/${encodeURIComponent(remoteId)}`:currentCharacterId?`/fichas/local/${encodeURIComponent(currentCharacterId)}`:"/fichas";
   const tab=activeSheetTab();
@@ -3435,7 +3447,7 @@ async function flushPendingRouteSave(){
   await saveCloudCharacterSnapshot(snapshot);
 }
 async function applyBrowserRoute({flush=false}={}){
-  if(!browserRoutingReady||document.body.classList.contains("auth-gated")) return;
+  if(!browserRoutingReady) return;
   const request=++browserRouteRequest,route=browserRouteLocation();
   applyingBrowserRoute=true;
   let fallback="",message="";
@@ -3462,8 +3474,16 @@ async function applyBrowserRoute({flush=false}={}){
       openSheetView({updateRoute:false});
       activateSheetTab(route.searchParams.get("aba")||"resumo");
     }else if(parts[0]==="fichas"&&parts[1]&&parts.length===2){
-      if(!cloudUser) throw new Error("Entre na nuvem para abrir esta ficha.");
-      await openCloudCharacter(parts[1],{updateRoute:false});
+      if(cloudUser){
+        try{
+          await openCloudCharacter(parts[1],{updateRoute:false});
+        }catch(error){
+          console.warn("Ficha sem acesso autenticado; tentando link público.",error);
+          await openPublicCloudCharacter(parts[1],{updateRoute:false});
+        }
+      }else{
+        await openPublicCloudCharacter(parts[1],{updateRoute:false});
+      }
       activateSheetTab(route.searchParams.get("aba")||"resumo");
     }else if(parts.length===1&&parts[0]==="campanhas"){
       openHub("campanhas",{updateRoute:false});
@@ -3499,11 +3519,19 @@ function setHubSection(section="fichas"){
   $("#hubCampaignDashboard")?.classList.toggle("hidden",activeHubSection!=="campanha");
   $$("[data-hub-section]").forEach(button=>button.classList.toggle("active",button.dataset.hubSection===(activeHubSection==="campanha"?"campanhas":activeHubSection)));
 }
+function leavePublicView(){
+  if(!publicViewActive()) return;
+  publicViewCharacter=null;
+  document.body.classList.remove("public-view");
+  setCurrentCloudReadOnly(false);
+  load();
+  renderAll();
+}
 function openSheetView(options={}){
   closeProfileMenu();
   closeSheetActionMenu();
   stopCampaignRollPolling();
-  if(!currentCharacterId){
+  if(!currentCharacterId&&!publicViewActive()){
     document.body.classList.add("hub-open");
     setHubSection("fichas");
     renderCloudPanel();
@@ -3520,7 +3548,14 @@ function openHub(section="fichas",options={}){
   closeProfileMenu();
   closeSheetActionMenu();
   if(section!=="campanha") stopCampaignRollPolling();
-  if(!document.body.classList.contains("auth-gated")&&!document.body.classList.contains("hub-open")) save(false);
+  const wasPublic=publicViewActive();
+  if(!wasPublic&&!document.body.classList.contains("auth-gated")&&!document.body.classList.contains("hub-open")) save(false);
+  if(wasPublic) leavePublicView();
+  if(wasPublic&&!cloudUser&&sessionStorage.getItem(AUTH_MODE_KEY)!=="offline"){
+    if(options.updateRoute!==false) writeBrowserRoute(hubRoute(section));
+    showAuthGate();
+    return;
+  }
   if(section==="inicio"||section==="fichas"||section==="campanhas") activeHubCampaignId="";
   document.body.classList.add("hub-open");
   setHubSection(section);
@@ -4260,9 +4295,32 @@ async function deleteHubLocalCharacter(localId,remoteId=""){
   renderHub();
   notify("Ficha excluida.");
 }
+async function openPublicCloudCharacter(remoteId,options={}){
+  if(!supabaseClient||!remoteId) throw new Error("Compartilhamento público indisponível.");
+  const {data,error}=await supabaseClient
+    .rpc("get_public_character",{character_uuid:remoteId})
+    .maybeSingle();
+  if(error) throw error;
+  if(!data) throw new Error("Este link público não está ativo ou a ficha não existe.");
+  publicViewCharacter={
+    id:data.id,
+    name:data.name||"Personagem",
+    player_name:data.player_name||"",
+    updated_at:data.updated_at||""
+  };
+  applySheetData(data.sheet_data||{});
+  document.body.classList.remove("auth-gated","hub-open");
+  document.body.classList.add("public-view");
+  setCurrentCloudReadOnly(true);
+  renderAll();
+  openSheetView({updateRoute:options.updateRoute});
+  setSaveStatus("Visualização pública","idle");
+  notify(`Ficha pública de <b>${escapeHtml(publicViewCharacter.name)}</b> aberta em modo somente leitura.`);
+}
 async function openCloudCharacter(remoteId,options={}){
   if(!cloudRequireLogin()) return;
-  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_private,updated_at").eq("id",remoteId).single();
+  if(publicViewActive()) leavePublicView();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   const currentRemoteId=mappedCloudCharacterId();
   if(currentRemoteId&&currentRemoteId!==remoteId) save(false);
@@ -4378,6 +4436,10 @@ function cacheLocalCharacterData(localId,data,name="",updatedAt=""){
   writeCharacterIndex({...index,activeId:currentCharacterId||localId});
 }
 function save(show=true){
+  if(publicViewActive()){
+    if(show) notify("Esta ficha pública está em modo somente leitura.");
+    return;
+  }
   if(cloudFirstMode()){
     if(show) return runCloudAction(()=>saveCloudCharacter(true));
     if(!mappedCloudCharacterId()){
@@ -4642,14 +4704,17 @@ function toggleSheetActionMenu(){
 }
 function renderProfileMenu(){
   const signedIn=!!cloudUser;
-  const label=signedIn?(cloudUser.email||"Conectado"):"Offline";
-  const status=signedIn?(currentCloudReadOnly?"Somente leitura":"Nuvem conectada"):"Modo local";
+  const label=publicViewActive()?"Visitante":(signedIn?(cloudUser.email||"Conectado"):"Offline");
+  const status=publicViewActive()?"Ficha pública":(signedIn?(currentCloudReadOnly?"Somente leitura":"Nuvem conectada"):"Modo local");
   const initial=(label.trim()[0]||"?").toUpperCase();
   if($("#profileName")) $("#profileName").textContent=label;
   if($("#profileStatus")) $("#profileStatus").textContent=status;
   if($("#profileAvatar")) $("#profileAvatar").textContent=initial;
   $("#profileCloudBtn")?.classList.toggle("hidden",signedIn);
-  if($("#profileLogoutBtn")) $("#profileLogoutBtn").textContent=signedIn?"Logout":"Sair";
+  if($("#profileLogoutBtn")){
+    $("#profileLogoutBtn").classList.toggle("hidden",publicViewActive());
+    $("#profileLogoutBtn").textContent=signedIn?"Logout":"Sair";
+  }
 }
 function enterApp(mode="offline"){
   const wasGated=document.body.classList.contains("auth-gated");
@@ -4705,6 +4770,15 @@ function renderCloudPanel(){
     actionSaveCloudButton.disabled=currentCloudReadOnly;
     actionSaveCloudButton.title=currentCloudReadOnly?"Somente o dono pode salvar esta ficha na nuvem":"";
   }
+  const currentCharacter=currentCloudCharacterMeta();
+  const canShare=!!(signedIn&&currentCharacter&&isOwnCloudCharacter(currentCharacter)&&!currentCloudReadOnly&&!isPrivateCloudCharacter(currentCharacter));
+  const shareButton=$("#actionShareCharacterBtn");
+  if(shareButton){
+    shareButton.classList.toggle("hidden",!canShare);
+    shareButton.textContent=currentCharacter?.is_public?"Copiar link público":"Ativar link público";
+  }
+  const disableShareButton=$("#actionDisableShareBtn");
+  if(disableShareButton) disableShareButton.classList.toggle("hidden",!canShare||!currentCharacter?.is_public);
 }
 function syncCurrentCharacterFromCloud(){
   const remoteId=mappedCloudCharacterId();
@@ -4733,7 +4807,7 @@ async function loadCloudData(options={}){
     renderHub();
     return;
   }
-  const characterColumns="id,owner_id,name,player_name,campaign_id,is_private,updated_at,sheet_data";
+  const characterColumns="id,owner_id,name,player_name,campaign_id,is_public,is_private,updated_at,sheet_data";
   let [{data:campaigns,error:campaignError},{data:characters,error:characterError}]=await Promise.all([
     supabaseClient.from("campaigns").select("id,owner_id,name,invite_code,updated_at").order("updated_at",{ascending:false}),
     supabaseClient.from("characters").select(characterColumns).order("updated_at",{ascending:false})
@@ -4742,7 +4816,7 @@ async function loadCloudData(options={}){
   if(characterError&&/is_private|column/i.test(String(characterError.message||""))){
     const fallback=await supabaseClient
       .from("characters")
-      .select("id,owner_id,name,player_name,campaign_id,updated_at,sheet_data")
+      .select("id,owner_id,name,player_name,campaign_id,is_public,updated_at,sheet_data")
       .order("updated_at",{ascending:false});
     characters=(fallback.data||[]).map(character=>({...character,is_private:false}));
     characterError=fallback.error;
@@ -4816,11 +4890,60 @@ async function saveCloudCharacter(show=true){
   markSaved("Salvo na nuvem");
   if(show) notify(`Ficha salva na nuvem: <b>${escapeHtml(data.name||payload.name)}</b>`);
 }
+function publicCharacterShareUrl(remoteId){
+  const hosted=/^https?:$/.test(location.protocol)&&!['localhost','127.0.0.1'].includes(location.hostname);
+  const origin=hosted?location.origin:"https://fichatormenta20.netlify.app";
+  return `${origin}/fichas/${encodeURIComponent(remoteId)}`;
+}
+async function copyPublicCharacterLink(remoteId){
+  const url=publicCharacterShareUrl(remoteId);
+  try{
+    await navigator.clipboard.writeText(url);
+    notify("Link público copiado. Qualquer pessoa com o endereço poderá visualizar a ficha em modo somente leitura.");
+  }catch{
+    prompt("Copie o link público da ficha:",url);
+  }
+}
+async function shareCurrentCloudCharacter(){
+  if(!cloudRequireLogin()||currentCloudReadOnly) return;
+  await saveCloudCharacter(false);
+  const remoteId=mappedCloudCharacterId();
+  const character=currentCloudCharacterMeta(remoteId);
+  if(!remoteId||!character) throw new Error("Salve a ficha na nuvem antes de compartilhar.");
+  if(isPrivateCloudCharacter(character)) throw new Error("Fichas ocultas de campanha não podem ser compartilhadas publicamente.");
+  if(!character.is_public){
+    const {error}=await supabaseClient
+      .from("characters")
+      .update({is_public:true,updated_at:new Date().toISOString()})
+      .eq("id",remoteId)
+      .eq("owner_id",cloudUser.id);
+    if(error) throw error;
+    await loadCloudData();
+  }
+  renderCloudPanel();
+  await copyPublicCharacterLink(remoteId);
+}
+async function disableCurrentCharacterShare(){
+  if(!cloudRequireLogin()||currentCloudReadOnly) return;
+  const remoteId=mappedCloudCharacterId();
+  const character=currentCloudCharacterMeta(remoteId);
+  if(!remoteId||!character?.is_public) return;
+  if(!confirm("Desativar o link público desta ficha? Quem tiver o endereço deixará de conseguir visualizá-la.")) return;
+  const {error}=await supabaseClient
+    .from("characters")
+    .update({is_public:false,updated_at:new Date().toISOString()})
+    .eq("id",remoteId)
+    .eq("owner_id",cloudUser.id);
+  if(error) throw error;
+  await loadCloudData();
+  renderCloudPanel();
+  notify("Link público desativado.");
+}
 async function loadSelectedCloudCharacter(){
   if(!cloudRequireLogin()) return;
   const remoteId=value("cloudCharacterSelect");
   if(!remoteId){notify("Escolha uma ficha da nuvem para carregar.");return}
-  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_private,updated_at").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   if(!confirm(`Carregar "${data.name||"personagem"}" da nuvem e substituir a ficha atual neste navegador?`)) return;
   const currentRemoteId=mappedCloudCharacterId();
@@ -5199,6 +5322,7 @@ async function cloudSignOut(){
   cloudCharacters=[];
   cloudCampaigns=[];
   setCurrentCloudReadOnly(false);
+  if(publicViewActive()) leavePublicView();
   localStorage.removeItem(AUTH_MODE_KEY);
   sessionStorage.removeItem(AUTH_MODE_KEY);
   writeBrowserRoute("/",{replace:true});
@@ -5222,7 +5346,7 @@ async function initCloud(){
     else showAuthGate();
     await loadCloudData({syncCurrent:true});
     browserRoutingReady=true;
-    if(cloudUser||sessionStorage.getItem(AUTH_MODE_KEY)==="offline") await applyBrowserRoute({flush:false});
+    if(cloudUser||sessionStorage.getItem(AUTH_MODE_KEY)==="offline"||routedCloudCharacterId()) await applyBrowserRoute({flush:false});
     supabaseClient.auth.onAuthStateChange(async(_event,session)=>{
       cloudUser=session?.user||null;
       if(cloudUser) enterApp("cloud");
@@ -5499,6 +5623,14 @@ $("#actionOpenCampaignBtn")?.addEventListener("click",()=>{
 $("#actionSaveCloudBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
   runCloudAction(()=>saveCloudCharacter(true));
+});
+$("#actionShareCharacterBtn")?.addEventListener("click",()=>{
+  closeSheetActionMenu();
+  runCloudAction(shareCurrentCloudCharacter);
+});
+$("#actionDisableShareBtn")?.addEventListener("click",()=>{
+  closeSheetActionMenu();
+  runCloudAction(disableCurrentCharacterShare);
 });
 $("#actionLinkCampaignBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
