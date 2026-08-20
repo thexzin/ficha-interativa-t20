@@ -992,7 +992,7 @@ function rollAttackDamage(attack){
   const title=escapeHtml(attack.name||"Ataque");
   const baseDamageLine=escapeHtml(baseDamage.details.join(" + "));
   const extraDamageLine=extraDamage.details.length?`<br>Dano extra: ${escapeHtml(extraDamage.details.join(" + "))}`:"";
-  const damageAttrLine=damageAttr?`<br>Atributo no dano: ${damageAttr} ${signedNumber(damageAttrBonus)}`:"";
+  const damageAttrLine=damageAttr?`<br>Atributo no dano: ${damageAttr} (${signedNumber(damageAttrBonus)})`:"";
   const globalDamageLine=globalDamage?`<br>Dano global: ${signedNumber(globalDamage)}`:"";
   const itemDamageLine=itemDamage?`<br>Item equipado: ${signedNumber(itemDamage)} dano`:"";
   const itemAttackLine=attackBreakdown.itemBonus?`<br>Bônus do item: ${signedNumber(attackBreakdown.itemBonus)} ataque`:"";
@@ -1013,7 +1013,7 @@ function rollAttackDamage(attack){
     bonus,
     totalAttack,
     totalDamage:damage.total,
-    damageDetails:`Ataque ${attackDice.mode}: [${attackDice.rolls.join(", ")}] | Base: ${baseDamage.details.join(" + ")}${extraDamage.details.length?` | Extra: ${extraDamage.details.join(" + ")}`:""}${damageAttr?` | ${damageAttr}: ${signedNumber(damageAttrBonus)}`:""}${globalDamage?` | Global: ${signedNumber(globalDamage)}`:""}`,
+    damageDetails:`Ataque ${attackDice.mode}: [${attackDice.rolls.join(", ")}] | Base: ${baseDamage.details.join(" + ")}${extraDamage.details.length?` | Extra: ${extraDamage.details.join(" + ")}`:""}${damageAttr?` | ${damageAttr} (${signedNumber(damageAttrBonus)})`:""}${globalDamage?` | Global: ${signedNumber(globalDamage)}`:""}`,
     isCritical,
     isFumble,
     critical,
@@ -2821,7 +2821,7 @@ function refreshAttackSummaries(){
     const breakdown=attackBonusBreakdown(normalized);
     const itemFx=breakdown.itemFx||emptyItemEffects();
     const damageAttr=ATTR_KEYS.includes(normalized.damageAttr)?normalized.damageAttr:"";
-    const extra=[String(normalized.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} ${signedNumber(permanentAttrNum(damageAttr))}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
+    const extra=[String(normalized.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(permanentAttrNum(damageAttr))})`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
     const parsed=parseCritical(normalized.crit,normalized.mult),margin=21-parsed.threshold;
     const itemMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?margin:0);
     const linkedItems=linkedAttackItems(normalized),linkedNames=linkedItems.map(item=>item.name||"Arma sem nome").join(", ");
@@ -2846,7 +2846,7 @@ function renderAttackCard(a,i){
   const damage=escapeHtml(a.damage||"sem dano");
   const extraDamage=escapeHtml(a.extraDamage||"");
   const damageAttr=ATTR_KEYS.includes(a.damageAttr)?a.damageAttr:"";
-  const extraSummary=[String(a.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} ${signedNumber(permanentAttrNum(damageAttr))}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
+  const extraSummary=[String(a.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(permanentAttrNum(damageAttr))})`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
   const critFlat=a.critFlat===true;
   const parsedCrit=parseCritical(a.crit,a.mult),baseMargin=21-parsedCrit.threshold;
   const itemCritMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?baseMargin:0);
