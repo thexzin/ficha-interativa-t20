@@ -368,6 +368,47 @@ function foldItemText(text){
 function itemCustomizationData(){
   return window.T20_ITEM_CUSTOMIZATION||{improvements:[],materials:[],enchantments:[],presetEffects:{}};
 }
+const ITEM_MOD_PREREQUISITES={
+  improvement:{
+    pungente:"certeira",atroz:"cruel","sob-medida":"ajustada",balistico:"reforcada",
+    farpada:"cruel",potencializador:"canalizador",penetrante:"cruel",devotado:"inscrito"
+  },
+  enchantment:{
+    energetica:"formidavel",magnifica:"formidavel",lancinante:"dilacerante",guardiao:"defensor",
+    cronal:"formidavel",manafaga:"formidavel",reflexiva:"cristalina",sepulcral:"tumular",
+    anulador:"abascanto",estigio:"abencoado"
+  }
+};
+const ITEM_MOD_REQUIRES_ANY={improvement:{deslumbrante:["banhado-ouro","cravejado-gemas"]},enchantment:{}};
+const ITEM_MOD_REQUIRES_OTHER={improvement:new Set(),enchantment:new Set(["implacavel","majestoso","pulverizante"])};
+const ITEM_MOD_INCOMPATIBLE={
+  improvement:{brasonado:["discreto"],discreto:["brasonado"]},
+  enchantment:{khalmyrita:["nimbico"],nimbico:["khalmyrita"],pulverizante:["contido"],contido:["pulverizante"]}
+};
+function modificationSlots(ids,kind){
+  const result=new Set(Array.isArray(ids)?ids:[]),prerequisites=ITEM_MOD_PREREQUISITES[kind]||{};
+  let changed=true;
+  while(changed){
+    changed=false;
+    [...result].forEach(id=>{const required=prerequisites[id];if(required&&!result.has(required)){result.add(required);changed=true}});
+  }
+  return result.size;
+}
+function modificationAdditions(kind,id,current=[]){
+  const selected=new Set(current),incompatible=(ITEM_MOD_INCOMPATIBLE[kind]?.[id]||[]).find(other=>selected.has(other));
+  if(incompatible) return {error:"Esta opção é incompatível com uma modificação já aplicada."};
+  const any=ITEM_MOD_REQUIRES_ANY[kind]?.[id];
+  if(any&&!any.some(required=>selected.has(required))) return {error:"Aplique primeiro uma das melhorias indicadas no pré-requisito."};
+  if(ITEM_MOD_REQUIRES_OTHER[kind]?.has(id)&&selected.size===0) return {error:"Este encanto exige que o item já possua outro encanto."};
+  const additions=[];
+  const add=next=>{
+    const required=ITEM_MOD_PREREQUISITES[kind]?.[next];
+    if(required&&!selected.has(required)&&!additions.includes(required)) add(required);
+    if(!selected.has(next)&&!additions.includes(next)) additions.push(next);
+  };
+  add(id);
+  return {additions};
+}
 function inventoryItemType(item){
   if(["weapon","armor","shield","esoteric","tool","clothing","accessory","other"].includes(item?.customizationType)) return item.customizationType;
   const category=foldItemText(item?.category);
@@ -377,6 +418,7 @@ function inventoryItemType(item){
     return "armor";
   }
   if(category.includes("escudo")) return "shield";
+  if(category.includes("municao")) return "weapon";
   if(category.includes("armadura")) return "armor";
   if(category.includes("arma")&&!category.includes("armadura")) return "weapon";
   if(category.includes("esoter")) return "esoteric";
@@ -405,14 +447,10 @@ function formatItemPrice(amount){
   return `T$ ${Number(amount).toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2})}`;
 }
 function itemSuperiorSlots(item){
-  return new Set(Array.isArray(item?.improvements)?item.improvements:[]).size+(item?.material?1:0);
+  return modificationSlots(item?.improvements,"improvement")+(item?.material?1:0);
 }
 function itemEnchantmentSlots(item){
-  const ids=new Set(Array.isArray(item?.enchantments)?item.enchantments:[]);
-  const prerequisites={energetica:"formidavel",lancinante:"dilacerante",magnifica:"formidavel",guardiao:"defensor"};
-  let slots=ids.size;
-  Object.entries(prerequisites).forEach(([id,prerequisite])=>{if(ids.has(id)&&!ids.has(prerequisite)) slots++});
-  return slots;
+  return modificationSlots(item?.enchantments,"enchantment");
 }
 function materialPriceCategory(item){
   const type=inventoryItemType(item);
@@ -424,8 +462,10 @@ function customizationPriceParts(item){
   const superiorSlots=itemSuperiorSlots(item),enchantmentSlots=itemEnchantmentSlots(item);
   const improvementCost=Number(improvementTable[Math.min(superiorSlots,improvementTable.length-1)]||0);
   const enchantmentCost=Number(enchantmentTable[Math.min(enchantmentSlots,enchantmentTable.length-1)]||0);
-  const materialCost=Number(pricing.materials?.[materialPriceCategory(item)]?.[item?.material]||0);
-  return {superiorSlots,enchantmentSlots,improvementCost,materialCost,enchantmentCost};
+  const materialId=String(item?.material||""),materialPrices=pricing.materials?.[materialPriceCategory(item)]||{};
+  const materialPriced=!materialId||Object.prototype.hasOwnProperty.call(materialPrices,materialId);
+  const materialCost=materialPriced?Number(materialPrices[materialId]||0):0;
+  return {superiorSlots,enchantmentSlots,improvementCost,materialId,materialPriced,materialCost,enchantmentCost};
 }
 function catalogPricingBaseline(item){
   const catalogItem=catalogInventoryItem(item);
@@ -441,11 +481,13 @@ function itemPriceDetails(item){
   const registered=itemPriceNumber(item?.price),automatic=item?.priceAuto!==false&&registered!==null;
   const current=customizationPriceParts(item),baseline=catalogPricingBaseline(item);
   const improvementAdjustment=Math.max(0,current.improvementCost-baseline.improvementCost);
-  const materialAdjustment=Math.max(0,current.materialCost-baseline.materialCost);
+  const materialNeedsManual=!!current.materialId&&!current.materialPriced&&current.materialId!==baseline.materialId;
+  const materialAdjustment=materialNeedsManual?0:Math.max(0,current.materialCost-baseline.materialCost);
   const enchantmentAdjustment=Math.max(0,current.enchantmentCost-baseline.enchantmentCost);
   const totalAdjustment=improvementAdjustment+materialAdjustment+enchantmentAdjustment;
   const final=registered===null?null:(automatic?Math.max(0,registered+totalAdjustment):registered);
-  return {registered,automatic,current,baseline,improvementAdjustment,materialAdjustment,enchantmentAdjustment,totalAdjustment,final,display:final===null?String(item?.price||""):formatItemPrice(final)};
+  const display=final===null?String(item?.price||""):`${formatItemPrice(final)}${automatic&&materialNeedsManual?" + material":""}`;
+  return {registered,automatic,current,baseline,materialNeedsManual,improvementAdjustment,materialAdjustment,enchantmentAdjustment,totalAdjustment,final,display};
 }
 function itemPriceBreakdownHtml(item){
   const details=itemPriceDetails(item);
@@ -456,11 +498,11 @@ function itemPriceBreakdownHtml(item){
     <span aria-hidden="true">${details.improvementAdjustment<0?"-":"+"}</span>
     <div><small>Melhorias</small><strong>${formatItemPrice(Math.abs(details.improvementAdjustment))}</strong></div>
     <span aria-hidden="true">${details.materialAdjustment<0?"-":"+"}</span>
-    <div><small>Material</small><strong>${formatItemPrice(Math.abs(details.materialAdjustment))}</strong></div>
+    <div><small>Material</small><strong>${details.materialNeedsManual?"Preço manual":formatItemPrice(Math.abs(details.materialAdjustment))}</strong></div>
     <span aria-hidden="true">${details.enchantmentAdjustment<0?"-":"+"}</span>
     <div><small>Encantos</small><strong>${formatItemPrice(Math.abs(details.enchantmentAdjustment))}</strong></div>
     <span aria-hidden="true">=</span>
-    <div class="itemPriceTotal"><small>Preço final</small><strong>${formatItemPrice(details.final)}</strong></div>
+    <div class="itemPriceTotal"><small>${details.materialNeedsManual?"Subtotal":"Preço final"}</small><strong>${formatItemPrice(details.final)}${details.materialNeedsManual?" + material":""}</strong></div>
   </div>`;
 }
 function allInventoryCatalogEntries(){
@@ -512,7 +554,7 @@ function baseProtectionStats(item){
   };
 }
 function emptyItemEffects(){
-  return {attrs:{},skills:{},attack:0,damage:0,extraDamage:[],defense:0,rd:0,resistance:0,armorPenalty:0,spellCd:0,pmLimit:0,pvMax:0,pmMax:0,load:0,spaces:0,critRange:0,critMultiplier:0,doubleThreat:false};
+  return {attrs:{},skills:{},attack:0,damage:0,extraDamage:[],defense:0,rd:0,resistance:0,armorPenalty:0,spellCd:0,pmLimit:0,pvMax:0,pmMax:0,load:0,spaces:0,setSpaces:null,critRange:0,critMultiplier:0,doubleThreat:false};
 }
 function normalizedManualItemEffects(value){
   const source=value&&typeof value==="object"?value:{};
@@ -533,6 +575,7 @@ function mergeEffectInto(target,effect={}){
   }
   if(effect.extraDamage) target.extraDamage.push(...(Array.isArray(effect.extraDamage)?effect.extraDamage:[effect.extraDamage]));
   if(effect.extraDamageFlat) target.extraDamage.push(String(effect.extraDamageFlat));
+  if(effect.setSpaces!==null&&effect.setSpaces!==undefined&&Number.isFinite(Number(effect.setSpaces))) target.setSpaces=Math.max(0,Number(effect.setSpaces));
   if(effect.doubleThreat) target.doubleThreat=true;
   return target;
 }
@@ -661,8 +704,8 @@ function inferItemCustomizations(item){
   const improvements=data.improvements.filter(entry=>entry.types.includes(type)&&includesName(entry)).map(entry=>entry.id);
   const enchantments=data.enchantments.filter(entry=>entry.types.includes(type)&&includesName(entry)).map(entry=>entry.id);
   return {
-    improvements:withPrerequisites(improvements,{pungente:"certeira",atroz:"cruel","sob-medida":"ajustada"}),
-    enchantments:withPrerequisites(enchantments,{energetica:"formidavel",magnifica:"formidavel",lancinante:"dilacerante",guardiao:"defensor"}),
+    improvements:withPrerequisites(improvements,ITEM_MOD_PREREQUISITES.improvement),
+    enchantments:withPrerequisites(enchantments,ITEM_MOD_PREREQUISITES.enchantment),
     material:data.materials.find(entry=>entry.id&&entry.types.includes(type)&&includesName(entry))?.id||""
   };
 }
@@ -699,10 +742,15 @@ function itemOwnEffects(item){
   const protection=baseProtectionStats(item);
   result.defense+=protection.defense;
   result.armorPenalty+=protection.armorPenalty;
-  groupedCustomizationEntries(item?.improvements,data.improvements).filter(entry=>entry.types.includes(type)).forEach(entry=>mergeEffectInto(result,entry.effects));
-  groupedCustomizationEntries(item?.enchantments,data.enchantments).filter(entry=>entry.types.includes(type)).forEach(entry=>mergeEffectInto(result,entry.effects));
+  const applyCustomizationEntry=entry=>{
+    mergeEffectInto(result,entry.effects);
+    mergeEffectInto(result,entry.effectsByType?.[type]);
+    if(type==="armor") mergeEffectInto(result,entry.effectsByArmorWeight?.[itemIsHeavyArmor(item)?"heavy":"light"]);
+  };
+  groupedCustomizationEntries(item?.improvements,data.improvements).filter(entry=>entry.types.includes(type)).forEach(applyCustomizationEntry);
+  groupedCustomizationEntries(item?.enchantments,data.enchantments).filter(entry=>entry.types.includes(type)).forEach(applyCustomizationEntry);
   const material=data.materials.find(entry=>entry.id===item?.material);
-  if(material) mergeEffectInto(result,material.effects);
+  if(material) applyCustomizationEntry(material);
   if(item?.material==="adamante"){
     if(type==="armor") result.rd+=itemIsHeavyArmor(item)?5:2;
     if(type==="shield") result.rd+=2;
@@ -717,6 +765,7 @@ function itemOwnEffects(item){
     if(type==="armor"||type==="shield") result.armorPenalty-=2;
   }
   if((item?.enchantments||[]).includes("invulneravel")) result.rd+=type==="shield"?2:5;
+  if((item?.enchantments||[]).includes("majestoso")&&hasSpellcastingProgression()) result.spellCd+=1;
   if((item?.improvements||[]).includes("aprimorado")&&item.chosenSkill) result.skills[item.chosenSkill]=Number(result.skills[item.chosenSkill]||0)+1;
   const preset=data.presetEffects[foldItemText(item?.name)];
   if(preset) mergeEffectInto(result,preset);
@@ -838,7 +887,8 @@ function attackLinkedItemSummary(item){
 function itemAttributeBonus(attr){return Number(equippedItemEffects().attrs[attr]||0)}
 function itemSkillBonus(skill){return Number(equippedItemEffects().skills[skill]||0)+((RESISTANCE_SKILLS.has(skill))?Number(equippedItemEffects().resistance||0):0)}
 function itemEffectiveSpaces(item){
-  const base=Math.max(0,Number(item?.spaces||0)),adjustment=Number(itemOwnEffects(item).spaces||0);
+  const base=Math.max(0,Number(item?.spaces||0)),effects=itemOwnEffects(item),adjustment=Number(effects.spaces||0);
+  if(effects.setSpaces!==null&&effects.setSpaces!==undefined&&Number.isFinite(Number(effects.setSpaces))) return Math.max(0,Number(effects.setSpaces));
   if(adjustment<0&&base>0) return Math.max(1,base+adjustment);
   return Math.max(0,base+adjustment);
 }
@@ -847,6 +897,7 @@ function itemAutomaticEffectLabels(item){
   ATTR_KEYS.forEach(attr=>{if(fx.attrs[attr]) labels.push(`${attr} ${signedNumber(fx.attrs[attr])}`)});
   Object.entries(fx.skills).forEach(([skill,bonus])=>{if(bonus) labels.push(`${skill} ${signedNumber(bonus)}`)});
   [["Ataque",fx.attack],["Dano",fx.damage],["Defesa",fx.defense],["RD",fx.rd],["Resistências",fx.resistance],["CD",fx.spellCd],["Limite de PM",fx.pmLimit],["PV máx.",fx.pvMax],["PM máx.",fx.pmMax],["Carga",fx.load],["Espaços",fx.spaces]].forEach(([label,bonus])=>{if(bonus) labels.push(`${label} ${signedNumber(bonus)}`)});
+  if(fx.setSpaces!==null&&fx.setSpaces!==undefined&&Number.isFinite(Number(fx.setSpaces))) labels.push(`Espaços ${fx.setSpaces}`);
   if(fx.armorPenalty>0) labels.push(`Penalidade de armadura -${fx.armorPenalty}`);
   if(fx.extraDamage.length) labels.push(`Dano extra ${fx.extraDamage.join(" + ")}`);
   if(fx.critRange) labels.push(`Margem ${signedNumber(fx.critRange)}`);
@@ -1311,6 +1362,7 @@ function applyResourceAmount(kind,direction){
 }
 const SPELL_ATTR_PM_CLASSES=new Set(["arcanista","bardo","clerigo","druida","frade"]);
 function classUsesSpellAttrForPm(cls){return SPELL_ATTR_PM_CLASSES.has(cls?.idBase)}
+function hasSpellcastingProgression(){return currentClassLevels().some(entry=>classUsesSpellAttrForPm(T20_DATA.classes[entry.id]))}
 function spellAttrPmBonus(cls){return classUsesSpellAttrForPm(cls)?num(value("spellAttr")):0}
 function classLevelsUseSpellAttrForPm(levels){return levels.some(entry=>classUsesSpellAttrForPm(T20_DATA.classes[entry.id]))}
 function classResourceBases(levels,{con=0,spellAttrValue=0}={}){
@@ -2777,17 +2829,44 @@ function renderSpells(){
 function itemCustomizationOptions(entries,selected,type){
   const selectedSet=new Set(selected||[]);
   const available=entries.filter(entry=>entry.types.includes(type)&&!selectedSet.has(entry.id));
-  return '<option value="">Escolha...</option>'+available.map(entry=>`<option value="${entry.id}" title="${escapeHtml(entry.description)}">${escapeHtml(entry.name)}</option>`).join("");
+  const groups=new Map();
+  available.forEach(entry=>{
+    const source=entry.source||"Outras fontes";
+    if(!groups.has(source)) groups.set(source,[]);
+    groups.get(source).push(entry);
+  });
+  const sourceOrder=["Jogo do Ano","Heróis de Arton","Deuses de Arton","Ameaças de Arton"];
+  const grouped=[...groups.entries()].sort((a,b)=>{
+    const ai=sourceOrder.indexOf(a[0]),bi=sourceOrder.indexOf(b[0]);
+    return (ai<0?99:ai)-(bi<0?99:bi)||a[0].localeCompare(b[0],"pt-BR");
+  }).map(([source,list])=>`<optgroup label="${escapeHtml(source)}">${list.sort((a,b)=>a.name.localeCompare(b.name,"pt-BR")).map(entry=>`<option value="${entry.id}" title="${escapeHtml(entry.description)}">${escapeHtml(entry.name)}${entry.page?` (${escapeHtml(entry.page)})`:""}</option>`).join("")}</optgroup>`).join("");
+  return '<option value="">Escolha...</option>'+grouped;
 }
 function itemMaterialOptions(item,type){
-  return itemCustomizationData().materials.filter(entry=>entry.types.includes(type)).map(entry=>`<option value="${entry.id}" ${entry.id===item.material?"selected":""}>${escapeHtml(entry.name)}</option>`).join("");
+  const entries=itemCustomizationData().materials.filter(entry=>entry.types.includes(type));
+  const materialPrices=itemCustomizationData().pricing?.materials?.[materialPriceCategory(item)]||{};
+  const empty=entries.find(entry=>!entry.id),groups=new Map();
+  entries.filter(entry=>entry.id).forEach(entry=>{
+    const source=entry.source||"Outras fontes";
+    if(!groups.has(source)) groups.set(source,[]);
+    groups.get(source).push(entry);
+  });
+  const sourceOrder=["Jogo do Ano","Ameaças de Arton"];
+  return `${empty?`<option value="" ${item.material?"":"selected"}>${escapeHtml(empty.name)}</option>`:""}${[...groups.entries()].sort((a,b)=>{
+    const ai=sourceOrder.indexOf(a[0]),bi=sourceOrder.indexOf(b[0]);
+    return (ai<0?99:ai)-(bi<0?99:bi)||a[0].localeCompare(b[0],"pt-BR");
+  }).map(([source,list])=>`<optgroup label="${escapeHtml(source)}">${list.sort((a,b)=>a.name.localeCompare(b.name,"pt-BR")).map(entry=>{
+    const rare=!Object.prototype.hasOwnProperty.call(materialPrices,entry.id);
+    return `<option value="${entry.id}" ${entry.id===item.material?"selected":""}>${escapeHtml(entry.name)}${rare?" — raro; preço manual":""}${entry.page?` (${escapeHtml(entry.page)})`:""}</option>`;
+  }).join("")}</optgroup>`).join("")}`;
 }
 function itemCustomizationChips(item,kind,index){
   const entries=kind==="improvement"?itemCustomizationData().improvements:itemCustomizationData().enchantments;
   const ids=kind==="improvement"?item.improvements:item.enchantments;
   return (ids||[]).map(id=>{
     const entry=entries.find(option=>option.id===id);
-    return entry?`<span class="itemModChip" title="${escapeHtml(entry.description)}">${escapeHtml(entry.name)}<button type="button" data-removeitemmod="${kind}" data-itemindex="${index}" data-modid="${id}" aria-label="Remover ${escapeHtml(entry.name)}">&times;</button></span>`:"";
+    const reference=[entry?.source,entry?.page].filter(Boolean).join(" • ");
+    return entry?`<span class="itemModChip" title="${escapeHtml([entry.description,reference].filter(Boolean).join(" — "))}">${escapeHtml(entry.name)}<button type="button" data-removeitemmod="${kind}" data-itemindex="${index}" data-modid="${id}" aria-label="Remover ${escapeHtml(entry.name)}">&times;</button></span>`:"";
   }).join("");
 }
 function linkedAttackOptions(selected=""){
@@ -2809,7 +2888,7 @@ function renderItemCard(it,i){
   const qty=Number.isFinite(rawQty)?rawQty:0,spaces=Number.isFinite(rawSpaces)?rawSpaces:0,effectiveSpaces=itemEffectiveSpaces(it),totalSpaces=qty*effectiveSpaces;
   const description=itemDescription(it);
   const type=inventoryItemType(it),data=itemCustomizationData(),protection=baseProtectionStats(it);
-  const foldedCategory=foldItemText(it.category),ambiguousProtection=foldedCategory.includes("armadura")&&foldedCategory.includes("escudo");
+  const foldedCategory=foldItemText(it.category),ambiguousProtection=foldedCategory.includes("armadura")&&foldedCategory.includes("escudo"),accessoryCategory=foldedCategory.includes("acessor");
   const effectLabels=itemAutomaticEffectLabels(it);
   const improvementCount=(it.improvements||[]).length,enchantmentCount=itemEnchantmentSlots(it),superiorCount=itemSuperiorSlots(it),priceDetails=itemPriceDetails(it);
   const materialName=it.material?data.materials.find(entry=>entry.id===it.material)?.name:"";
@@ -2856,7 +2935,7 @@ function renderItemCard(it,i){
         <div class="itemCustomizationTitle"><div><strong>Modificações</strong><small>Ativas apenas quando o item estiver equipado</small></div><span class="${superiorCount>4||enchantmentCount>3?"limitExceeded":""}">${superiorCount}/4 melhorias &bull; ${enchantmentCount}/3 encantos</span></div>
         <div class="itemCustomizationControls">
           ${itemMaterialOptions(it,type)?`<label>Material<select data-i="${i}" data-k="material">${itemMaterialOptions(it,type)}</select></label>`:""}
-          ${ambiguousProtection?`<label>Aplicar como<select data-i="${i}" data-k="customizationType"><option value="" ${it.customizationType?"":"selected"}>Automático</option><option value="armor" ${it.customizationType==="armor"?"selected":""}>Armadura</option><option value="shield" ${it.customizationType==="shield"?"selected":""}>Escudo</option></select></label>`:""}
+          ${ambiguousProtection?`<label>Aplicar como<select data-i="${i}" data-k="customizationType"><option value="" ${it.customizationType?"":"selected"}>Automático</option><option value="armor" ${it.customizationType==="armor"?"selected":""}>Armadura</option><option value="shield" ${it.customizationType==="shield"?"selected":""}>Escudo</option></select></label>`:accessoryCategory?`<label>Aplicar como<select data-i="${i}" data-k="customizationType"><option value="" ${it.customizationType?"":"selected"}>Acessório genérico</option><option value="clothing" ${it.customizationType==="clothing"?"selected":""}>Vestuário</option><option value="tool" ${it.customizationType==="tool"?"selected":""}>Ferramenta</option></select></label>`:""}
           ${data.improvements.some(entry=>entry.types.includes(type))?`<label>Adicionar melhoria<span class="itemAddControl"><select id="item-improvement-${i}">${itemCustomizationOptions(data.improvements,it.improvements,type)}</select><button type="button" data-additemmod="improvement" data-itemindex="${i}" aria-label="Adicionar melhoria">+</button></span></label>`:""}
           ${data.enchantments.some(entry=>entry.types.includes(type))?`<label>Adicionar encanto<span class="itemAddControl"><select id="item-enchantment-${i}">${itemCustomizationOptions(data.enchantments,it.enchantments,type)}</select><button type="button" data-additemmod="enchantment" data-itemindex="${i}" aria-label="Adicionar encanto">+</button></span></label>`:""}
           ${type==="weapon"?`<label>Ataque associado<select data-i="${i}" data-k="linkedAttackId">${linkedAttackOptions(it.linkedAttackId)}</select></label>`:""}
@@ -2883,8 +2962,9 @@ function renderItems(){
     const index=Number(button.dataset.itemindex),kind=button.dataset.additemmod,select=$(`#item-${kind}-${index}`),id=select?.value;
     if(!id) return;
     const key=kind==="improvement"?"improvements":"enchantments";
-    const prerequisites={pungente:"certeira",atroz:"cruel","sob-medida":"ajustada",energetica:"formidavel",magnifica:"formidavel",lancinante:"dilacerante",guardiao:"defensor"};
-    const additions=[prerequisites[id],id].filter(Boolean),current=state.items[index][key]||[];
+    const current=state.items[index][key]||[],requirements=modificationAdditions(kind,id,current);
+    if(requirements.error){notify(requirements.error);return}
+    const additions=requirements.additions;
     const next=[...new Set([...current,...additions])],limit=kind==="improvement"?4-(state.items[index].material?1:0):3;
     if(next.length>limit){notify(`Limite de ${kind==="improvement"?"4 melhorias (incluindo material especial)":"3 encantos"} atingido.`);return}
     state.items[index][key]=next;

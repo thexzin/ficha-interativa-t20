@@ -39,7 +39,7 @@ Ataques calculam acerto e dano em uma única rolagem, incluindo crítico, dano e
 
 O Inventário reúne itens mundanos e mágicos dos catálogos incluídos. Itens equipados podem aplicar atributos, Defesa, RD, penalidade de armadura, perícias, resistências, PV, PM, CD, carga e bônus de ataque ou dano.
 
-Armas, armaduras, escudos e esotéricos aceitam melhorias, materiais especiais e encantos. O preço final pode ser calculado automaticamente: o card recolhido mostra somente o total e o card expandido apresenta a composição do valor. Preços manuais continuam disponíveis.
+Armas, armaduras, escudos, esotéricos e acessórios aceitam melhorias, materiais especiais e encantos do Jogo do Ano, Heróis de Arton, Deuses de Arton e Ameaças de Arton. Os seletores separam as opções por fonte e aplicam bônus permanentes compatíveis automaticamente. O preço final pode ser calculado pela ficha; materiais raros sem preço publicado ficam marcados para ajuste manual.
 
 ### Nuvem e campanhas
 
@@ -88,9 +88,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Controle rápido do mestre:** o Escudo agora aplica dano, cura, gasto e recuperação de PM diretamente nos cards, incluindo PV/PM temporários e opção de considerar RD.
-2. **Condições e sanfonas:** os cards do Escudo possuem resumo recolhido, detalhes expansíveis e aplicação ou remoção rápida de condições.
-3. **Estado de combate seguro:** PV, PM e condições ganharam sincronização própria em tempo real para evitar conflitos entre alterações do mestre e autosaves dos jogadores.
+1. **Modificações de outros livros:** melhorias, materiais especiais e encantos de Heróis, Deuses e Ameaças de Arton foram integrados ao inventário com fonte, pré-requisitos, incompatibilidades, preços e efeitos automáticos compatíveis.
+2. **Controle rápido do mestre:** o Escudo aplica dano, cura, gasto e recuperação de PM diretamente nos cards, incluindo PV/PM temporários e opção de considerar RD.
+3. **Condições e sanfonas:** os cards do Escudo possuem resumo recolhido, detalhes expansíveis e aplicação ou remoção rápida de condições.
 
 ## Aviso
 
