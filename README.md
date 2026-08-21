@@ -86,9 +86,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Transparência nos retratos:** recortes de imagens PNG agora preservam o fundo transparente na ficha, nos cards e na nuvem.
-2. **Cabeçalho refinado:** os sete campos ocupam uma única linha mais baixa, com controles uniformes e um pouco mais de espaço entre eles.
-3. **Cards mais limpos:** fichas e personagens da campanha exibem apenas informações de jogo, sem local de armazenamento ou data da última edição.
+1. **Reordenação direta:** itens e poderes agora flutuam livremente durante o arrasto e trocam diretamente com a posição escolhida na grade.
+2. **Transparência nos retratos:** recortes de imagens PNG agora preservam o fundo transparente na ficha, nos cards e na nuvem.
+3. **Cabeçalho refinado:** os sete campos ocupam uma única linha mais baixa, com controles uniformes e um pouco mais de espaço entre eles.
 
 ## Aviso
 

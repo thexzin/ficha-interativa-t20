@@ -1884,22 +1884,13 @@ function moveCollectionEntry(collection,index,direction){
 function swapExpandedIndexes(indexes,first,second){
   return new Set([...indexes].map(index=>index===first?second:index===second?first:index));
 }
-function moveCollectionEntryTo(collection,from,to){
-  if(!Array.isArray(collection)||from===to||from<0||to<0||from>=collection.length||to>=collection.length) return false;
-  const [entry]=collection.splice(from,1);
-  collection.splice(to,0,entry);
+function swapCollectionEntries(collection,first,second){
+  if(!Array.isArray(collection)||first===second||first<0||second<0||first>=collection.length||second>=collection.length) return false;
+  [collection[first],collection[second]]=[collection[second],collection[first]];
   return true;
 }
-function moveExpandedIndex(indexes,from,to){
-  return new Set([...indexes].map(index=>{
-    if(index===from) return to;
-    if(from<to&&index>from&&index<=to) return index-1;
-    if(to<from&&index>=to&&index<from) return index+1;
-    return index;
-  }));
-}
 function accordionDragHandle(kind,index){
-  return `<button type="button" class="accordionDragHandle" data-reorder-kind="${kind}" data-reorder-index="${index}" title="Arraste para reordenar" aria-label="Arraste para reordenar; use as setas do teclado"><span aria-hidden="true"></span></button>`;
+  return `<button type="button" class="accordionDragHandle" data-reorder-kind="${kind}" data-reorder-index="${index}" title="Arraste para trocar de posição" aria-label="Arraste para trocar de posição; use as setas do teclado"><span aria-hidden="true"></span></button>`;
 }
 function bindAccordionReorder({kind,collection,cardSelector,getExpanded,setExpanded,render,commit}){
   const container=kind==="power"?$("#powersList"):$("#itemsList");
@@ -1924,7 +1915,7 @@ function bindAccordionReorder({kind,collection,cardSelector,getExpanded,setExpan
       const card=handle.closest(cardSelector),from=Number(handle.dataset.reorderIndex);
       if(!card||!Number.isInteger(from)) return;
       const startX=event.clientX,startY=event.clientY,originalStyle=card.getAttribute("style");
-      let dragging=false,placeholder=null,offsetX=0,offsetY=0;
+      let dragging=false,placeholder=null,offsetX=0,offsetY=0,dropTarget=null,to=from;
       handle.setPointerCapture?.(event.pointerId);
       const startDragging=moveEvent=>{
         const rect=card.getBoundingClientRect();
@@ -1943,51 +1934,59 @@ function bindAccordionReorder({kind,collection,cardSelector,getExpanded,setExpan
         card.style.left=`${moveEvent.clientX-offsetX}px`;
         card.style.top=`${moveEvent.clientY-offsetY}px`;
       };
-      const placePlaceholder=moveEvent=>{
-        const candidates=[...container.children].filter(child=>child!==card&&child!==placeholder&&child.matches?.(cardSelector));
-        if(!candidates.length) return;
-        let target=null,bestDistance=Infinity;
-        candidates.forEach(candidate=>{
-          const rect=candidate.getBoundingClientRect(),centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
-          const distance=((moveEvent.clientX-centerX)/Math.max(1,rect.width))**2+((moveEvent.clientY-centerY)/Math.max(1,Math.min(rect.height,180)))**2;
-          if(distance<bestDistance){bestDistance=distance;target=candidate}
+      const selectDropTarget=moveEvent=>{
+        const slots=[{element:placeholder,index:from},...[...container.querySelectorAll(cardSelector)]
+          .filter(candidate=>candidate!==card)
+          .map(candidate=>({element:candidate,index:Number(candidate.querySelector(`[data-reorder-kind="${kind}"]`)?.dataset.reorderIndex)}))]
+          .filter(slot=>slot.element&&Number.isInteger(slot.index));
+        if(!slots.length) return;
+        let target=slots.find(slot=>{
+          const rect=slot.element.getBoundingClientRect();
+          return moveEvent.clientX>=rect.left&&moveEvent.clientX<=rect.right&&moveEvent.clientY>=rect.top&&moveEvent.clientY<=rect.bottom;
         });
-        if(!target) return;
-        const rect=target.getBoundingClientRect(),centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
-        const sameRow=Math.abs(moveEvent.clientY-centerY)<Math.min(rect.height*.42,90);
-        const before=sameRow?moveEvent.clientX<centerX:moveEvent.clientY<centerY;
-        container.insertBefore(placeholder,before?target:target.nextSibling);
+        if(!target){
+          let bestDistance=Infinity;
+          slots.forEach(slot=>{
+            const rect=slot.element.getBoundingClientRect(),centerX=rect.left+rect.width/2,centerY=rect.top+rect.height/2;
+            const distance=((moveEvent.clientX-centerX)/Math.max(1,rect.width))**2+((moveEvent.clientY-centerY)/Math.max(1,Math.min(rect.height,180)))**2;
+            if(distance<bestDistance){bestDistance=distance;target=slot}
+          });
+        }
+        dropTarget?.classList.remove("accordionDropTarget");
+        to=target?.index??from;
+        dropTarget=target?.element===placeholder?null:target?.element||null;
+        dropTarget?.classList.add("accordionDropTarget");
       };
       const onMove=moveEvent=>{
+        moveEvent.preventDefault();
         if(!dragging&&Math.hypot(moveEvent.clientX-startX,moveEvent.clientY-startY)<6) return;
         if(!dragging) startDragging(moveEvent);
         positionFloatingCard(moveEvent);
-        placePlaceholder(moveEvent);
+        selectDropTarget(moveEvent);
         const edge=72,scrollStep=14;
         if(moveEvent.clientY<edge) window.scrollBy(0,-scrollStep);
         else if(moveEvent.clientY>window.innerHeight-edge) window.scrollBy(0,scrollStep);
       };
       const finish=shouldCommit=>{
-        handle.removeEventListener("pointermove",onMove);
-        handle.removeEventListener("pointerup",onUp);
-        handle.removeEventListener("pointercancel",onCancel);
+        window.removeEventListener("pointermove",onMove);
+        window.removeEventListener("pointerup",onUp);
+        window.removeEventListener("pointercancel",onCancel);
         handle.releasePointerCapture?.(event.pointerId);
         card.classList.remove("dragging");
+        dropTarget?.classList.remove("accordionDropTarget");
         document.body.classList.remove("accordionDragging");
         if(originalStyle===null) card.removeAttribute("style");else card.setAttribute("style",originalStyle);
         if(!dragging){return}
-        const order=[...container.children].filter(child=>child!==card&&(child===placeholder||child.matches?.(cardSelector)));
-        const to=order.indexOf(placeholder);
         placeholder?.remove();
-        if(!shouldCommit){return}
-        if(!moveCollectionEntryTo(collection,from,to)){render();return}
-        setExpanded(moveExpandedIndex(getExpanded(),from,to));
+        if(!shouldCommit||to===from){return}
+        if(!swapCollectionEntries(collection,from,to)){render();return}
+        setExpanded(swapExpandedIndexes(getExpanded(),from,to));
         commit();
       };
       const onUp=()=>finish(true),onCancel=()=>finish(false);
-      handle.addEventListener("pointermove",onMove);
-      handle.addEventListener("pointerup",onUp);
-      handle.addEventListener("pointercancel",onCancel);
+      window.addEventListener("pointermove",onMove,{passive:false});
+      window.addEventListener("pointerup",onUp);
+      window.addEventListener("pointercancel",onCancel);
     };
   });
 }
