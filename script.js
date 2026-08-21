@@ -3980,6 +3980,7 @@ function activateSheetTab(tab="resumo"){
   if(!button) return;
   $$('[data-tab]').forEach(candidate=>candidate.classList.toggle("active",candidate===button));
   $$(".tab").forEach(section=>section.classList.toggle("active",section.id===`tab-${button.dataset.tab}`));
+  $("#identityLayout")?.classList.toggle("portraitVisible",button.dataset.tab==="resumo");
 }
 async function flushPendingRouteSave(){
   const remoteId=mappedCloudCharacterId();

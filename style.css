@@ -590,9 +590,12 @@ input,select,textarea{border-color:#694038}.attrs label{position:relative;paddin
 @media(max-width:980px){.initiativeEntry{grid-template-columns:38px 44px minmax(140px,1fr) 82px minmax(120px,150px)}.initiativeEntryActions{grid-column:3/-1;justify-content:flex-end}.initiativePanelHeader{grid-template-columns:minmax(0,1fr) auto}.initiativePanelActions{grid-column:1/-1;justify-content:stretch}.initiativePanelActions button{flex:1}.initiativePortrait{width:44px;height:44px}}
 @media(max-width:680px){.campaignInitiativePanel.idle,.initiativePanelHeader{grid-template-columns:1fr}.campaignInitiativePanel.idle>button{width:100%}.initiativeRoundBadge{position:absolute;right:2rem;align-self:start}.initiativePanelHeader{position:relative}.initiativePanelIntro{padding-right:78px}.initiativePanelActions{display:grid;grid-template-columns:1fr 1fr}.initiativePanelActions button:last-child{grid-column:1/-1}.initiativeEntry{grid-template-columns:34px 40px minmax(0,1fr) 74px;padding:.65rem;gap:.5rem}.initiativePortrait{width:40px;height:40px}.initiativeState{grid-column:2/4}.initiativeEntryActions{grid-column:4;grid-row:2;justify-content:flex-end}.initiativeManualAdd{grid-template-columns:1fr 90px}.initiativeManualAdd button{grid-column:1/-1}.initiativeIdentity small{white-space:normal}}
 
-/* Retrato: upload, enquadramento e presenca visual no cabecalho da ficha. */
-.identity{grid-template-columns:170px repeat(4,minmax(0,1fr));align-items:start}
-.portraitEditor{display:grid;gap:.38rem;align-self:stretch;grid-row:span 2}
+/* Retrato: painel lateral independente, visivel apenas em Stats. */
+.identityLayout{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;align-items:start}
+.identityLayout.portraitVisible{grid-template-columns:170px minmax(0,1fr)}
+.identityLayout:not(.portraitVisible) .portraitEditor{display:none}
+.identity{grid-template-columns:repeat(4,minmax(0,1fr));align-items:start}
+.portraitEditor{display:grid;gap:.38rem;align-self:start;padding:.75rem}
 .portraitEditorLabel{color:var(--muted);font-size:.78rem;line-height:1}
 .characterPortraitBox{min-height:148px;display:grid;grid-template-rows:minmax(0,1fr) auto auto;gap:.45rem;padding:.5rem;border:1px solid #704139;border-radius:8px;background:linear-gradient(145deg,#2a2119,#15110e);box-shadow:inset 0 0 0 1px rgba(213,168,76,.07)}
 .characterPortraitPreview{position:relative;height:auto;min-height:100px;aspect-ratio:1/1;border:1px solid #5e4435;border-radius:5px;background:radial-gradient(circle at 50% 38%,#2d241b 0,#17120e 70%);overflow:hidden;display:grid;place-items:center}
@@ -624,6 +627,6 @@ input,select,textarea{border-color:#694038}.attrs label{position:relative;paddin
 .portraitCropActions{display:flex;justify-content:flex-end;gap:.55rem;flex-wrap:wrap}
 .portraitCropActions button{min-height:40px}
 
-@media(max-width:1050px){.identity{grid-template-columns:170px 1fr 1fr}.portraitEditor{grid-column:auto;grid-row:span 3}.characterPortraitBox{min-height:210px}}
-@media(max-width:760px){.identity{grid-template-columns:140px 1fr}.portraitEditor{grid-row:span 4}.characterPortraitBox{min-height:190px}}
-@media(max-width:620px){.identity{grid-template-columns:1fr}.portraitEditor{grid-column:auto;grid-row:auto}.characterPortraitBox{grid-template-columns:116px minmax(0,1fr);grid-template-rows:auto auto;min-height:0;align-items:center}.characterPortraitPreview{grid-row:1/3;min-height:116px}.characterPortraitBox>small{align-self:start}.portraitCropPanel{padding:.8rem}.portraitCropActions{display:grid;grid-template-columns:1fr 1fr}.portraitCropActions button:last-child{grid-column:1/-1}.portraitCropStage>span{max-width:90%;white-space:normal;text-align:center}}
+@media(max-width:1050px){.identityLayout.portraitVisible{grid-template-columns:160px minmax(0,1fr)}.identity{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.identityLayout.portraitVisible{grid-template-columns:140px minmax(0,1fr)}}
+@media(max-width:620px){.identityLayout.portraitVisible{grid-template-columns:1fr}.identity{grid-template-columns:1fr}.portraitEditor{grid-column:auto}.characterPortraitBox{grid-template-columns:116px minmax(0,1fr);grid-template-rows:auto auto;min-height:0;align-items:center}.characterPortraitPreview{grid-row:1/3;min-height:116px}.characterPortraitBox>small{align-self:start}.portraitCropPanel{padding:.8rem}.portraitCropActions{display:grid;grid-template-columns:1fr 1fr}.portraitCropActions button:last-child{grid-column:1/-1}.portraitCropStage>span{max-width:90%;white-space:normal;text-align:center}}

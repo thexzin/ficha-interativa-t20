@@ -86,7 +86,7 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Retratos com recorte:** o campo de URL virou um upload com enquadramento, zoom e exibição integrada na ficha, nos cards, na iniciativa e no Escudo; os backups JSON omitem a imagem para permanecerem leves.
+1. **Retratos com recorte:** o upload com enquadramento agora fica em um painel lateral exclusivo de Stats, além de aparecer nos cards, na iniciativa e no Escudo; os backups JSON omitem a imagem para permanecerem leves.
 2. **Iniciativa no Escudo:** combates ativos capturam automaticamente rolagens de Iniciativa, ordenam participantes e controlam turnos e rodadas.
 3. **Cartomante:** a variante de Arcanista recebeu progressão automática, regras completas e gerenciamento de baralho diretamente no Grimório.
 

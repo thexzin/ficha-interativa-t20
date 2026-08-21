@@ -233,24 +233,25 @@ if(location.protocol!=="file:"){
 </section>
 
 <main class="wrap">
-<section class="panel identity">
-  <div class="portraitEditor">
-    <span class="portraitEditorLabel">Retrato</span>
-    <div class="characterPortraitBox">
-      <div id="characterPortraitPreview" class="characterPortraitPreview">
-        <img id="characterPortraitImage" class="hidden" alt="Retrato do personagem">
-        <span id="characterPortraitPlaceholder" class="characterPortraitPlaceholder" aria-hidden="true">?</span>
-      </div>
-      <div id="portraitEditorActions" class="portraitEditorActions">
-        <button id="portraitUploadBtn" type="button">Escolher imagem</button>
-        <button id="portraitRemoveBtn" type="button" class="deleteIconButton hidden" title="Remover retrato" aria-label="Remover retrato"><span class="deleteIconGlyph" aria-hidden="true"></span></button>
-      </div>
-      <small id="portraitEditorHint">JPG, PNG ou WebP. O recorte ser&aacute; quadrado.</small>
+<div id="identityLayout" class="identityLayout portraitVisible">
+<aside class="panel portraitEditor">
+  <span class="portraitEditorLabel">Retrato</span>
+  <div class="characterPortraitBox">
+    <div id="characterPortraitPreview" class="characterPortraitPreview">
+      <img id="characterPortraitImage" class="hidden" alt="Retrato do personagem">
+      <span id="characterPortraitPlaceholder" class="characterPortraitPlaceholder" aria-hidden="true">?</span>
     </div>
-    <input id="portraitUrl" data-save type="hidden">
-    <input id="portraitPath" data-save type="hidden">
-    <input id="portraitFileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+    <div id="portraitEditorActions" class="portraitEditorActions">
+      <button id="portraitUploadBtn" type="button">Escolher imagem</button>
+      <button id="portraitRemoveBtn" type="button" class="deleteIconButton hidden" title="Remover retrato" aria-label="Remover retrato"><span class="deleteIconGlyph" aria-hidden="true"></span></button>
+    </div>
+    <small id="portraitEditorHint">JPG, PNG ou WebP. O recorte ser&aacute; quadrado.</small>
   </div>
+  <input id="portraitUrl" data-save type="hidden">
+  <input id="portraitPath" data-save type="hidden">
+  <input id="portraitFileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+</aside>
+<section class="panel identity">
   <label>Nome<input id="nome" data-save></label>
   <label>Jogador<input id="jogador" data-save></label>
   <label>Raça<select id="raca" data-save></select></label>
@@ -282,6 +283,7 @@ if(location.protocol!=="file:"){
     <div id="classLevelsList" class="classLevelsList"></div>
   </div>
 </section>
+</div>
 
 <section id="tab-resumo" class="tab active">
   <article class="panel">
