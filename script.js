@@ -4173,7 +4173,7 @@ function renderHubCharacters(){
           <span>${record.summary||"Sem detalhes"}</span>
         </div>
         <div class="hubCardActions characterHubActions">
-          <button class="hubOpenButton" type="button" data-open-${record.kind}-character="${escapeHtml(record.id)}">Acessar ficha</button>
+          <button class="hubOpenButton hubOpenIconButton" type="button" data-open-${record.kind}-character="${escapeHtml(record.id)}" aria-label="Acessar ficha" title="Acessar ficha"><img src="open-sheet-icon.png" alt="" draggable="false" aria-hidden="true"></button>
           <button class="hubDeleteButton deleteIconButton" type="button" ${deleteAttrs} title="Excluir ficha" aria-label="Excluir ficha">${DELETE_ICON_HTML}</button>
         </div>
       </article>`;
@@ -4934,7 +4934,7 @@ function renderCampaignDashboard(){
         <span>${[character.player_name,"Ficha da campanha"].filter(Boolean).map(escapeHtml).join(" &bull; ")}</span>
       </div>
       <div class="hubCardActions characterHubActions${canRemoveFromCampaign?" hasRemove":""}${canDeletePrivate?" hasDelete":""}">
-        <button class="hubOpenButton" type="button" data-dashboard-open-character="${escapeHtml(character.id)}">Acessar ficha</button>
+        <button class="hubOpenButton hubOpenIconButton" type="button" data-dashboard-open-character="${escapeHtml(character.id)}" aria-label="Acessar ficha" title="Acessar ficha"><img src="open-sheet-icon.png" alt="" draggable="false" aria-hidden="true"></button>
         ${canRemoveFromCampaign?`<button class="hubRemoveButton" type="button" data-remove-campaign-character="${escapeHtml(character.id)}">Remover</button>`:""}
         ${canDeletePrivate?`<button class="hubDeleteButton deleteIconButton" type="button" data-delete-private-campaign-character="${escapeHtml(character.id)}" title="Excluir ficha oculta" aria-label="Excluir ficha oculta">${DELETE_ICON_HTML}</button>`:""}
       </div>

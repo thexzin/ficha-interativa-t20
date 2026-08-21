@@ -86,9 +86,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Reordenação direta:** itens e poderes agora flutuam livremente durante o arrasto e trocam diretamente com a posição escolhida na grade.
-2. **Transparência nos retratos:** recortes de imagens PNG agora preservam o fundo transparente na ficha, nos cards e na nuvem.
-3. **Cabeçalho refinado:** os sete campos ocupam uma única linha mais baixa, com controles uniformes e um pouco mais de espaço entre eles.
+1. **Acesso compacto:** o comando para abrir uma ficha agora usa um ícone dourado nos cards de personagens e campanhas.
+2. **Miniaturas completas:** os retratos dos cards de ficha agora usam uma caixa quadrada maior, compatível com o recorte original e sem cortar as bordas.
+3. **Reordenação direta:** itens e poderes agora flutuam livremente durante o arrasto e trocam diretamente com a posição escolhida na grade.
 
 ## Aviso
 
