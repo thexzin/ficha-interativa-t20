@@ -43,7 +43,9 @@ Armas, armaduras, escudos e esotéricos aceitam melhorias, materiais especiais e
 
 ### Nuvem e campanhas
 
-Com Supabase configurado, cada usuário pode salvar fichas na nuvem, criar ou entrar em campanhas por convite e vincular personagens. O mestre pode gerenciar fichas da campanha, criar fichas ocultas e acompanhar PV, PM, Defesa, condições e rolagens pelo Escudo do Mestre. O Escudo também possui encontros com iniciativa automática: enquanto um combate estiver ativo, rolagens da perícia Iniciativa entram na ordem, que pode ser ajustada pelo mestre e avançada por turnos e rodadas.
+Com Supabase configurado, cada usuário pode salvar fichas na nuvem, criar ou entrar em campanhas por convite e vincular personagens. O mestre pode gerenciar fichas da campanha, criar fichas ocultas e acompanhar PV, PM, Defesa, condições e rolagens pelo Escudo do Mestre. Os cards do Escudo são expansíveis e permitem aplicar dano, cura, gasto ou recuperação de PM e condições sem abrir a ficha. Esse estado de combate é compartilhado em tempo real e separado do JSON principal para evitar conflitos entre o salvamento do mestre e o do jogador.
+
+O Escudo também possui encontros com iniciativa automática: enquanto um combate estiver ativo, rolagens da perícia Iniciativa entram na ordem, que pode ser ajustada pelo mestre e avançada por turnos e rodadas.
 
 O dono também pode ativar um link público para uma ficha. Visitantes abrem esse endereço sem conta em modo somente leitura, e o mesmo link pode ser revogado a qualquer momento. Fichas ocultas de campanha nunca entram nesse compartilhamento.
 
@@ -69,7 +71,7 @@ No Netlify, o arquivo `_redirects` já encaminha endereços como `/fichas/...` e
 - **Nuvem:** após o login, o Supabase se torna o destino principal.
 - **Backup:** `Exportar JSON` e `Importar JSON` funcionam nos dois modos. O retrato não entra no arquivo exportado, mantendo o backup leve para importação online.
 
-Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas, pelo compartilhamento público e pelo Storage. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e depois `supabase_permissions.sql`. Os arquivos `supabase_campaign_initiative.sql` e `supabase_character_portraits.sql` adicionam, respectivamente, a iniciativa e o bucket seguro de retratos.
+Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas, pelo compartilhamento público e pelo Storage. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e depois `supabase_permissions.sql`. Os arquivos `supabase_campaign_initiative.sql`, `supabase_master_shield_controls.sql` e `supabase_character_portraits.sql` adicionam, respectivamente, iniciativa, estado compartilhado de combate e o bucket seguro de retratos.
 
 ## Arquivos principais
 
@@ -86,9 +88,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Acesso compacto:** o comando para abrir uma ficha agora usa um ícone dourado nos cards de personagens e campanhas.
-2. **Miniaturas completas:** os retratos dos cards de ficha agora usam uma caixa quadrada maior, compatível com o recorte original e sem cortar as bordas.
-3. **Reordenação direta:** itens e poderes agora flutuam livremente durante o arrasto e trocam diretamente com a posição escolhida na grade.
+1. **Controle rápido do mestre:** o Escudo agora aplica dano, cura, gasto e recuperação de PM diretamente nos cards, incluindo PV/PM temporários e opção de considerar RD.
+2. **Condições e sanfonas:** os cards do Escudo possuem resumo recolhido, detalhes expansíveis e aplicação ou remoção rápida de condições.
+3. **Estado de combate seguro:** PV, PM e condições ganharam sincronização própria em tempo real para evitar conflitos entre alterações do mestre e autosaves dos jogadores.
 
 ## Aviso
 

@@ -19,7 +19,10 @@ let cloudCampaigns=[];
 let cloudCampaignRolls=[];
 let cloudCampaignEncounters=[];
 let cloudInitiativeEntries=[];
+let cloudCharacterRuntimeStates=[];
 let campaignInitiativeAvailable=true;
+let combatRuntimeAvailable=true;
+let combatRuntimeChannel=null;
 
 function makeEntryId(prefix="entry"){
   if(globalThis.crypto?.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
@@ -113,6 +116,7 @@ let expandedPowerCards=new Set();
 let expandedItemCards=new Set();
 let expandedAttackCards=new Set();
 let expandedPartnerCards=new Set();
+let expandedShieldCards=new Set();
 let activeHubSection="fichas";
 let activeHubCampaignId="";
 let activeCampaignDashboardTab="fichas";
@@ -121,6 +125,7 @@ let shieldCharacterFilter="";
 let shieldSortMode="risco";
 let currentCloudReadOnly=false;
 let cloudAutosaveTimers=new Map();
+let combatRuntimeSaveTimers=new Map();
 let saveStatusTimer=null;
 let browserRoutingReady=false;
 let applyingBrowserRoute=false;
@@ -3525,6 +3530,55 @@ function normalizeSheetData(data){
     state:normalizeLoadedState(data.state)
   };
 }
+function combatRuntimeForCharacter(characterId){
+  return cloudCharacterRuntimeStates.find(entry=>entry.character_id===characterId)||null;
+}
+function combatRuntimePayload(characterId,data){
+  const normalized=normalizeSheetData(data),fields=normalized.fields,state=normalized.state;
+  return {
+    character_id:characterId,
+    pv_current:Number(fields.pvAtual)||0,
+    pm_current:Number(fields.pmAtual)||0,
+    pv_temp:Math.max(0,Number(fields.pvBonus)||0),
+    pm_temp:Math.max(0,Number(fields.pmBonus)||0),
+    conditions:clonePlain(state.conditions),
+    custom_conditions:clonePlain(state.customConditions),
+    updated_by:cloudUser?.id||null
+  };
+}
+function combatRuntimeFingerprint(entry){
+  if(!entry) return "";
+  return JSON.stringify({
+    pv_current:Number(entry.pv_current)||0,
+    pm_current:Number(entry.pm_current)||0,
+    pv_temp:Math.max(0,Number(entry.pv_temp)||0),
+    pm_temp:Math.max(0,Number(entry.pm_temp)||0),
+    conditions:entry.conditions&&typeof entry.conditions==="object"?entry.conditions:{},
+    custom_conditions:Array.isArray(entry.custom_conditions)?entry.custom_conditions:[]
+  });
+}
+function applyCombatRuntimeToSheetData(data,runtime){
+  const normalized=normalizeSheetData(data);
+  if(!runtime) return normalized;
+  normalized.fields.pvAtual=Number(runtime.pv_current)||0;
+  normalized.fields.pmAtual=Number(runtime.pm_current)||0;
+  normalized.fields.pvBonus=Math.max(0,Number(runtime.pv_temp)||0);
+  normalized.fields.pmBonus=Math.max(0,Number(runtime.pm_temp)||0);
+  normalized.state.conditions=runtime.conditions&&typeof runtime.conditions==="object"?clonePlain(runtime.conditions):{};
+  normalized.state.customConditions=Array.isArray(runtime.custom_conditions)?clonePlain(runtime.custom_conditions):[];
+  return normalized;
+}
+function cloudSheetData(character){
+  return applyCombatRuntimeToSheetData(character?.sheet_data||{},combatRuntimeForCharacter(character?.id));
+}
+function storeCombatRuntime(runtime){
+  if(!runtime?.character_id) return;
+  const index=cloudCharacterRuntimeStates.findIndex(entry=>entry.character_id===runtime.character_id);
+  if(index>=0) cloudCharacterRuntimeStates[index]={...cloudCharacterRuntimeStates[index],...runtime};
+  else cloudCharacterRuntimeStates.push(runtime);
+  const character=cloudCharacters.find(entry=>entry.id===runtime.character_id);
+  if(character) character.sheet_data=applyCombatRuntimeToSheetData(character.sheet_data,runtime);
+}
 function sheetDataFromCurrent(){
   return {fields:collectSavedFields(),state:clonePlain(state)};
 }
@@ -3787,6 +3841,74 @@ function renderSheetCampaignShortcut(){
   button.disabled=!campaignId;
   button.textContent=campaignId?"Abrir campanha vinculada":"Sem campanha vinculada";
 }
+function clearCombatRuntimeSaveTimer(remoteId){
+  if(!remoteId||!combatRuntimeSaveTimers.has(remoteId)) return;
+  clearTimeout(combatRuntimeSaveTimers.get(remoteId));
+  combatRuntimeSaveTimers.delete(remoteId);
+}
+async function syncCombatRuntimeSnapshot(snapshot){
+  if(!combatRuntimeAvailable||!supabaseClient||!cloudUser||!snapshot?.remoteId||!snapshot?.data) return;
+  const selectedMeta=cloudCharacters.find(character=>character.id===snapshot.remoteId);
+  if(isCloudCharacterReadOnly(selectedMeta)) return;
+  const payload=combatRuntimePayload(snapshot.remoteId,snapshot.data);
+  if(combatRuntimeFingerprint(payload)===combatRuntimeFingerprint(combatRuntimeForCharacter(snapshot.remoteId))) return;
+  const {data,error}=await supabaseClient
+    .from("character_runtime_states")
+    .upsert(payload,{onConflict:"character_id"})
+    .select("character_id,pv_current,pm_current,pv_temp,pm_temp,conditions,custom_conditions,updated_by,updated_at")
+    .single();
+  if(error){
+    if(/character_runtime_states|relation|schema cache/i.test(String(error.message||""))){
+      combatRuntimeAvailable=false;
+      console.warn("Estado de combate ainda não instalado no Supabase.",error);
+      return;
+    }
+    throw error;
+  }
+  storeCombatRuntime(data);
+}
+function queueCombatRuntimeSnapshot(snapshot){
+  if(!snapshot?.remoteId||!combatRuntimeAvailable) return;
+  clearCombatRuntimeSaveTimer(snapshot.remoteId);
+  const timer=setTimeout(()=>{
+    combatRuntimeSaveTimers.delete(snapshot.remoteId);
+    runCloudAction(()=>syncCombatRuntimeSnapshot(snapshot));
+  },250);
+  combatRuntimeSaveTimers.set(snapshot.remoteId,timer);
+}
+function applyCombatRuntimeToCurrent(runtime){
+  if(!runtime||mappedCloudCharacterId()!==runtime.character_id||publicViewActive()) return;
+  restoreSavedField("pvAtual",Number(runtime.pv_current)||0);
+  restoreSavedField("pmAtual",Number(runtime.pm_current)||0);
+  restoreSavedField("pvBonus",Math.max(0,Number(runtime.pv_temp)||0));
+  restoreSavedField("pmBonus",Math.max(0,Number(runtime.pm_temp)||0));
+  state.conditions=runtime.conditions&&typeof runtime.conditions==="object"?clonePlain(runtime.conditions):{};
+  state.customConditions=Array.isArray(runtime.custom_conditions)?clonePlain(runtime.custom_conditions):[];
+  renderConditions();
+  recalc();
+  if(currentCharacterId) cacheLocalCharacterData(currentCharacterId,sheetDataFromCurrent(),value("nome"),runtime.updated_at||new Date().toISOString());
+}
+function handleCombatRuntimeChange(payload){
+  const runtime=payload?.new;
+  if(!runtime?.character_id) return;
+  storeCombatRuntime(runtime);
+  applyCombatRuntimeToCurrent(runtime);
+  if(activeCampaignDashboardTab==="escudo"&&activeHubCampaignId&&document.body.classList.contains("hub-open")) renderCampaignDashboard();
+}
+function stopCombatRuntimeRealtime(){
+  if(combatRuntimeChannel&&supabaseClient) supabaseClient.removeChannel(combatRuntimeChannel);
+  combatRuntimeChannel=null;
+}
+function startCombatRuntimeRealtime(){
+  stopCombatRuntimeRealtime();
+  if(!combatRuntimeAvailable||!supabaseClient||!cloudUser) return;
+  combatRuntimeChannel=supabaseClient
+    .channel(`character-runtime-${cloudUser.id}`)
+    .on("postgres_changes",{event:"*",schema:"public",table:"character_runtime_states"},handleCombatRuntimeChange)
+    .subscribe(status=>{
+      if(status==="CHANNEL_ERROR") console.warn("Realtime do estado de combate indisponível; o escudo continuará usando atualização periódica.");
+    });
+}
 function queueCloudAutosave(){
   if(!cloudFirstMode()||currentCloudReadOnly||!currentCharacterId) return;
   const snapshot={
@@ -3795,6 +3917,7 @@ function queueCloudAutosave(){
     data:sheetDataFromCurrent()
   };
   if(!snapshot.remoteId) return;
+  queueCombatRuntimeSnapshot(snapshot);
   markSaving("Salvando...");
   cacheLocalCharacterData(snapshot.localId,snapshot.data,characterNameFromData(snapshot.data),new Date().toISOString());
   clearTimeout(cloudAutosaveTimers.get(snapshot.remoteId));
@@ -3813,6 +3936,8 @@ async function saveCloudCharacterSnapshot(snapshot){
   if(!supabaseClient||!cloudUser||!snapshot?.remoteId||!snapshot?.data) return;
   const selectedMeta=cloudCharacters.find(character=>character.id===snapshot.remoteId);
   if(isCloudCharacterReadOnly(selectedMeta)) return;
+  clearCombatRuntimeSaveTimer(snapshot.remoteId);
+  await syncCombatRuntimeSnapshot(snapshot);
   const originalPortrait=String(snapshot.data?.fields?.portraitUrl||"");
   const preparedData=await preparePortraitDataForCloud(snapshot.data,snapshot.remoteId);
   const payload=cloudCharacterUpdatePayload(preparedData);
@@ -4344,7 +4469,7 @@ function activeConditionNamesFromSheet(data){
   return [...base,...custom];
 }
 function sheetSummaryFromCloudCharacter(character){
-  const data=normalizeSheetData(character.sheet_data||{});
+  const data=cloudSheetData(character);
   const fields=data.fields||{},savedState=data.state||{};
   const itemFx=equippedItemEffects(savedState.items||[]);
   const classLevels=classLevelsForSheet(fields,savedState);
@@ -4384,6 +4509,8 @@ function sheetSummaryFromCloudCharacter(character){
     deslocamento:sheetNum(fields,"deslocamento")||race.deslocamento||9,
     tamanho:fields.tamanho||race.tamanho||"Medio",
     conditions:activeConditions,
+    conditionState:clonePlain(savedState.conditions||{}),
+    customConditions:clonePlain(savedState.customConditions||[]),
     updatedAt:character.updated_at||"",
     deathLimit,
     status:pvAtual<deathLimit?"morto":(pvAtual<0?"morrendo":(pvMax>0&&pvAtual<=Math.ceil(pvMax*.25)?"ferido":"ok"))
@@ -4613,6 +4740,24 @@ function bindMasterShieldControls(){
   $$("[data-initiative-state]").forEach(select=>select.onchange=()=>runCloudAction(()=>updateInitiativeState(select.dataset.initiativeState,select.value)));
   $$("[data-initiative-move]").forEach(button=>button.onclick=()=>runCloudAction(()=>moveInitiativeEntry(button.dataset.initiativeMove,Number(button.dataset.direction||0))));
   $$("[data-initiative-delete]").forEach(button=>button.onclick=()=>runCloudAction(()=>deleteInitiativeEntry(button.dataset.initiativeDelete)));
+  $$("[data-shield-toggle]").forEach(button=>button.onclick=()=>{
+    const id=button.dataset.shieldToggle;
+    if(expandedShieldCards.has(id)) expandedShieldCards.delete(id);
+    else expandedShieldCards.add(id);
+    renderCampaignDashboard();
+  });
+  $$("[data-shield-resource]").forEach(button=>button.onclick=()=>runCloudAction(()=>adjustShieldResource(
+    button.dataset.character,
+    button.dataset.shieldResource,
+    Number(button.dataset.delta||0)
+  )));
+  $$("[data-shield-apply]").forEach(button=>button.onclick=()=>runCloudAction(()=>applyShieldResourceAmount(button)));
+  $$("[data-shield-condition-add]").forEach(button=>button.onclick=()=>runCloudAction(()=>addShieldCondition(button.dataset.shieldConditionAdd)));
+  $$("[data-shield-condition-remove]").forEach(button=>button.onclick=()=>runCloudAction(()=>setShieldCondition(
+    button.dataset.character,
+    button.dataset.shieldConditionRemove,
+    false
+  )));
 }
 function requireMasterEncounter(){
   const campaign=cloudCampaigns.find(item=>item.id===activeHubCampaignId);
@@ -4810,37 +4955,124 @@ async function clearCampaignRollHistory(){
   renderCampaignDashboard();
   notify("Historico de rolagens limpo.");
 }
+function shieldRuntimeReady(){
+  if(combatRuntimeAvailable) return true;
+  notify("Os controles de combate ainda não estão instalados no Supabase.");
+  return false;
+}
+function refreshShieldRuntime(runtime){
+  const row=Array.isArray(runtime)?runtime[0]:runtime;
+  if(row?.character_id) storeCombatRuntime(row);
+  renderCampaignDashboard();
+  return row;
+}
+async function adjustShieldResource(characterId,resource,delta){
+  if(!shieldRuntimeReady()||!characterId||!Number.isFinite(delta)||delta===0) return;
+  const {data,error}=await supabaseClient.rpc("adjust_character_runtime_resource",{
+    p_character_id:characterId,
+    p_resource:resource,
+    p_delta:Math.trunc(delta)
+  });
+  if(error) throw error;
+  refreshShieldRuntime(data);
+}
+async function applyShieldResourceAmount(button){
+  if(!button) return;
+  const control=button.closest(".shieldResourceControl"),input=control?.querySelector("input[type='number']");
+  const amount=Math.abs(Math.trunc(Number(input?.value||0)));
+  if(!amount){notify("Informe um valor para aplicar.");input?.focus();return}
+  const resource=button.dataset.resource;
+  let delta=button.dataset.shieldApply==="subtract"?-amount:amount;
+  if(resource==="pv"&&delta<0&&control.querySelector("[data-apply-rd]")?.checked){
+    const rd=Math.max(0,Number(button.dataset.rd)||0);
+    delta=-Math.max(0,amount-rd);
+    if(delta===0){notify(`A RD ${rd} absorveu todo o dano.`);if(input) input.value="";return}
+  }
+  await adjustShieldResource(button.dataset.character,resource,delta);
+  if(input) input.value="";
+}
+async function setShieldCondition(characterId,conditionName,active){
+  if(!shieldRuntimeReady()||!characterId||!conditionName) return;
+  const {data,error}=await supabaseClient.rpc("set_character_runtime_condition",{
+    p_character_id:characterId,
+    p_condition_name:conditionName,
+    p_active:!!active
+  });
+  if(error) throw error;
+  refreshShieldRuntime(data);
+}
+async function addShieldCondition(characterId){
+  const select=document.querySelector(`[data-shield-condition-select="${characterId}"]`);
+  if(!select?.value){notify("Escolha uma condição.");return}
+  await setShieldCondition(characterId,select.value,true);
+}
+function renderShieldResourceControl(summary,resource){
+  const isPv=resource==="pv",label=isPv?"PV":"PM",negative=isPv?"Dano":"Gasto",positive=isPv?"Cura":"Recuperar";
+  return `<div class="shieldResourceControl">
+    <div class="shieldControlTitle"><strong>${label}</strong>${isPv?`<label><input type="checkbox" data-apply-rd checked> Aplicar RD ${summary.rd}</label>`:""}</div>
+    <div class="shieldApplyRow">
+      <input type="number" min="0" inputmode="numeric" placeholder="Valor" aria-label="Valor de ${label}">
+      <button type="button" data-shield-apply="subtract" data-resource="${resource}" data-character="${escapeHtml(summary.id)}" data-rd="${summary.rd}">${negative}</button>
+      <button type="button" data-shield-apply="add" data-resource="${resource}" data-character="${escapeHtml(summary.id)}">${positive}</button>
+    </div>
+    <div class="shieldQuickRow">
+      ${[-5,-1,1,5].map(delta=>`<button type="button" data-shield-resource="${resource}" data-character="${escapeHtml(summary.id)}" data-delta="${delta}">${delta>0?`+${delta}`:delta}</button>`).join("")}
+    </div>
+  </div>`;
+}
 function renderMasterShieldCard(summary){
-  const pvPct=resourceBarPercent(summary.pvAtual,summary.pvMax);
-  const pmPct=resourceBarPercent(summary.pmAtual,summary.pmMax);
+  const pvPct=resourceBarPercent(summary.pvAtual,summary.pvMax),pmPct=resourceBarPercent(summary.pmAtual,summary.pmMax);
+  const expanded=expandedShieldCards.has(summary.id);
   const attrs=ATTR_KEYS.map(key=>`<div><small>${key}</small><strong>${summary.attrs[key]}</strong></div>`).join("");
-  const conditionText=summary.conditions.length?summary.conditions.map(escapeHtml).join(" &bull; "):"Sem condicoes";
-  return `<article class="masterShieldCard ${summary.status}">
+  const activeStandard=Object.entries(summary.conditionState||{}).filter(([,status])=>status?.active).map(([name])=>name);
+  const activeCustom=(summary.customConditions||[]).filter(condition=>condition?.active).map(condition=>condition.name||"Condição");
+  const conditionChips=[
+    ...activeStandard.map(name=>`<span>${escapeHtml(name)}<button type="button" data-character="${escapeHtml(summary.id)}" data-shield-condition-remove="${escapeHtml(name)}" title="Remover ${escapeHtml(name)}" aria-label="Remover ${escapeHtml(name)}">&times;</button></span>`),
+    ...activeCustom.map(name=>`<span>${escapeHtml(name)}</span>`)
+  ].join("");
+  const conditionOptions=Object.keys(CONDITION_LIBRARY).sort((a,b)=>a.localeCompare(b,"pt-BR"))
+    .map(name=>`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+  return `<article class="masterShieldCard ${summary.status} ${expanded?"expanded":"collapsed"}">
     <div class="shieldCardHeader ${summary.imageUrl?"hasPortrait":""}">
       ${summary.imageUrl?`<img class="shieldPortrait" src="${escapeHtml(summary.imageUrl)}" alt="Retrato de ${escapeHtml(summary.name)}">`:""}
       <div>
         <strong>${escapeHtml(summary.name)}</strong>
-        <span>${escapeHtml(summary.raceName)} &bull; ${escapeHtml(summary.className)} nivel ${summary.level}</span>
+        <span>${escapeHtml(summary.raceName)} &bull; ${escapeHtml(summary.className)} nível ${summary.level}</span>
         ${summary.player?`<small>${escapeHtml(summary.player)}</small>`:""}
       </div>
-      <button type="button" data-dashboard-open-character="${escapeHtml(summary.id)}">Ficha</button>
+      <div class="shieldCardActions">
+        <button type="button" data-dashboard-open-character="${escapeHtml(summary.id)}">Ficha</button>
+        <button class="shieldToggleButton" type="button" data-shield-toggle="${escapeHtml(summary.id)}" aria-expanded="${expanded}" title="${expanded?"Recolher":"Expandir"} controles">${expanded?"&#9650;":"&#9660;"}</button>
+      </div>
     </div>
-    <div class="shieldAttrs">${attrs}</div>
-    <div class="shieldResource">
-      <div><small>PV</small><strong>${summary.pvAtual}/${summary.pvMax}${summary.pvTemp?` +${summary.pvTemp}`:""}</strong></div>
-      <span><i style="width:${pvPct}%"></i></span>
+    <div class="shieldCompactResources">
+      <div class="shieldResource">
+        <div><small>PV</small><strong>${summary.pvAtual}/${summary.pvMax}${summary.pvTemp?` +${summary.pvTemp}`:""}</strong></div>
+        <span><i style="width:${pvPct}%"></i></span>
+      </div>
+      <div class="shieldResource pm">
+        <div><small>PM</small><strong>${summary.pmAtual}/${summary.pmMax}${summary.pmTemp?` +${summary.pmTemp}`:""}</strong></div>
+        <span><i style="width:${pmPct}%"></i></span>
+      </div>
     </div>
-    <div class="shieldResource pm">
-      <div><small>PM</small><strong>${summary.pmAtual}/${summary.pmMax}${summary.pmTemp?` +${summary.pmTemp}`:""}</strong></div>
-      <span><i style="width:${pmPct}%"></i></span>
-    </div>
-    <div class="shieldStats">
-      <div><small>Defesa</small><strong>${summary.defense}</strong></div>
-      <div><small>RD</small><strong>${summary.rd}</strong></div>
-      <div><small>Desl.</small><strong>${summary.deslocamento}m</strong></div>
-      <div><small>Tam.</small><strong>${escapeHtml(summary.tamanho)}</strong></div>
-    </div>
-    <div class="shieldConditions">${conditionText}</div>
+    <div class="shieldConditions ${conditionChips?"hasConditions":""}">${conditionChips||"Sem condições"}</div>
+    ${expanded?`<div class="shieldCardDetails">
+      <div class="shieldAttrs">${attrs}</div>
+      <div class="shieldStats">
+        <div><small>Defesa</small><strong>${summary.defense}</strong></div>
+        <div><small>RD</small><strong>${summary.rd}</strong></div>
+        <div><small>Desl.</small><strong>${summary.deslocamento}m</strong></div>
+        <div><small>Tam.</small><strong>${escapeHtml(summary.tamanho)}</strong></div>
+      </div>
+      <div class="shieldRuntimeControls">
+        ${renderShieldResourceControl(summary,"pv")}
+        ${renderShieldResourceControl(summary,"pm")}
+      </div>
+      <div class="shieldConditionControl">
+        <label>Aplicar condição<select data-shield-condition-select="${escapeHtml(summary.id)}"><option value="">Escolha...</option>${conditionOptions}</select></label>
+        <button type="button" data-shield-condition-add="${escapeHtml(summary.id)}">Aplicar</button>
+      </div>
+    </div>`:""}
   </article>`;
 }
 function shouldPollCampaignRolls(){
@@ -5129,13 +5361,22 @@ async function openPublicCloudCharacter(remoteId,options={}){
     .maybeSingle();
   if(error) throw error;
   if(!data) throw new Error("Este link público não está ativo ou a ficha não existe.");
+  let publicRuntime=null;
+  if(combatRuntimeAvailable){
+    const runtimeResult=await supabaseClient
+      .from("character_runtime_states")
+      .select("character_id,pv_current,pm_current,pv_temp,pm_temp,conditions,custom_conditions,updated_by,updated_at")
+      .eq("character_id",remoteId)
+      .maybeSingle();
+    if(!runtimeResult.error) publicRuntime=runtimeResult.data;
+  }
   publicViewCharacter={
     id:data.id,
     name:data.name||"Personagem",
     player_name:data.player_name||"",
     updated_at:data.updated_at||""
   };
-  applySheetData(data.sheet_data||{});
+  applySheetData(applyCombatRuntimeToSheetData(data.sheet_data||{},publicRuntime));
   document.body.classList.remove("auth-gated","hub-open");
   document.body.classList.add("public-view");
   setCurrentCloudReadOnly(true);
@@ -5149,6 +5390,8 @@ async function openCloudCharacter(remoteId,options={}){
   if(publicViewActive()) leavePublicView();
   const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
+  const runtime=combatRuntimeForCharacter(remoteId);
+  const sheetData=applyCombatRuntimeToSheetData(data.sheet_data,runtime);
   const currentRemoteId=mappedCloudCharacterId();
   if(currentRemoteId&&currentRemoteId!==remoteId) save(false);
   else clearCloudAutosaveTimer(remoteId);
@@ -5159,11 +5402,11 @@ async function openCloudCharacter(remoteId,options={}){
     index.activeId=localId;
     writeCharacterIndex(index);
   }else{
-    createCharacter(data.sheet_data,characterNameFromData(data.sheet_data,data.name||"Personagem da nuvem"));
+    createCharacter(sheetData,characterNameFromData(sheetData,data.name||"Personagem da nuvem"));
   }
-  applySheetData(data.sheet_data);
+  applySheetData(sheetData);
   setMappedCloudCharacterId(data.id);
-  cacheLocalCharacterData(currentCharacterId,data.sheet_data,data.name,data.updated_at);
+  cacheLocalCharacterData(currentCharacterId,sheetData,data.name,data.updated_at);
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id||"";
   renderAll();
@@ -5697,15 +5940,19 @@ async function loadCloudData(options={}){
     cloudCampaignRolls=[];
     cloudCampaignEncounters=[];
     cloudInitiativeEntries=[];
+    cloudCharacterRuntimeStates=[];
     setCurrentCloudReadOnly(false);
     renderCloudPanel();
     renderHub();
     return;
   }
   const characterColumns="id,owner_id,name,player_name,campaign_id,is_public,is_private,updated_at,sheet_data";
-  let [{data:campaigns,error:campaignError},{data:characters,error:characterError}]=await Promise.all([
+  let [{data:campaigns,error:campaignError},{data:characters,error:characterError},runtimeResult]=await Promise.all([
     supabaseClient.from("campaigns").select("id,owner_id,name,invite_code,updated_at").order("updated_at",{ascending:false}),
-    supabaseClient.from("characters").select(characterColumns).order("updated_at",{ascending:false})
+    supabaseClient.from("characters").select(characterColumns).order("updated_at",{ascending:false}),
+    combatRuntimeAvailable
+      ? supabaseClient.from("character_runtime_states").select("character_id,pv_current,pm_current,pv_temp,pm_temp,conditions,custom_conditions,updated_by,updated_at")
+      : Promise.resolve({data:[],error:null})
   ]);
   if(campaignError) throw campaignError;
   if(characterError&&/is_private|column/i.test(String(characterError.message||""))){
@@ -5717,8 +5964,18 @@ async function loadCloudData(options={}){
     characterError=fallback.error;
   }
   if(characterError) throw characterError;
+  if(runtimeResult.error){
+    if(/character_runtime_states|relation|schema cache/i.test(String(runtimeResult.error.message||""))){
+      combatRuntimeAvailable=false;
+      runtimeResult={data:[],error:null};
+    }else throw runtimeResult.error;
+  }
   cloudCampaigns=campaigns||[];
-  cloudCharacters=characters||[];
+  cloudCharacterRuntimeStates=runtimeResult.data||[];
+  cloudCharacters=(characters||[]).map(character=>({
+    ...character,
+    sheet_data:applyCombatRuntimeToSheetData(character.sheet_data,combatRuntimeForCharacter(character.id))
+  }));
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(currentCloudCharacterMeta()));
   if(options.syncCurrent) syncCurrentCharacterFromCloud();
   await Promise.all([loadCampaignRolls(),loadCampaignInitiative()]);
@@ -5773,6 +6030,10 @@ async function saveCloudCharacter(show=true){
   }
   markSaving("Salvando...");
   const preparedData=await preparePortraitDataForCloud(sheetDataFromCurrent(),selected||currentCharacterId);
+  if(selected){
+    clearCombatRuntimeSaveTimer(selected);
+    await syncCombatRuntimeSnapshot({localId:currentCharacterId,remoteId:selected,data:preparedData});
+  }
   applyPreparedPortraitFields(preparedData);
   const payload=selected?cloudCharacterUpdatePayload(preparedData):{
     ...cloudPayloadFromCurrent(),
@@ -5848,13 +6109,14 @@ async function loadSelectedCloudCharacter(){
   const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   if(!confirm(`Carregar "${data.name||"personagem"}" da nuvem e substituir a ficha atual neste navegador?`)) return;
+  const sheetData=applyCombatRuntimeToSheetData(data.sheet_data,combatRuntimeForCharacter(remoteId));
   const currentRemoteId=mappedCloudCharacterId();
   if(currentRemoteId&&currentRemoteId!==remoteId) save(false);
   else clearCloudAutosaveTimer(remoteId);
-  if(!currentCharacterId) createCharacter(data.sheet_data,characterNameFromData(data.sheet_data,data.name||"Personagem da nuvem"));
-  applySheetData(data.sheet_data);
+  if(!currentCharacterId) createCharacter(sheetData,characterNameFromData(sheetData,data.name||"Personagem da nuvem"));
+  applySheetData(sheetData);
   setMappedCloudCharacterId(data.id);
-  cacheLocalCharacterData(currentCharacterId,data.sheet_data,data.name,data.updated_at);
+  cacheLocalCharacterData(currentCharacterId,sheetData,data.name,data.updated_at);
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(data));
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id||"";
   renderAll();
@@ -6222,10 +6484,14 @@ async function cloudSignOut(){
   if(!supabaseClient) return;
   cloudAutosaveTimers.forEach(timer=>clearTimeout(timer));
   cloudAutosaveTimers.clear();
+  combatRuntimeSaveTimers.forEach(timer=>clearTimeout(timer));
+  combatRuntimeSaveTimers.clear();
+  stopCombatRuntimeRealtime();
   await supabaseClient.auth.signOut();
   cloudUser=null;
   cloudCharacters=[];
   cloudCampaigns=[];
+  cloudCharacterRuntimeStates=[];
   setCurrentCloudReadOnly(false);
   if(publicViewActive()) leavePublicView();
   localStorage.removeItem(AUTH_MODE_KEY);
@@ -6250,6 +6516,7 @@ async function initCloud(){
     else if(sessionStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
     else showAuthGate();
     await loadCloudData({syncCurrent:true});
+    startCombatRuntimeRealtime();
     browserRoutingReady=true;
     if(cloudUser||sessionStorage.getItem(AUTH_MODE_KEY)==="offline"||routedCloudCharacterId()) await applyBrowserRoute({flush:false});
     supabaseClient.auth.onAuthStateChange(async(_event,session)=>{
@@ -6257,6 +6524,8 @@ async function initCloud(){
       if(cloudUser) enterApp("cloud");
       try{
         await loadCloudData({syncCurrent:!!cloudUser});
+        if(cloudUser) startCombatRuntimeRealtime();
+        else stopCombatRuntimeRealtime();
         if(cloudUser) await initializeBrowserRouting();
       }catch(err){console.error(err);renderCloudPanel()}
     });

@@ -577,6 +577,37 @@ input,select,textarea{border-color:#694038}.attrs label{position:relative;paddin
 
 /* Escudo do Mestre: encontro e iniciativa */
 .masterShieldSurface{display:grid;gap:1.2rem}
+
+/* Controles compartilhados do Escudo do Mestre */
+.masterShieldRoster{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));align-items:start}
+.masterShieldCard{align-content:start;transition:border-color .18s ease,background .18s ease}
+.masterShieldCard.collapsed{gap:.6rem}
+.shieldCardActions{display:flex;align-items:flex-start;gap:.4rem}
+.shieldCardActions .shieldToggleButton{width:32px;min-width:32px;padding:.25rem;font-size:.72rem}
+.shieldCompactResources{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.shieldCardDetails{display:grid;gap:.75rem;border-top:1px solid #3f3029;padding-top:.75rem}
+.shieldRuntimeControls{display:grid;grid-template-columns:1fr;gap:.8rem;border-top:1px solid #3f3029;padding-top:.75rem}
+.shieldResourceControl{display:grid;gap:.45rem;min-width:0}
+.shieldControlTitle{display:flex;align-items:center;justify-content:space-between;gap:.5rem;color:#f3c879}
+.shieldControlTitle>strong{font-family:Cinzel,Georgia,serif;font-size:.82rem}
+.shieldControlTitle label{display:flex;flex-direction:row;align-items:center;gap:.3rem;color:#bdaa91;font-size:.66rem;text-transform:none;white-space:nowrap}
+.shieldControlTitle input{width:14px;height:14px;min-height:0;margin:0;accent-color:#b7832f}
+.shieldApplyRow{display:grid;grid-template-columns:minmax(64px,1fr) auto auto;gap:.35rem}
+.shieldApplyRow input,.shieldConditionControl select{min-width:0;min-height:34px;padding:.35rem .48rem;background:#120f0c;border-color:#5d4036;color:#f4ead8}
+.shieldApplyRow button,.shieldConditionControl button,.shieldQuickRow button{min-height:34px;padding:.34rem .52rem;background:#2d251d;border-color:#765436;color:#f3d394;font-size:.72rem;font-weight:900}
+.shieldApplyRow button:hover,.shieldConditionControl button:hover,.shieldQuickRow button:hover{border-color:#d5a84c;background:#392c20}
+.shieldQuickRow{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem}
+.shieldQuickRow button{padding:.3rem;min-width:0}
+.shieldConditionControl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.55rem;align-items:end;border-top:1px solid #3f3029;padding-top:.75rem}
+.shieldConditionControl label{gap:.3rem;color:#d5a84c;font-size:.68rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+.shieldConditions{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;min-height:32px}
+.shieldConditions.hasConditions{border-color:#6c4f30}
+.shieldConditions>span{display:inline-flex;align-items:center;gap:.22rem;border:1px solid #704139;background:#241915;color:#f3c879;padding:.2rem .28rem .2rem .42rem;font-size:.72rem}
+.shieldConditions>span button{display:inline-grid;place-items:center;width:19px;height:19px;min-height:19px;padding:0;border:0;background:transparent;color:#e7b2a8;font-size:1rem;line-height:1}
+.shieldConditions>span button:hover{color:#ff6c61;background:#351713}
+
+@media(max-width:980px){.shieldRuntimeControls{grid-template-columns:1fr}.masterShieldRoster{grid-template-columns:1fr}}
+@media(max-width:520px){.shieldCompactResources{grid-template-columns:1fr}.shieldApplyRow{grid-template-columns:1fr 1fr}.shieldApplyRow input{grid-column:1/-1}.shieldConditionControl{grid-template-columns:1fr}.shieldCardHeader.hasPortrait{grid-template-columns:48px minmax(0,1fr)}.shieldPortrait{width:48px;height:48px}.shieldCardActions{grid-column:1/-1;justify-content:flex-end}}
 .campaignInitiativePanel{border:1px solid #654335;border-radius:8px;background:#1d1814;box-shadow:0 14px 30px rgba(0,0,0,.22);overflow:hidden}
 .campaignInitiativePanel.idle{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:1rem;padding:1rem 1.15rem;background:linear-gradient(135deg,#211a14,#171412)}
 .campaignInitiativePanel.idle>button{min-width:150px;border-color:#9a6e26;background:#342714;color:#ffd071;font-weight:900}
