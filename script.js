@@ -9,20 +9,48 @@ const SUPABASE_URL="https://kcknkxczcczsyoljugcb.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_2v5KyyfqIEm446I7w8Y83Q_LD-Jv5QK";
 const CLOUD_CHARACTER_MAP_KEY="t20_cloud_character_map_v1";
 const AUTH_MODE_KEY="t20_auth_mode_v1";
+const PORTRAIT_BUCKET="character-portraits";
+const PORTRAIT_MAX_SOURCE_BYTES=12*1024*1024;
 
 let supabaseClient=null;
 let cloudUser=null;
 let cloudCharacters=[];
 let cloudCampaigns=[];
 let cloudCampaignRolls=[];
+let cloudCampaignEncounters=[];
+let cloudInitiativeEntries=[];
+let campaignInitiativeAvailable=true;
 
 function makeEntryId(prefix="entry"){
   if(globalThis.crypto?.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,9)}`;
 }
 
+function defaultCartomanteState(){
+  return {
+    materialized:false,hand:[],cardHp:0,mulliganUsed:false,
+    rareChoice:"",epicChoice:"",deity:"",grantedPower:"",
+    divineSpells:{1:"",2:"",3:"",4:"",5:""},
+    exodiaParts:[],exodiaMode:"partner",exodiaSummoned:false,exodiaNotes:"",
+    partnerType:"combatente",cloneAbility:"",tutorCard:"",tutorExtraPm:0
+  };
+}
+function normalizeCartomanteState(value){
+  const base=defaultCartomanteState();
+  const source=value&&typeof value==="object"?value:{};
+  const normalized={...base,...source};
+  normalized.materialized=source.materialized===true;
+  normalized.hand=Array.isArray(source.hand)?[...new Set(source.hand.map(String))]:[];
+  normalized.cardHp=Math.max(0,Number(source.cardHp||0));
+  normalized.mulliganUsed=source.mulliganUsed===true;
+  normalized.divineSpells={...base.divineSpells,...(source.divineSpells||{})};
+  normalized.exodiaParts=Array.isArray(source.exodiaParts)?[...new Set(source.exodiaParts.map(String))]:[];
+  normalized.exodiaSummoned=source.exodiaSummoned===true;
+  normalized.tutorExtraPm=Math.max(0,Number(source.tutorExtraPm||0));
+  return normalized;
+}
 function defaultState(){
-  return {powers:[],spells:[],items:[],partners:[],attacks:[defaultAttack({name:"Ataque desarmado",damage:"1d3"})],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false};
+  return {powers:[],spells:[],items:[],partners:[],attacks:[defaultAttack({name:"Ataque desarmado",damage:"1d3"})],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false,cartomante:defaultCartomanteState()};
 }
 function defaultAttack(overrides={}){
   return {
@@ -68,9 +96,14 @@ function normalizeState(){
   });
   if(!state.offices.length) state.offices=defaultState().offices;
   state.classLevels=Array.isArray(state.classLevels)?state.classLevels:[];
-  state.spells=state.spells.map(spell=>normalizeSpellDetailFields({...spell}));
+  state.spells=state.spells.map(spell=>{
+    const normalized=normalizeSpellDetailFields({...spell});
+    if(!String(normalized.id||"").trim()) normalized.id=makeEntryId("spell");
+    return normalized;
+  });
   state.items=state.items.map(item=>normalizeInventoryItemDescription(item));
   state.partners=state.partners.map(normalizePartner);
+  state.cartomante=normalizeCartomanteState(state.cartomante);
 }
 
 let state=defaultState();
@@ -93,6 +126,7 @@ let browserRoutingReady=false;
 let applyingBrowserRoute=false;
 let browserRouteRequest=0;
 let publicViewCharacter=null;
+let portraitCropState={source:null,minScale:1,scale:1,x:0,y:0,dragging:false,pointerId:null,lastX:0,lastY:0};
 
 const ATTR_KEYS=["FOR","DES","CON","INT","SAB","CAR"];
 const ATTR_NAMES={FOR:"Força",DES:"Destreza",CON:"Constituição",INT:"Inteligência",SAB:"Sabedoria",CAR:"Carisma"};
@@ -1149,6 +1183,7 @@ function syncPrimaryFieldsFromClassLevels(){
 function setClassLevels(levels,{render=true}={}){
   state.classLevels=sanitizeClassLevels(levels);
   syncPrimaryFieldsFromClassLevels();
+  syncClassSpellAttr();
   if(render) renderClassLevels();
 }
 function classSelectOptions(selected){
@@ -1201,7 +1236,8 @@ function renderClassLevels(){
     if(idx===0) state.skillData={};
     setClassLevels(levels);
     syncClassDefenseAttr();
-    renderPowers();renderPartners();refreshPowerPickerIfOpen();recalc();save(false);
+    syncClassSpellAttr();
+    renderPowers();renderPartners();renderSpells();refreshPowerPickerIfOpen();recalc();save(false);
   });
   $$("[data-classlevel-level]").forEach(element=>element.onchange=()=>{
     const levels=currentClassLevels();
@@ -1209,7 +1245,7 @@ function renderClassLevels(){
     const otherLevels=levels.reduce((sum,entry,entryIndex)=>sum+(entryIndex===idx?0:clampClassLevel(entry.level)),0);
     levels[idx].level=Math.min(clampClassLevel(element.value),Math.max(1,20-otherLevels));
     setClassLevels(levels);
-    renderPowers();renderPartners();refreshPowerPickerIfOpen();recalc();save(false);
+    renderPowers();renderPartners();renderSpells();refreshPowerPickerIfOpen();recalc();save(false);
   });
   $$("[data-classlevel-remove]").forEach(element=>element.onclick=()=>{
     const levels=currentClassLevels();
@@ -1217,7 +1253,7 @@ function renderClassLevels(){
     if(idx<=0) return;
     levels.splice(idx,1);
     setClassLevels(levels);
-    renderPowers();renderPartners();refreshPowerPickerIfOpen();recalc();save(false);
+    renderPowers();renderPartners();renderSpells();refreshPowerPickerIfOpen();recalc();save(false);
   });
 }
 function addClassLevel(){
@@ -1227,7 +1263,7 @@ function addClassLevel(){
   const id=Object.keys(T20_DATA.classes).find(classId=>!used.has(classId))||firstClassId();
   levels.push({id,level:1});
   setClassLevels(levels);
-  renderPowers();renderPartners();refreshPowerPickerIfOpen();recalc();save(false);
+  renderPowers();renderPartners();renderSpells();refreshPowerPickerIfOpen();recalc();save(false);
 }
 function trainingBonus(){const l=totalClassLevel();return l>=15?6:l>=7?4:2}
 function halfLevel(){return Math.floor(totalClassLevel()/2)}
@@ -1341,7 +1377,7 @@ function recalc(){
   const pvTemp=Math.max(0,num("pvBonus")),pmTemp=Math.max(0,num("pmBonus"));
   const pvMax=pvBase+num("pvAjuste")+itemFx.pvMax,pmMax=pmBase+num("pmAjuste")+itemFx.pmMax;
   const pvAtual=num("pvAtual"),deathLimit=deathLimitFromPvMax(pvMax),deathThreshold=deathLimit-1,isDying=pvAtual<0,isDead=pvAtual<deathLimit;
-  $("#pvMaxView").textContent=isDying?deathLimit:pvMax;$("#pmMaxView").textContent=pmMax;$("#pvAtualView").textContent=pvAtual;$("#pmAtualView").textContent=num("pmAtual");
+  $("#pvMaxView").textContent=isDying?deathLimit:pvMax;$("#pvMaxView").dataset.max=pvMax;$("#pmMaxView").textContent=pmMax;$("#pmMaxView").dataset.max=pmMax;$("#pvAtualView").textContent=pvAtual;$("#pmAtualView").textContent=num("pmAtual");
   $("#pvTempView").textContent=pvTemp?` +${pvTemp} temp`:"";$("#pmTempView").textContent=pmTemp?` +${pmTemp} temp`:"";
   const conditionFx=activeConditionEffects();
   const defenseAttr=ATTR_KEYS.includes(value("defAttr"))?value("defAttr"):"DES";
@@ -1448,7 +1484,7 @@ function recalc(){
   if(sizeInput) sizeInput.onchange=()=>{const sizeField=$("#tamanho");if(sizeField) sizeField.value=sizeInput.value===baseSize?"":sizeInput.value;save(false)};
   const moveInput=$("#summaryMoveInput");
   if(moveInput) moveInput.oninput=()=>{const moveField=$("#deslocamento");if(moveField) moveField.value=moveInput.value;save(false)};
-  renderProgress();renderSkills();renderInventorySummary();renderGlobalModifierSummary();refreshAttackSummaries();
+  renderProgress();renderSkills();renderInventorySummary();renderGlobalModifierSummary();refreshAttackSummaries();renderCartomantePanel();
 }
 function classProgressionForClassId(classId){
   const cls=T20_DATA.classes[classId];
@@ -2011,7 +2047,7 @@ function renderPowers(){
   });
   bindCollection("p",state.powers,renderPowers);
   $$("[data-pautodel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pautodel;suppressAutoPower(state.powers[idx]);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();recalc();save(false)});
-  $$("[data-pdel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pdel;state.powers.splice(idx,1);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();recalc();save(false)});
+  $$("[data-pdel]").forEach(e=>e.onclick=()=>{const idx=+e.dataset.pdel;if(state.powers[idx]?.cartomanteGrantedPower)state.cartomante.grantedPower="";state.powers.splice(idx,1);expandedPowerCards=new Set([...expandedPowerCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderPowers();recalc();save(false)});
 }
 function currentClassPowerIds(){
   return [...new Set(currentClassLevels().flatMap(entry=>{
@@ -2431,18 +2467,271 @@ function renderSpellsLegacy(){
   $$('[data-sdel]').forEach(e=>e.onclick=()=>{state.spells.splice(+e.dataset.sdel,1);renderSpells();save(false)});
   $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=partnerSpellCost(spell);applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||'Magia'} conjurada: −${cost} PM`)});
 }
+function cartomanteClassEntry(){return currentClassLevels().find(entry=>entry.id==="cartomante")||null}
+function cartomanteLevel(){return cartomanteClassEntry()?.level||0}
+function cartomanteHandLimit(){
+  const level=totalClassLevel();
+  return level<=4?4:level<=10?5:level<=16?6:7;
+}
+function cartomanteCardMaxHp(){
+  const stored=Number($("#pvMaxView")?.dataset?.max||0);
+  return Math.max(1,Math.floor(stored/4));
+}
+function cartomanteSpellKey(spell){return `spell:${spell.id}`}
+function cartomanteSpellExecution(spell){
+  const execution=String(spell?.execution||"").trim();
+  if(!cartomanteClassEntry()||/livre|reaç|reac/i.test(execution)) return execution;
+  return "movimento (Cartomante)";
+}
+function cartomanteSpecialIds(){
+  const level=cartomanteLevel(),cart=state.cartomante;
+  const result=[];
+  if(level>=7&&window.T20_CARTOMANTE_CARDS?.[cart.rareChoice]) result.push(cart.rareChoice);
+  if(level>=10&&window.T20_CARTOMANTE_CARDS?.[cart.epicChoice]&&!result.includes(cart.epicChoice)) result.push(cart.epicChoice);
+  return result;
+}
+function cartomanteExodiaEntries(){
+  if(cartomanteLevel()<20) return [];
+  return [
+    ["cabeca","Cabeça"],["braco_direito","Braço Direito"],["braco_esquerdo","Braço Esquerdo"],
+    ["perna_direita","Perna Direita"],["perna_esquerda","Perna Esquerda"]
+  ].map(([id,name])=>({key:`exodia:${id}`,type:"exodia",id,name:`Exodia: ${name}`,cost:5,rarity:"Mítica",summary:"Parte do Aspecto divino; permanece no pentagrama após ser jogada."}));
+}
+function cartomanteDeckEntries(){
+  const spells=state.spells.map((spell,index)=>({
+    key:cartomanteSpellKey(spell),type:"spell",index,name:spell.name||"Magia sem nome",
+    cost:partnerSpellCost(spell),rarity:`${spell.circle||1}º círculo`,summary:[spell.type,spell.school,cartomanteSpellExecution(spell)].filter(Boolean).join(" • ")
+  }));
+  const specials=cartomanteSpecialIds().map(id=>{
+    const card=window.T20_CARTOMANTE_CARDS[id];
+    return {key:`special:${id}`,type:"special",...card};
+  });
+  return [...spells,...specials,...cartomanteExodiaEntries()];
+}
+function cartomanteEntryByKey(key){return cartomanteDeckEntries().find(entry=>entry.key===key)||null}
+function pruneCartomanteHand(){
+  const valid=new Set(cartomanteDeckEntries().map(entry=>entry.key));
+  state.cartomante.hand=state.cartomante.hand.filter(key=>valid.has(key)&&!state.cartomante.exodiaParts.includes(key));
+}
+function drawCartomanteCards(amount){
+  const cart=state.cartomante;
+  if(!cart.materialized){notify("Materialize o baralho antes de comprar cartas.");return 0}
+  pruneCartomanteHand();
+  let drawn=0;
+  for(let count=0;count<amount;count++){
+    const blocked=new Set([...cart.hand,...cart.exodiaParts]);
+    const available=cartomanteDeckEntries().filter(entry=>!blocked.has(entry.key));
+    if(!available.length) break;
+    const card=available[Math.floor(Math.random()*available.length)];
+    cart.hand.push(card.key);drawn++;
+  }
+  return drawn;
+}
+function removeCartomantePartner(){
+  state.partners=state.partners.filter(partner=>partner.source!=="Carta Especial: Parceiro Arcano");
+}
+function materializeCartomanteDeck(){
+  const cart=state.cartomante;
+  applyResourceDelta("pmAtual","pmBonus",-1,false);
+  cart.materialized=true;cart.hand=[];cart.cardHp=cartomanteCardMaxHp();cart.mulliganUsed=false;
+  cart.exodiaParts=[];cart.exodiaSummoned=false;
+  const drawn=drawCartomanteCards(cartomanteHandLimit());
+  recalc();renderSpells();save(false);
+  notify(`Baralho materializado: ${drawn} carta${drawn===1?"":"s"} na mão.`);
+}
+function endCartomanteScene(){
+  const cart=state.cartomante;
+  cart.materialized=false;cart.hand=[];cart.cardHp=0;cart.mulliganUsed=false;cart.exodiaParts=[];cart.exodiaSummoned=false;
+  removeCartomantePartner();renderPartners();renderSpells();recalc();save(false);notify("Cena encerrada; as cartas retornaram ao baralho.");
+}
+function destroyCartomanteCards(){
+  const cart=state.cartomante;
+  cart.materialized=false;cart.hand=[];cart.cardHp=0;
+  state.conditions.Atordoado={active:true};
+  renderConditions();renderConditionMini();renderSpells();recalc();save(false);
+  notify("As cartas foram destruídas. Você fica atordoado por uma rodada e deve materializá-las novamente.");
+}
+function cartomanteMulligan(){
+  const cart=state.cartomante;
+  if(cartomanteLevel()<3||!cart.materialized||cart.mulliganUsed) return;
+  cart.hand=[];cart.mulliganUsed=true;
+  const drawn=drawCartomanteCards(cartomanteHandLimit());
+  renderSpells();save(false);notify(`Mulligan realizado: ${drawn} nova${drawn===1?" carta":"s cartas"}.`);
+}
+function cartomantePmMaximum(){
+  const value=Number($("#pmMaxView")?.textContent||0);
+  return Number.isFinite(value)?Math.max(0,value):0;
+}
+function summonCartomantePartner(){
+  const cart=state.cartomante,level=cartomanteLevel();
+  const rank=level>=18?"Mestre":level>=12?"Veterano":"Iniciante";
+  removeCartomantePartner();
+  state.partners.push(defaultPartner({type:cart.partnerType,rank,name:`Parceiro Arcano (${PARTNER_CATALOG[cart.partnerType]?.name||"Parceiro"})`,source:"Carta Especial: Parceiro Arcano"}));
+  renderPartners();
+}
+function resolveCartomanteCard(entry,{skipCost=false,fromHand=true}={}){
+  if(!entry) return;
+  const cart=state.cartomante;
+  if(fromHand){
+    const index=cart.hand.indexOf(entry.key);
+    if(index<0){notify("Essa carta não está em sua mão.");return}
+    cart.hand.splice(index,1);
+  }
+  if(!skipCost) applyResourceDelta("pmAtual","pmBonus",-Number(entry.cost||0),false);
+  if(entry.type==="spell"){
+    const spell=state.spells[entry.index];
+    notify(`${spell?.name||entry.name} conjurada: ${skipCost?"custo-base ignorado pelo Tutor Arcano":`-${entry.cost} PM`}.`);
+  }else if(entry.type==="exodia"){
+    if(!cart.exodiaParts.includes(entry.key)) cart.exodiaParts.push(entry.key);
+    cart.exodiaSummoned=cart.exodiaParts.length===5;
+    notify(cart.exodiaSummoned?`Exodia completo: o Aspecto de ${cart.deity||"sua divindade"} se manifesta.`:`${entry.name} foi colocada no pentagrama.`);
+  }else{
+    switch(entry.id){
+      case "parceiro_arcano": summonCartomantePartner();notify("Parceiro Arcano invocado até o fim da cena.");break;
+      case "clone": notify(`Clone preparado${cart.cloneAbility?`: ${cart.cloneAbility}`:""}. A habilidade pode ser usada até o fim do próximo turno.`);break;
+      case "super_trunfo": notify("Super Trunfo: o teste escolhido é um sucesso automático.");break;
+      case "chamado_ancestral": {const count=drawCartomanteCards(3);notify(`Chamado Ancestral: ${count} carta${count===1?" comprada":"s compradas"}.`);break}
+      case "lotus_negra": {
+        const recovered=Array.from({length:3},()=>1+Math.floor(Math.random()*8)).reduce((sum,die)=>sum+die,0);
+        setNumberField("pmAtual",Math.min(cartomantePmMaximum(),num("pmAtual")+recovered));
+        notify(`Lótus Negra recuperou ${recovered} PM.`);break;
+      }
+    }
+  }
+  recalc();renderSpells();save(false);
+}
+function castGrimoireSpell(index){
+  const spell=state.spells[index];
+  if(!spell) return;
+  if(cartomanteClassEntry()){
+    if(!state.cartomante.materialized){notify("Materialize o baralho para lançar suas cartas.");return}
+    const entry=cartomanteEntryByKey(cartomanteSpellKey(spell));
+    if(!entry||!state.cartomante.hand.includes(entry.key)){notify("Essa magia está no baralho, não em sua mão.");return}
+    resolveCartomanteCard(entry);return;
+  }
+  const cost=partnerSpellCost(spell);
+  applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||"Magia"} conjurada: -${cost} PM`);
+}
+function cartomanteJogatinaBonus(){
+  const button=$('[data-skroll="Jogatina"]');
+  if(button) return Number(button.dataset.bonus||0);
+  const data=state.skillData.Jogatina||{trained:true,adjust:0,attr:"CAR"};
+  return halfLevel()+attrNum(data.attr||"CAR")+(data.trained?trainingBonus():0)+Number(data.adjust||0)+num("globalTestBonus")+num("skillGlobalBonus");
+}
+function useTutorArcano(){
+  const cart=state.cartomante;
+  if(cartomanteLevel()<16||!cart.materialized){notify("Materialize o baralho antes de usar Tutor Arcano.");return}
+  const entry=cartomanteEntryByKey(cart.tutorCard);
+  if(!entry||cart.hand.includes(entry.key)||cart.exodiaParts.includes(entry.key)){notify("Escolha uma carta que esteja no baralho.");return}
+  const extra=Math.max(0,Number(cart.tutorExtraPm||0)),cost=15+extra;
+  applyResourceDelta("pmAtual","pmBonus",-cost,false);
+  const die=1+Math.floor(Math.random()*20),bonus=cartomanteJogatinaBonus(),total=die+bonus,dc=20+cartomanteLevel();
+  if(total>=dc){
+    resolveCartomanteCard(entry,{skipCost:true,fromHand:false});
+    notify(`Tutor Arcano: ${die} ${bonus>=0?"+":""}${bonus} = ${total} contra CD ${dc}. ${entry.name} foi lançada.`);
+  }else{
+    state.conditions.Confuso={active:true};renderConditions();renderConditionMini();recalc();renderSpells();save(false);
+    notify(`Tutor Arcano falhou: ${die} ${bonus>=0?"+":""}${bonus} = ${total} contra CD ${dc}. Você fica confuso até o fim do próximo turno.`);
+  }
+}
+function cartomanteDivineSpellOptions(circle,selected){
+  const spells=(window.T20_SPELL_CATALOG||[]).filter(spell=>Number(spell.circle)===Number(circle)&&["Divina","Universal"].includes(spell.type));
+  return `<option value="">Escolha...</option>${spells.map(spell=>`<option value="${escapeHtml(spell.name)}" ${spell.name===selected?"selected":""}>${escapeHtml(spell.name)} (${escapeHtml(spell.type)})</option>`).join("")}`;
+}
+function setCartomanteDivineSpell(circle,name){
+  const cart=state.cartomante,marker=Number(circle);
+  state.spells=state.spells.filter(spell=>Number(spell.cartomanteDivineCircle)!==marker);
+  cart.divineSpells[circle]=name;
+  if(name&&!state.spells.some(spell=>spell.name===name)){
+    const source=(window.T20_SPELL_CATALOG||[]).find(spell=>spell.name===name&&Number(spell.circle)===marker);
+    if(source) state.spells.push({...normalizeSpellForDisplay(source),id:makeEntryId("spell"),cartomanteDivineCircle:marker});
+  }
+  expandedSpellCards.clear();renderSpells();save(false);
+}
+function setCartomanteGrantedPower(name){
+  state.cartomante.grantedPower=name;
+  state.powers=state.powers.filter(power=>power.cartomanteGrantedPower!==true);
+  const power=powerCatalogEntries().find(entry=>entry.type==="Concedido"&&entry.name===name);
+  if(power) state.powers.push({name:power.name,type:"Concedido",cost:power.cost||"",action:power.action||"",source:`Destino Traçado • ${power.source||"Poder concedido"}`,desc:power.desc||"",cartomanteGrantedPower:true});
+  renderPowers();recalc();save(false);
+}
+function renderCartomantePanel(){
+  const panel=$("#cartomantePanel");
+  if(!panel) return;
+  const classEntry=cartomanteClassEntry();
+  panel.classList.toggle("hidden",!classEntry);
+  if(!classEntry){panel.innerHTML="";return}
+  const level=cartomanteLevel(),cart=state.cartomante;
+  if(cart.materialized) cart.cardHp=Math.min(cart.cardHp,cartomanteCardMaxHp());
+  pruneCartomanteHand();
+  const entries=cartomanteDeckEntries(),handEntries=cart.hand.map(cartomanteEntryByKey).filter(Boolean);
+  const staged=new Set(cart.exodiaParts),deckCount=entries.filter(entry=>!cart.hand.includes(entry.key)&&!staged.has(entry.key)).length;
+  const limit=cartomanteHandLimit(),overLimit=cart.hand.length>limit;
+  const rareOptions=["parceiro_arcano","clone","super_trunfo"].map(id=>`<option value="${id}" ${cart.rareChoice===id?"selected":""}>${escapeHtml(window.T20_CARTOMANTE_CARDS[id].name)}</option>`).join("");
+  const epicIds=["chamado_ancestral","lotus_negra",...(["parceiro_arcano","clone","super_trunfo"].filter(id=>id!==cart.rareChoice))];
+  const epicOptions=epicIds.map(id=>`<option value="${id}" ${cart.epicChoice===id?"selected":""}>${escapeHtml(window.T20_CARTOMANTE_CARDS[id].name)} (${escapeHtml(window.T20_CARTOMANTE_CARDS[id].rarity)})</option>`).join("");
+  const deityOptions=(window.T20_CARTOMANTE_DEITIES||[]).map(name=>`<option ${cart.deity===name?"selected":""}>${escapeHtml(name)}</option>`).join("");
+  const granted=cart.deity?powerCatalogEntries().filter(power=>power.type==="Concedido"&&(power.deities||[]).includes(cart.deity)).sort((a,b)=>a.name.localeCompare(b.name,"pt-BR")):[];
+  const partnerOptions=Object.entries(PARTNER_CATALOG).map(([id,entry])=>`<option value="${id}" ${cart.partnerType===id?"selected":""}>${escapeHtml(entry.name)}</option>`).join("");
+  const tutorOptions=entries.filter(entry=>!cart.hand.includes(entry.key)&&!staged.has(entry.key)).map(entry=>`<option value="${entry.key}" ${cart.tutorCard===entry.key?"selected":""}>${escapeHtml(entry.name)}</option>`).join("");
+  panel.innerHTML=`
+    <div class="cartomanteHeader"><div><span class="eyebrow">Caminho do Cartomante</span><h3>Baralho Arcano</h3><p>As magias só podem ser lançadas quando suas cartas estiverem na mão.</p></div><span class="cartomanteStatus ${cart.materialized?"active":""}">${cart.materialized?"Materializado":"Desmaterializado"}</span></div>
+    <div class="cartomanteStats">
+      <div><small>Baralho</small><strong>${deckCount}</strong></div><div class="${overLimit?"danger":""}"><small>Mão</small><strong>${cart.hand.length}/${limit}</strong></div>
+      <div><small>Cartas</small><strong>RD 5</strong></div><label><span>PV das cartas <small>máx. ${cartomanteCardMaxHp()}</small></span><input id="cartomanteCardHp" type="number" min="0" max="${cartomanteCardMaxHp()}" value="${cart.cardHp}"></label>
+    </div>
+    <div class="cartomanteActions">
+      <button type="button" id="cartomanteMaterialize">${cart.materialized?"Rematerializar (-1 PM)":"Materializar (-1 PM)"}</button>
+      <button type="button" id="cartomanteDraw" ${!cart.materialized||overLimit?"disabled":""}>Início do turno: comprar 1</button>
+      ${level>=3?`<button type="button" id="cartomanteMulligan" ${!cart.materialized||cart.mulliganUsed?"disabled":""}>Mulligan</button>`:""}
+      <button type="button" id="cartomanteDestroy" class="dangerButton" ${!cart.materialized?"disabled":""}>Cartas destruídas</button>
+      <button type="button" id="cartomanteEndScene" ${!cart.materialized?"disabled":""}>Encerrar cena</button>
+    </div>
+    ${overLimit?`<p class="cartomanteWarning">Sua mão excedeu o limite. Devolva ${cart.hand.length-limit} carta${cart.hand.length-limit===1?"":"s"} ao baralho.</p>`:""}
+    <div class="cartomanteHand"><div class="cartomanteSubhead"><h4>Mão</h4><span>${handEntries.length?"Jogue ou devolva uma carta":"Nenhuma carta na mão"}</span></div><div class="cartomanteHandGrid">${handEntries.map(entry=>`<article class="cartomanteCard ${entry.type}"><div><small>${escapeHtml(entry.rarity||"")} • ${entry.cost} PM</small><strong>${escapeHtml(entry.name)}</strong><p>${escapeHtml(entry.summary||"")}</p>${entry.desc?`<details><summary>Regras da carta</summary><p>${escapeHtml(entry.desc)}</p></details>`:""}</div><div><button type="button" data-cart-play="${entry.key}" ${overLimit?"disabled":""}>${entry.type==="spell"?"Conjurar":"Jogar"}</button><button type="button" data-cart-return="${entry.key}">Devolver</button></div></article>`).join("")}</div></div>
+    <details class="cartomanteSetup" ${level>=7&&!cart.rareChoice?"open":""}><summary>Configuração e habilidades do caminho</summary><div class="cartomanteSetupGrid">
+      ${level>=7?`<label>Carta Especial Rara<select id="cartomanteRare"><option value="">Escolha...</option>${rareOptions}</select></label>`:""}
+      ${level>=10?`<label>Carta Especial Épica<select id="cartomanteEpic"><option value="">Escolha...</option>${epicOptions}</select></label>`:""}
+      ${level>=7&&[cart.rareChoice,cart.epicChoice].includes("parceiro_arcano")?`<label>Tipo do Parceiro Arcano<select id="cartomantePartnerType">${partnerOptions}</select></label>`:""}
+      ${level>=7&&[cart.rareChoice,cart.epicChoice].includes("clone")?`<label>Habilidade copiada por Clone<input id="cartomanteCloneAbility" value="${escapeHtml(cart.cloneAbility)}" placeholder="Nome da habilidade"></label>`:""}
+      ${level>=15?`<label>Deus de Destino Traçado<select id="cartomanteDeity"><option value="">Escolha...</option>${deityOptions}</select></label><label>Poder concedido<select id="cartomanteGranted"><option value="">Escolha...</option>${granted.map(power=>`<option ${cart.grantedPower===power.name?"selected":""}>${escapeHtml(power.name)}</option>`).join("")}</select></label>`:""}
+      ${level>=15?[1,2,3,4,...(level>=20?[5]:[])].map(circle=>`<label>Magia divina de ${circle}º círculo<select data-cart-divine="${circle}">${cartomanteDivineSpellOptions(circle,cart.divineSpells[circle])}</select></label>`).join(""):""}
+    </div></details>
+    ${level>=16?`<div class="cartomanteTutor"><div><h4>Tutor Arcano</h4><p>Teste de Jogatina contra CD ${20+level}; o custo é 15 PM mais aprimoramentos.</p></div><select id="cartomanteTutorCard"><option value="">Carta no baralho...</option>${tutorOptions}</select><label>PM de aprimoramentos<input id="cartomanteTutorExtra" type="number" min="0" value="${cart.tutorExtraPm}"></label><button type="button" id="cartomanteTutorUse">Buscar e lançar</button></div>`:""}
+    ${level>=20?`<div class="cartomanteExodia"><div><h4>Exodia</h4><p>${cart.exodiaSummoned?`Aspecto de ${escapeHtml(cart.deity||"sua divindade")} manifestado.`:`${cart.exodiaParts.length}/5 partes no pentagrama.`}</p></div><label>Controle<select id="cartomanteExodiaMode"><option value="partner" ${cart.exodiaMode==="partner"?"selected":""}>Criatura parceira</option><option value="direct" ${cart.exodiaMode==="direct"?"selected":""}>Controle direto</option></select></label><label class="cartomanteExodiaNotes">Aspecto escolhido ou ficha personalizada<textarea id="cartomanteExodiaNotes" rows="2" placeholder="Nome, ND e referência do Aspecto...">${escapeHtml(cart.exodiaNotes)}</textarea></label></div>`:""}`;
+  $("#cartomanteMaterialize").onclick=materializeCartomanteDeck;
+  $("#cartomanteDraw").onclick=()=>{const count=drawCartomanteCards(1);renderSpells();save(false);notify(count?"Uma carta foi comprada.":"Não há cartas disponíveis no baralho.")};
+  $("#cartomanteMulligan")?.addEventListener("click",cartomanteMulligan);
+  $("#cartomanteDestroy").onclick=destroyCartomanteCards;$("#cartomanteEndScene").onclick=endCartomanteScene;
+  $("#cartomanteCardHp").onchange=event=>{cart.cardHp=Math.max(0,Math.min(cartomanteCardMaxHp(),Number(event.target.value||0)));if(cart.cardHp===0&&cart.materialized)destroyCartomanteCards();else save(false)};
+  $$('[data-cart-play]').forEach(button=>button.onclick=()=>resolveCartomanteCard(cartomanteEntryByKey(button.dataset.cartPlay)));
+  $$('[data-cart-return]').forEach(button=>button.onclick=()=>{cart.hand=cart.hand.filter(key=>key!==button.dataset.cartReturn);renderSpells();save(false)});
+  $("#cartomanteRare")?.addEventListener("change",event=>{cart.rareChoice=event.target.value;if(cart.epicChoice===cart.rareChoice)cart.epicChoice="";pruneCartomanteHand();renderSpells();save(false)});
+  $("#cartomanteEpic")?.addEventListener("change",event=>{cart.epicChoice=event.target.value;pruneCartomanteHand();renderSpells();save(false)});
+  $("#cartomantePartnerType")?.addEventListener("change",event=>{cart.partnerType=event.target.value;save(false)});
+  $("#cartomanteCloneAbility")?.addEventListener("input",event=>{cart.cloneAbility=event.target.value;save(false)});
+  $("#cartomanteDeity")?.addEventListener("change",event=>{cart.deity=event.target.value;cart.grantedPower="";setCartomanteGrantedPower("");renderSpells();save(false)});
+  $("#cartomanteGranted")?.addEventListener("change",event=>setCartomanteGrantedPower(event.target.value));
+  $$('[data-cart-divine]').forEach(select=>select.onchange=()=>setCartomanteDivineSpell(Number(select.dataset.cartDivine),select.value));
+  $("#cartomanteTutorCard")?.addEventListener("change",event=>{cart.tutorCard=event.target.value;save(false)});
+  $("#cartomanteTutorExtra")?.addEventListener("input",event=>{cart.tutorExtraPm=Math.max(0,Number(event.target.value||0));save(false)});
+  $("#cartomanteTutorUse")?.addEventListener("click",useTutorArcano);
+  $("#cartomanteExodiaMode")?.addEventListener("change",event=>{cart.exodiaMode=event.target.value;save(false)});
+  $("#cartomanteExodiaNotes")?.addEventListener("input",event=>{cart.exodiaNotes=event.target.value;save(false)});
+}
 function renderGrimoireSpellCard(s,i){
   const isOpen=expandedSpellCards.has(i);
   const circle=Math.max(1,Math.min(5,Number(s.circle||1)));
   const cost=Number(s.cost||1),castCost=partnerSpellCost(s);
   const costSummary=castCost===cost?`${cost} PM`:`${castCost} PM com parceiro`;
-  const summary=[`${circle}º círculo`,costSummary,s.type,s.school,s.execution].filter(Boolean).map(escapeHtml).join(" &bull; ");
+  const summary=[`${circle}º círculo`,costSummary,s.type,s.school,cartomanteSpellExecution(s)].filter(Boolean).map(escapeHtml).join(" &bull; ");
   return `<div class="card grimoireSpellCard ${isOpen?"expanded":""}">
     <button type="button" class="grimoireSpellToggle" data-spelltoggle="${i}" aria-expanded="${isOpen}">
       <span class="grimoireSpellTitle"><strong>${escapeHtml(s.name||"Magia sem nome")}</strong><small>${summary||"Sem detalhes"}</small></span>
       <span class="grimoireSpellCue">${isOpen?"Recolher":"Expandir"}</span>
     </button>
     <div class="grimoireSpellBody ${isOpen?"":"hidden"}">
+      ${cartomanteClassEntry()?`<p class="cartomanteSpellRule">Carta do baralho: execução efetiva ${escapeHtml(cartomanteSpellExecution(s)||"conforme a magia")}; exige as duas mãos livres.</p>`:""}
       <div class="grimoireMainFields">
         <label>Nome<input data-s="${i}" data-k="name" value="${escapeHtml(s.name||"")}" placeholder="Nome da magia"></label>
         <label>Escola<input data-s="${i}" data-k="school" value="${escapeHtml(s.school||"")}" placeholder="Escola"></label>
@@ -2459,11 +2748,12 @@ function renderGrimoireSpellCard(s,i){
         <label>Resistência<input data-s="${i}" data-k="resistance" value="${escapeHtml(s.resistance||"")}" placeholder="Vontade anula"></label>
       </div>
       <label>Descrição e aprimoramentos<textarea data-s="${i}" data-k="desc" rows="7" placeholder="Descricao e aprimoramentos">${escapeHtml(s.desc||"")}</textarea></label>
-      <div class="smallActions grimoireSpellActions"><button type="button" class="cast" data-cast="${i}">Conjurar (-${castCost} PM)</button><button type="button" class="remove iconRemove deleteIconButton" data-sdel="${i}" aria-label="Excluir magia ${escapeHtml(s.name||"")}" title="Excluir">${DELETE_ICON_HTML}</button></div>
+      <div class="smallActions grimoireSpellActions"><button type="button" class="cast" data-cast="${i}">${cartomanteClassEntry()?(state.cartomante.hand.includes(cartomanteSpellKey(s))?`Jogar carta (-${castCost} PM)`:"Carta no baralho"):`Conjurar (-${castCost} PM)`}</button><button type="button" class="remove iconRemove deleteIconButton" data-sdel="${i}" aria-label="Excluir magia ${escapeHtml(s.name||"")}" title="Excluir">${DELETE_ICON_HTML}</button></div>
     </div>
   </div>`;
 }
 function renderSpells(){
+  renderCartomantePanel();
   const sorted=state.spells.map((spell,index)=>({spell,index})).sort((a,b)=>(Number(a.spell.circle||1)-Number(b.spell.circle||1)) || String(a.spell.name||'').localeCompare(String(b.spell.name||''),'pt-BR'));
   const groups={1:[],2:[],3:[],4:[],5:[]};
   sorted.forEach(item=>{
@@ -2478,7 +2768,7 @@ function renderSpells(){
   $$('[data-spelltoggle]').forEach(e=>e.onclick=()=>{const idx=+e.dataset.spelltoggle;if(expandedSpellCards.has(idx))expandedSpellCards.delete(idx);else expandedSpellCards.add(idx);renderSpells()});
   bindCollection('s',state.spells,renderSpells);
   $$('[data-sdel]').forEach(e=>e.onclick=()=>{const idx=+e.dataset.sdel;state.spells.splice(idx,1);expandedSpellCards=new Set([...expandedSpellCards].filter(openIdx=>openIdx!==idx).map(openIdx=>openIdx>idx?openIdx-1:openIdx));renderSpells();save(false)});
-  $$('[data-cast]').forEach(e=>e.onclick=()=>{const spell=state.spells[+e.dataset.cast],cost=partnerSpellCost(spell);applyResourceDelta("pmAtual","pmBonus",-cost,false);recalc();save(false);notify(`${spell.name||'Magia'} conjurada: -${cost} PM`)});
+  $$('[data-cast]').forEach(e=>e.onclick=()=>castGrimoireSpell(+e.dataset.cast));
 }
 function itemCustomizationOptions(entries,selected,type){
   const selectedSet=new Set(selected||[]);
@@ -3215,14 +3505,17 @@ function normalizeLoadedState(saved){
     offices:Array.isArray(saved.offices)&&saved.offices.length?saved.offices:base.offices,
     suppressedAutoPowers:Array.isArray(saved.suppressedAutoPowers)?saved.suppressedAutoPowers:base.suppressedAutoPowers,
     classLevels:Array.isArray(saved.classLevels)?saved.classLevels:base.classLevels,
-    multiclassEnabled:saved.multiclassEnabled===true
+    multiclassEnabled:saved.multiclassEnabled===true,
+    cartomante:normalizeCartomanteState(saved.cartomante)
   };
 }
 function normalizeSheetData(data){
   data=data&&typeof data==="object"?data:{};
   const fields=data.fields&&typeof data.fields==="object"?{...data.fields}:{};
+  const hasCartomante=fields.classe==="cartomante"||(Array.isArray(data.state?.classLevels)&&data.state.classLevels.some(entry=>entry?.id==="cartomante"));
   if(fields.raca==="suraggel") fields.raca="suraggel_aggelus";
   if(fields.classe==="sentinela" && fields.defAttr===undefined) fields.defAttr="INT";
+  if(hasCartomante) fields.spellAttr="CAR";
   if(fields.spacesLimitAuto===undefined){
     const savedLimit=Number(fields.spacesLimit);
     const calculatedLimit=baseLoadLimitForStrength(fields.FOR);
@@ -3289,6 +3582,7 @@ function characterNameFromData(data,fallback="Personagem sem nome"){
 function characterImageUrlFromFields(fields){
   const raw=String(fields?.portraitUrl||fields?.imageUrl||"").trim();
   if(!raw) return "";
+  if(/^data:image\/(?:jpeg|png|webp);base64,/i.test(raw)) return raw;
   try{
     const url=new URL(raw);
     return ["http:","https:"].includes(url.protocol)?raw:"";
@@ -3303,10 +3597,173 @@ function renderCharacterPortrait(){
   const imageUrl=characterImageUrlFromData(sheetDataFromCurrent());
   const preview=$("#characterPortraitPreview");
   const image=$("#characterPortraitImage");
-  if(!preview||!image) return;
-  preview.classList.toggle("hidden",!imageUrl);
-  if(imageUrl) image.src=imageUrl;
-  else image.removeAttribute("src");
+  const placeholder=$("#characterPortraitPlaceholder");
+  const editor=$(".portraitEditor");
+  const removeButton=$("#portraitRemoveBtn");
+  if(!preview||!image||!placeholder) return;
+  const locked=currentCloudReadOnly||publicViewActive();
+  const initial=String(value("nome")||"?").trim().charAt(0).toLocaleUpperCase("pt-BR")||"?";
+  placeholder.textContent=initial;
+  editor?.classList.toggle("readOnly",locked);
+  if($("#portraitUploadBtn")) $("#portraitUploadBtn").disabled=locked;
+  removeButton?.classList.toggle("hidden",!imageUrl||locked);
+  image.onload=()=>{image.classList.remove("hidden");placeholder.classList.add("hidden")};
+  image.onerror=()=>{image.classList.add("hidden");placeholder.classList.remove("hidden")};
+  if(imageUrl){
+    image.classList.add("hidden");
+    placeholder.classList.remove("hidden");
+    image.src=imageUrl;
+  }else{
+    image.removeAttribute("src");
+    image.classList.add("hidden");
+    placeholder.classList.remove("hidden");
+  }
+}
+function portraitCropCanvas(){return $("#portraitCropCanvas")}
+function portraitCropArea(){
+  const canvas=portraitCropCanvas();
+  const size=Math.min(canvas.width,canvas.height)*.72;
+  return {x:(canvas.width-size)/2,y:(canvas.height-size)/2,size};
+}
+function clampPortraitCropPosition(){
+  const source=portraitCropState.source;
+  if(!source) return;
+  const crop=portraitCropArea();
+  const width=source.width*portraitCropState.scale,height=source.height*portraitCropState.scale;
+  portraitCropState.x=Math.min(crop.x,Math.max(crop.x+crop.size-width,portraitCropState.x));
+  portraitCropState.y=Math.min(crop.y,Math.max(crop.y+crop.size-height,portraitCropState.y));
+}
+function drawPortraitCrop(){
+  const canvas=portraitCropCanvas(),source=portraitCropState.source;
+  if(!canvas||!source) return;
+  const ctx=canvas.getContext("2d"),crop=portraitCropArea();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#050403";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(source,portraitCropState.x,portraitCropState.y,source.width*portraitCropState.scale,source.height*portraitCropState.scale);
+  ctx.fillStyle="rgba(0,0,0,.64)";
+  ctx.fillRect(0,0,canvas.width,crop.y);
+  ctx.fillRect(0,crop.y+crop.size,canvas.width,canvas.height-crop.y-crop.size);
+  ctx.fillRect(0,crop.y,crop.x,crop.size);
+  ctx.fillRect(crop.x+crop.size,crop.y,canvas.width-crop.x-crop.size,crop.size);
+  ctx.strokeStyle="#f2dfc0";ctx.lineWidth=3;ctx.strokeRect(crop.x+.5,crop.y+.5,crop.size-1,crop.size-1);
+  ctx.strokeStyle="rgba(213,168,76,.65)";ctx.lineWidth=1;
+  for(let i=1;i<3;i++){
+    const offset=crop.size*i/3;
+    ctx.beginPath();ctx.moveTo(crop.x+offset,crop.y);ctx.lineTo(crop.x+offset,crop.y+crop.size);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(crop.x,crop.y+offset);ctx.lineTo(crop.x+crop.size,crop.y+offset);ctx.stroke();
+  }
+}
+function fitPortraitCropSource(source){
+  portraitCropState.source=source;
+  const crop=portraitCropArea();
+  portraitCropState.minScale=Math.max(crop.size/source.width,crop.size/source.height);
+  portraitCropState.scale=portraitCropState.minScale;
+  portraitCropState.x=(portraitCropCanvas().width-source.width*portraitCropState.scale)/2;
+  portraitCropState.y=(portraitCropCanvas().height-source.height*portraitCropState.scale)/2;
+  const zoom=$("#portraitCropZoom");
+  if(zoom) zoom.value="1";
+  clampPortraitCropPosition();drawPortraitCrop();
+}
+async function portraitSourceFromFile(file){
+  if(globalThis.createImageBitmap){
+    try{return await createImageBitmap(file,{imageOrientation:"from-image"})}catch{}
+  }
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file),image=new Image();
+    image.onload=()=>{URL.revokeObjectURL(url);resolve(image)};
+    image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Não foi possível abrir esta imagem."))};
+    image.src=url;
+  });
+}
+async function openPortraitCrop(file){
+  if(!file) return;
+  if(!/^image\/(?:jpeg|png|webp)$/i.test(file.type||"")) throw new Error("Escolha uma imagem JPG, PNG ou WebP.");
+  if(file.size>PORTRAIT_MAX_SOURCE_BYTES) throw new Error("A imagem original deve ter no máximo 12 MB.");
+  if(portraitCropState.source?.close) portraitCropState.source.close();
+  const source=await portraitSourceFromFile(file);
+  $("#portraitCropModal").classList.remove("hidden");
+  document.body.classList.add("modalOpen");
+  fitPortraitCropSource(source);
+}
+function closePortraitCrop(){
+  $("#portraitCropModal")?.classList.add("hidden");
+  document.body.classList.remove("modalOpen");
+  portraitCropState.dragging=false;portraitCropState.pointerId=null;
+  if(portraitCropState.source?.close) portraitCropState.source.close();
+  portraitCropState.source=null;
+}
+function portraitCropOutputBlob(){
+  const source=portraitCropState.source,crop=portraitCropArea();
+  if(!source) return Promise.reject(new Error("Nenhuma imagem foi selecionada."));
+  const output=document.createElement("canvas");output.width=512;output.height=512;
+  const ctx=output.getContext("2d");
+  const sourceX=(crop.x-portraitCropState.x)/portraitCropState.scale;
+  const sourceY=(crop.y-portraitCropState.y)/portraitCropState.scale;
+  const sourceSize=crop.size/portraitCropState.scale;
+  ctx.drawImage(source,sourceX,sourceY,sourceSize,sourceSize,0,0,512,512);
+  return new Promise((resolve,reject)=>output.toBlob(blob=>blob?resolve(blob):reject(new Error("Não foi possível recortar a imagem.")),"image/jpeg",.88));
+}
+function blobToDataUrl(blob){
+  return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob)});
+}
+function dataUrlToBlob(dataUrl){
+  const [header,payload]=String(dataUrl||"").split(",");
+  const mime=/data:([^;]+)/i.exec(header||"")?.[1]||"image/jpeg";
+  const bytes=atob(payload||""),array=new Uint8Array(bytes.length);
+  for(let i=0;i<bytes.length;i++) array[i]=bytes.charCodeAt(i);
+  return new Blob([array],{type:mime});
+}
+async function uploadPortraitBlob(blob,referenceId="character"){
+  if(!supabaseClient||!cloudUser) throw new Error("Entre na nuvem para enviar o retrato.");
+  const safeReference=String(referenceId||"character").replace(/[^a-z0-9_-]/gi,"-").slice(0,80)||"character";
+  const token=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const path=`${cloudUser.id}/${safeReference}/${token}.jpg`;
+  const {error}=await supabaseClient.storage.from(PORTRAIT_BUCKET).upload(path,blob,{contentType:"image/jpeg",cacheControl:"31536000",upsert:false});
+  if(error) throw error;
+  const {data}=supabaseClient.storage.from(PORTRAIT_BUCKET).getPublicUrl(path);
+  if(!data?.publicUrl) throw new Error("O Storage não retornou a URL do retrato.");
+  return {url:data.publicUrl,path};
+}
+async function preparePortraitDataForCloud(data,referenceId="character"){
+  const normalized=normalizeSheetData(data);
+  const raw=String(normalized.fields?.portraitUrl||"").trim();
+  if(!/^data:image\/(?:jpeg|png|webp);base64,/i.test(raw)) return normalized;
+  const uploaded=await uploadPortraitBlob(dataUrlToBlob(raw),referenceId);
+  normalized.fields.portraitUrl=uploaded.url;
+  normalized.fields.portraitPath=uploaded.path;
+  return normalized;
+}
+function applyPreparedPortraitFields(data){
+  restoreSavedField("portraitUrl",data?.fields?.portraitUrl||"");
+  restoreSavedField("portraitPath",data?.fields?.portraitPath||"");
+  renderCharacterPortrait();
+}
+async function confirmPortraitCrop(){
+  const button=$("#portraitCropConfirm");
+  if(button) button.disabled=true;
+  try{
+    const blob=await portraitCropOutputBlob();
+    closePortraitCrop();
+    if(cloudFirstMode()){
+      markSaving("Enviando retrato...");
+      const uploaded=await uploadPortraitBlob(blob,mappedCloudCharacterId()||currentCharacterId||"character");
+      restoreSavedField("portraitUrl",uploaded.url);restoreSavedField("portraitPath",uploaded.path);
+      renderCharacterPortrait();saveLocalSnapshot(false);
+      await saveCloudCharacter(false);
+      notify("Retrato recortado e salvo na nuvem.");
+    }else{
+      restoreSavedField("portraitUrl",await blobToDataUrl(blob));restoreSavedField("portraitPath","");
+      renderCharacterPortrait();save(false);
+      notify("Retrato recortado e salvo neste navegador.");
+    }
+  }finally{if(button) button.disabled=false}
+}
+function removeCharacterPortrait(){
+  if(currentCloudReadOnly||publicViewActive()) return;
+  if(!characterImageUrlFromData(sheetDataFromCurrent())) return;
+  if(!confirm("Remover o retrato deste personagem?")) return;
+  restoreSavedField("portraitUrl","");restoreSavedField("portraitPath","");
+  renderCharacterPortrait();save(false);
 }
 function cloudFirstMode(){
   return !!(supabaseClient&&cloudUser);
@@ -3355,7 +3812,9 @@ async function saveCloudCharacterSnapshot(snapshot){
   if(!supabaseClient||!cloudUser||!snapshot?.remoteId||!snapshot?.data) return;
   const selectedMeta=cloudCharacters.find(character=>character.id===snapshot.remoteId);
   if(isCloudCharacterReadOnly(selectedMeta)) return;
-  const payload=cloudCharacterUpdatePayload(snapshot.data);
+  const originalPortrait=String(snapshot.data?.fields?.portraitUrl||"");
+  const preparedData=await preparePortraitDataForCloud(snapshot.data,snapshot.remoteId);
+  const payload=cloudCharacterUpdatePayload(preparedData);
   const {data,error}=await supabaseClient
     .from("characters")
     .update(payload)
@@ -3367,6 +3826,7 @@ async function saveCloudCharacterSnapshot(snapshot){
   if(snapshot.localId){
     setCloudMappingForLocal(snapshot.localId,data.id);
     cacheLocalCharacterData(snapshot.localId,payload.sheet_data,data.name||payload.name,data.updated_at);
+    if(snapshot.localId===currentCharacterId&&value("portraitUrl")===originalPortrait) applyPreparedPortraitFields(preparedData);
   }
   await loadCloudData();
   markSaved("Salvo na nuvem");
@@ -3937,6 +4397,92 @@ function formatRollDate(value){
   if(Number.isNaN(date.getTime())) return "";
   return date.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
 }
+function activeCampaignEncounter(campaignId=activeHubCampaignId){
+  return cloudCampaignEncounters
+    .filter(encounter=>encounter.campaign_id===campaignId&&["collecting","active"].includes(encounter.status))
+    .sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))[0]||null;
+}
+function initiativeEntriesForEncounter(encounterId){
+  return cloudInitiativeEntries.filter(entry=>entry.encounter_id===encounterId);
+}
+function initiativeHasTotal(entry){
+  return entry?.initiative_total!==null&&entry?.initiative_total!==""&&Number.isFinite(Number(entry.initiative_total));
+}
+function sortedInitiativeEntries(encounter){
+  const entries=initiativeEntriesForEncounter(encounter?.id);
+  return [...entries].sort((a,b)=>{
+    if(encounter?.status==="active"){
+      const aPosition=Number.isFinite(Number(a.position))&&a.position!==null?Number(a.position):Number.MAX_SAFE_INTEGER;
+      const bPosition=Number.isFinite(Number(b.position))&&b.position!==null?Number(b.position):Number.MAX_SAFE_INTEGER;
+      if(aPosition!==bPosition) return aPosition-bPosition;
+    }
+    const aWaiting=initiativeHasTotal(a)?0:1,bWaiting=initiativeHasTotal(b)?0:1;
+    if(aWaiting!==bWaiting) return aWaiting-bWaiting;
+    return Number(b.initiative_total||0)-Number(a.initiative_total||0)
+      ||Number(b.initiative_bonus||0)-Number(a.initiative_bonus||0)
+      ||String(a.actor_name||"").localeCompare(String(b.actor_name||""),"pt-BR");
+  });
+}
+function initiativeStateOptions(selected){
+  return [
+    ["ready","Pronto"],
+    ["unconscious","Inconsciente"],
+    ["out","Fora do combate"]
+  ].map(([value,label])=>`<option value="${value}" ${selected===value?"selected":""}>${label}</option>`).join("");
+}
+function renderInitiativeEntry(entry,index,encounter,summaryById){
+  const summary=summaryById.get(entry.character_id);
+  const hasTotal=initiativeHasTotal(entry);
+  const isCurrent=encounter.status==="active"&&encounter.current_entry_id===entry.id;
+  const source=entry.source==="roll"&&entry.d20!==null
+    ?`1d20 (${entry.d20}) ${Number(entry.initiative_bonus||0)>=0?"+":""}${Number(entry.initiative_bonus||0)}`
+    :(entry.source==="manual"?"Valor manual":"Aguardando rolagem");
+  const detail=summary?`${summary.raceName} &bull; ${summary.className} nivel ${summary.level}`:source;
+  return `<article class="initiativeEntry ${isCurrent?"current":""} ${hasTotal?"":"waiting"} ${entry.participant_state||"ready"}">
+    <div class="initiativeOrder">${isCurrent?`<span>Vez</span>`:`<span>${hasTotal?index+1:"-"}</span>`}</div>
+    <div class="initiativePortrait">${summary?.imageUrl?`<img src="${escapeHtml(summary.imageUrl)}" alt="Retrato de ${escapeHtml(entry.actor_name)}">`:`<span>${escapeHtml(String(entry.actor_name||"?").trim()[0]||"?")}</span>`}</div>
+    <div class="initiativeIdentity">
+      <strong>${escapeHtml(entry.actor_name||"Participante")}</strong>
+      <small>${detail}</small>
+      ${entry.source==="roll"?`<em>${source}</em>`:""}
+    </div>
+    <label class="initiativeValue">Iniciativa<input type="number" data-initiative-total="${escapeHtml(entry.id)}" value="${hasTotal?Number(entry.initiative_total):""}" placeholder="--"></label>
+    <label class="initiativeState">Estado<select data-initiative-state="${escapeHtml(entry.id)}">${initiativeStateOptions(entry.participant_state||"ready")}</select></label>
+    <div class="initiativeEntryActions">
+      ${encounter.status==="active"?`<button type="button" data-initiative-move="${escapeHtml(entry.id)}" data-direction="-1" title="Subir na ordem" aria-label="Subir na ordem">&#8593;</button><button type="button" data-initiative-move="${escapeHtml(entry.id)}" data-direction="1" title="Descer na ordem" aria-label="Descer na ordem">&#8595;</button>`:""}
+      <button type="button" class="deleteIconButton" data-initiative-delete="${escapeHtml(entry.id)}" title="Remover da iniciativa" aria-label="Remover da iniciativa">${DELETE_ICON_HTML}</button>
+    </div>
+  </article>`;
+}
+function renderCampaignInitiative(campaignId,summaries){
+  if(!campaignInitiativeAvailable) return `<section class="campaignInitiativePanel unavailable"><div><small>Iniciativa</small><strong>Recurso indisponivel</strong><span>Aplique o arquivo supabase_campaign_initiative.sql no Supabase.</span></div></section>`;
+  const encounter=activeCampaignEncounter(campaignId);
+  if(!encounter) return `<section class="campaignInitiativePanel idle">
+    <div class="initiativePanelIntro"><small>Combate</small><h3>Iniciativa</h3><p>Ative o combate para receber e ordenar automaticamente as rolagens de Iniciativa da campanha.</p></div>
+    <button id="initiativeStartBtn" type="button">Iniciar combate</button>
+  </section>`;
+  const entries=sortedInitiativeEntries(encounter);
+  const summaryById=new Map(summaries.map(summary=>[summary.id,summary]));
+  const rolledEntries=entries.filter(initiativeHasTotal);
+  const current=entries.find(entry=>entry.id===encounter.current_entry_id);
+  const collecting=encounter.status==="collecting";
+  return `<section class="campaignInitiativePanel ${encounter.status}">
+    <div class="initiativePanelHeader">
+      <div class="initiativePanelIntro"><small>Combate ativo</small><h3>Iniciativa</h3><p>${collecting?`${rolledEntries.length} de ${entries.length} participantes rolaram.`:`Rodada ${encounter.round_number||1}${current?` &bull; vez de ${escapeHtml(current.actor_name)}`:""}`}</p></div>
+      <div class="initiativeRoundBadge"><small>${collecting?"Preparacao":"Rodada"}</small><strong>${collecting?rolledEntries.length:(encounter.round_number||1)}</strong></div>
+      <div class="initiativePanelActions">
+        ${collecting?`<button id="initiativeBeginRoundBtn" type="button" ${rolledEntries.length?"":"disabled"}>Comecar rodada</button>`:`<button id="initiativePrevTurnBtn" type="button" title="Turno anterior" aria-label="Turno anterior">&#8592;</button><button id="initiativeNextTurnBtn" type="button">Proximo turno &#8594;</button>`}
+        <button id="initiativeEndBtn" class="subtleButton" type="button">Encerrar combate</button>
+      </div>
+    </div>
+    <div class="initiativeEntries">${entries.length?entries.map((entry,index)=>renderInitiativeEntry(entry,index,encounter,summaryById)).join(""):`<p class="muted">Nenhum participante. Vincule fichas ou adicione um participante manual.</p>`}</div>
+    <div class="initiativeManualAdd">
+      <label>Participante<input id="initiativeManualName" placeholder="Nome do NPC ou aliado"></label>
+      <label>Iniciativa<input id="initiativeManualTotal" type="number" placeholder="Opcional"></label>
+      <button id="initiativeManualAddBtn" type="button" title="Adicionar participante">+ Adicionar</button>
+    </div>
+  </section>`;
+}
 function renderCampaignRollHistory(campaignId,characterId=""){
   const rolls=cloudCampaignRolls
     .filter(roll=>roll.campaign_id===campaignId)
@@ -4005,7 +4551,9 @@ function renderMasterShield(characters){
   const dyingCount=allSummaries.filter(summary=>summary.status==="morrendo"||summary.status==="morto").length;
   const woundedCount=allSummaries.filter(summary=>summary.status==="ferido").length;
   const conditionCount=allSummaries.filter(summary=>summary.conditions.length).length;
-  return `<div class="masterShieldLayout">
+  return `<div class="masterShieldSurface">
+    ${renderCampaignInitiative(activeHubCampaignId,allSummaries)}
+    <div class="masterShieldLayout">
     <aside class="masterShieldFeed">
       ${renderShieldControls(allSummaries)}
       <div class="shieldOverview">
@@ -4033,7 +4581,7 @@ function renderMasterShield(characters){
     <div class="masterShieldRoster">
       ${summaries.length?summaries.map(summary=>renderMasterShieldCard(summary)).join(""):`<div class="hubEmpty">Nenhuma ficha vinculada a esta campanha ainda.</div>`}
     </div>
-  </div>`;
+  </div></div>`;
 }
 function bindMasterShieldControls(){
   const filter=$("#shieldCharacterFilter");
@@ -4048,6 +4596,202 @@ function bindMasterShieldControls(){
   };
   const clear=$("#clearCampaignRollsBtn");
   if(clear) clear.onclick=()=>runCloudAction(clearCampaignRollHistory);
+  const start=$("#initiativeStartBtn");
+  if(start) start.onclick=()=>runCloudAction(startCampaignEncounter);
+  const begin=$("#initiativeBeginRoundBtn");
+  if(begin) begin.onclick=()=>runCloudAction(beginCampaignInitiativeRound);
+  const previous=$("#initiativePrevTurnBtn");
+  if(previous) previous.onclick=()=>runCloudAction(()=>advanceCampaignInitiative(-1));
+  const next=$("#initiativeNextTurnBtn");
+  if(next) next.onclick=()=>runCloudAction(()=>advanceCampaignInitiative(1));
+  const end=$("#initiativeEndBtn");
+  if(end) end.onclick=()=>runCloudAction(endCampaignEncounter);
+  const add=$("#initiativeManualAddBtn");
+  if(add) add.onclick=()=>runCloudAction(addManualInitiativeEntry);
+  $$("[data-initiative-total]").forEach(input=>input.onchange=()=>runCloudAction(()=>updateInitiativeTotal(input.dataset.initiativeTotal,input.value)));
+  $$("[data-initiative-state]").forEach(select=>select.onchange=()=>runCloudAction(()=>updateInitiativeState(select.dataset.initiativeState,select.value)));
+  $$("[data-initiative-move]").forEach(button=>button.onclick=()=>runCloudAction(()=>moveInitiativeEntry(button.dataset.initiativeMove,Number(button.dataset.direction||0))));
+  $$("[data-initiative-delete]").forEach(button=>button.onclick=()=>runCloudAction(()=>deleteInitiativeEntry(button.dataset.initiativeDelete)));
+}
+function requireMasterEncounter(){
+  const campaign=cloudCampaigns.find(item=>item.id===activeHubCampaignId);
+  if(!campaign||!isCampaignOwner(campaign)){
+    notify("A iniciativa pode ser controlada apenas pelo mestre da campanha.");
+    return null;
+  }
+  return {campaign,encounter:activeCampaignEncounter(campaign.id)};
+}
+async function refreshCampaignShield(message=""){
+  await loadCloudData();
+  activeCampaignDashboardTab="escudo";
+  renderCampaignDashboard();
+  if(message) notify(message);
+}
+async function startCampaignEncounter(){
+  if(!cloudRequireLogin()||!campaignInitiativeAvailable) return;
+  const context=requireMasterEncounter();
+  if(!context) return;
+  if(context.encounter){
+    notify("Esta campanha ja possui um combate ativo.");
+    return;
+  }
+  const {data:encounter,error}=await supabaseClient
+    .from("campaign_encounters")
+    .insert({campaign_id:context.campaign.id,created_by:cloudUser.id,status:"collecting",round_number:0})
+    .select("id,campaign_id,created_by,status,round_number,current_entry_id,created_at,updated_at,ended_at")
+    .single();
+  if(error) throw error;
+  const characters=campaignCharactersForView(context.campaign,true);
+  if(characters.length){
+    const rows=characters.map(character=>({
+      encounter_id:encounter.id,
+      campaign_id:context.campaign.id,
+      character_id:character.id,
+      user_id:character.owner_id||cloudUser.id,
+      actor_name:character.name||"Personagem sem nome",
+      participant_state:"ready",
+      source:"campaign"
+    }));
+    const {error:entryError}=await supabaseClient.from("campaign_initiative_entries").insert(rows);
+    if(entryError){
+      await supabaseClient.from("campaign_encounters").delete().eq("id",encounter.id);
+      throw entryError;
+    }
+  }
+  await refreshCampaignShield("Combate iniciado. Aguardando rolagens de Iniciativa.");
+}
+async function beginCampaignInitiativeRound(){
+  const context=requireMasterEncounter();
+  if(!context?.encounter) return;
+  const ordered=sortedInitiativeEntries(context.encounter).filter(initiativeHasTotal);
+  if(!ordered.length){
+    notify("Aguarde ao menos uma rolagem de Iniciativa.");
+    return;
+  }
+  const updates=ordered.map((entry,index)=>supabaseClient
+    .from("campaign_initiative_entries")
+    .update({position:index,updated_at:new Date().toISOString()})
+    .eq("id",entry.id));
+  const results=await Promise.all(updates);
+  const failed=results.find(result=>result.error);
+  if(failed?.error) throw failed.error;
+  const {error}=await supabaseClient
+    .from("campaign_encounters")
+    .update({status:"active",round_number:1,current_entry_id:ordered[0].id,updated_at:new Date().toISOString()})
+    .eq("id",context.encounter.id);
+  if(error) throw error;
+  await refreshCampaignShield(`Rodada 1 iniciada. Vez de <b>${escapeHtml(ordered[0].actor_name)}</b>.`);
+}
+async function advanceCampaignInitiative(direction=1){
+  const context=requireMasterEncounter();
+  if(!context?.encounter||context.encounter.status!=="active") return;
+  const ordered=sortedInitiativeEntries(context.encounter)
+    .filter(entry=>initiativeHasTotal(entry)&&entry.participant_state==="ready");
+  if(!ordered.length){
+    notify("Nao ha participantes ativos na iniciativa.");
+    return;
+  }
+  const currentIndex=ordered.findIndex(entry=>entry.id===context.encounter.current_entry_id);
+  let nextIndex=currentIndex<0?0:currentIndex+Math.sign(direction||1);
+  let round=Math.max(1,Number(context.encounter.round_number||1));
+  if(nextIndex>=ordered.length){nextIndex=0;round+=1}
+  if(nextIndex<0){nextIndex=ordered.length-1;round=Math.max(1,round-1)}
+  const next=ordered[nextIndex];
+  const {error}=await supabaseClient
+    .from("campaign_encounters")
+    .update({current_entry_id:next.id,round_number:round,updated_at:new Date().toISOString()})
+    .eq("id",context.encounter.id);
+  if(error) throw error;
+  await refreshCampaignShield(`Rodada ${round}: vez de <b>${escapeHtml(next.actor_name)}</b>.`);
+}
+async function endCampaignEncounter(){
+  const context=requireMasterEncounter();
+  if(!context?.encounter) return;
+  if(!confirm("Encerrar o combate atual? A ordem sera arquivada.")) return;
+  const now=new Date().toISOString();
+  const {error}=await supabaseClient
+    .from("campaign_encounters")
+    .update({status:"ended",current_entry_id:null,ended_at:now,updated_at:now})
+    .eq("id",context.encounter.id);
+  if(error) throw error;
+  await refreshCampaignShield("Combate encerrado.");
+}
+async function addManualInitiativeEntry(){
+  const context=requireMasterEncounter();
+  if(!context?.encounter) return;
+  const name=String($("#initiativeManualName")?.value||"").trim();
+  const raw=String($("#initiativeManualTotal")?.value||"").trim();
+  if(!name){notify("Informe o nome do participante.");return}
+  const total=raw===""?null:Number(raw);
+  if(total!==null&&!Number.isFinite(total)){notify("Informe uma iniciativa valida.");return}
+  const entries=sortedInitiativeEntries(context.encounter);
+  const position=context.encounter.status==="active"&&total!==null
+    ?Math.max(-1,...entries.map(entry=>entry.position===null?-1:Number(entry.position||0)))+1
+    :null;
+  const {error}=await supabaseClient.from("campaign_initiative_entries").insert({
+    encounter_id:context.encounter.id,
+    campaign_id:context.campaign.id,
+    user_id:cloudUser.id,
+    actor_name:name,
+    initiative_total:total,
+    initiative_bonus:0,
+    position,
+    participant_state:"ready",
+    source:"manual"
+  });
+  if(error) throw error;
+  await refreshCampaignShield(`Participante adicionado: <b>${escapeHtml(name)}</b>.`);
+}
+async function updateInitiativeTotal(entryId,rawValue){
+  const context=requireMasterEncounter();
+  if(!context?.encounter||!entryId) return;
+  const raw=String(rawValue??"").trim();
+  const total=raw===""?null:Number(raw);
+  if(total!==null&&!Number.isFinite(total)) return;
+  const entry=cloudInitiativeEntries.find(item=>item.id===entryId);
+  const patch={initiative_total:total,d20:null,source:"manual",updated_at:new Date().toISOString()};
+  if(context.encounter.status==="active"&&total!==null&&entry?.position===null){
+    const entries=initiativeEntriesForEncounter(context.encounter.id);
+    patch.position=Math.max(-1,...entries.map(item=>item.position===null?-1:Number(item.position||0)))+1;
+  }
+  const {error}=await supabaseClient.from("campaign_initiative_entries").update(patch).eq("id",entryId);
+  if(error) throw error;
+  await refreshCampaignShield();
+}
+async function updateInitiativeState(entryId,nextState){
+  const context=requireMasterEncounter();
+  if(!context?.encounter||!entryId||!["ready","unconscious","out"].includes(nextState)) return;
+  const {error}=await supabaseClient
+    .from("campaign_initiative_entries")
+    .update({participant_state:nextState,updated_at:new Date().toISOString()})
+    .eq("id",entryId);
+  if(error) throw error;
+  await refreshCampaignShield();
+}
+async function moveInitiativeEntry(entryId,direction){
+  const context=requireMasterEncounter();
+  if(!context?.encounter||context.encounter.status!=="active") return;
+  const ordered=sortedInitiativeEntries(context.encounter).filter(initiativeHasTotal);
+  const index=ordered.findIndex(entry=>entry.id===entryId);
+  const target=index+Math.sign(direction||0);
+  if(index<0||target<0||target>=ordered.length) return;
+  [ordered[index],ordered[target]]=[ordered[target],ordered[index]];
+  const results=await Promise.all(ordered.map((entry,position)=>supabaseClient
+    .from("campaign_initiative_entries")
+    .update({position,updated_at:new Date().toISOString()})
+    .eq("id",entry.id)));
+  const failed=results.find(result=>result.error);
+  if(failed?.error) throw failed.error;
+  await refreshCampaignShield();
+}
+async function deleteInitiativeEntry(entryId){
+  const context=requireMasterEncounter();
+  if(!context?.encounter||!entryId) return;
+  const entry=cloudInitiativeEntries.find(item=>item.id===entryId);
+  if(!confirm(`Remover ${entry?.actor_name||"este participante"} da iniciativa?`)) return;
+  const {error}=await supabaseClient.from("campaign_initiative_entries").delete().eq("id",entryId);
+  if(error) throw error;
+  await refreshCampaignShield();
 }
 async function clearCampaignRollHistory(){
   if(!cloudRequireLogin()||!activeHubCampaignId) return;
@@ -4648,12 +5392,21 @@ function importSheetData(data){
   else save(false);
   notify(asNew?"Personagem importado.":"Personagem atual substituído pelo JSON importado.");
 }
-function exportSheet(){
+function sheetDataForJsonExport(){
   const data=sheetDataFromCurrent();
+  delete data.fields.portraitUrl;
+  delete data.fields.portraitPath;
+  delete data.fields.imageUrl;
+  return data;
+}
+function exportSheet(){
+  const data=sheetDataForJsonExport();
   const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
   a.download=`ficha-${(value("nome")||"personagem").replace(/\W+/g,"-")}.json`;
   a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),0);
+  notify("JSON exportado sem o retrato para manter o arquivo leve.");
 }
 function readCloudCharacterMap(){
   try{return JSON.parse(localStorage.getItem(CLOUD_CHARACTER_MAP_KEY)||"{}")||{}}
@@ -4721,6 +5474,61 @@ async function loadCampaignRolls(){
   }
   cloudCampaignRolls=data||[];
 }
+function missingInitiativeSchema(error){
+  const message=String(error?.message||error?.details||"");
+  return ["42P01","PGRST205","PGRST204"].includes(error?.code)||/campaign_encounters|campaign_initiative_entries/i.test(message);
+}
+async function loadCampaignInitiative(){
+  if(!supabaseClient||!cloudUser){
+    cloudCampaignEncounters=[];
+    cloudInitiativeEntries=[];
+    return;
+  }
+  const {data:encounters,error:encounterError}=await supabaseClient
+    .from("campaign_encounters")
+    .select("id,campaign_id,created_by,status,round_number,current_entry_id,created_at,updated_at,ended_at")
+    .in("status",["collecting","active"])
+    .order("created_at",{ascending:false});
+  if(encounterError){
+    if(missingInitiativeSchema(encounterError)){
+      campaignInitiativeAvailable=false;
+      cloudCampaignEncounters=[];
+      cloudInitiativeEntries=[];
+      return;
+    }
+    throw encounterError;
+  }
+  campaignInitiativeAvailable=true;
+  cloudCampaignEncounters=encounters||[];
+  const encounterIds=cloudCampaignEncounters.map(encounter=>encounter.id);
+  if(!encounterIds.length){
+    cloudInitiativeEntries=[];
+    return;
+  }
+  const {data:entries,error:entryError}=await supabaseClient
+    .from("campaign_initiative_entries")
+    .select("id,encounter_id,campaign_id,character_id,user_id,actor_name,initiative_total,initiative_bonus,d20,position,participant_state,source,created_at,updated_at")
+    .in("encounter_id",encounterIds);
+  if(entryError){
+    if(missingInitiativeSchema(entryError)){
+      campaignInitiativeAvailable=false;
+      cloudInitiativeEntries=[];
+      return;
+    }
+    throw entryError;
+  }
+  cloudInitiativeEntries=entries||[];
+}
+async function confirmInitiativeRollCapture(roll,campaignId){
+  if(roll?.type!=="d20"||foldItemText(roll.title)!=="iniciativa") return;
+  const {data,error}=await supabaseClient
+    .from("campaign_encounters")
+    .select("id")
+    .eq("campaign_id",campaignId)
+    .in("status",["collecting","active"])
+    .limit(1);
+  if(!error&&data?.length) markSaved("Iniciativa enviada ao mestre",4200);
+}
 async function recordCampaignRoll(roll){
   if(!supabaseClient||!cloudUser||!roll) return;
   const campaignId=currentCampaignIdForRoll();
@@ -4755,10 +5563,12 @@ async function recordCampaignRoll(roll){
     if(error) throw error;
     cloudCampaignRolls=[data,...cloudCampaignRolls].slice(0,120);
     if(activeHubCampaignId===campaignId&&activeCampaignDashboardTab==="escudo") renderCampaignDashboard();
+    await confirmInitiativeRollCapture(roll,campaignId);
     return;
   }
   const {error}=await supabaseClient.from("campaign_rolls").insert(rollRow);
   if(error) throw error;
+  await confirmInitiativeRollCapture(roll,campaignId);
 }
 function setCloudStatus(text){
   const status=$("#cloudStatus");
@@ -4884,6 +5694,8 @@ async function loadCloudData(options={}){
     cloudCharacters=[];
     cloudCampaigns=[];
     cloudCampaignRolls=[];
+    cloudCampaignEncounters=[];
+    cloudInitiativeEntries=[];
     setCurrentCloudReadOnly(false);
     renderCloudPanel();
     renderHub();
@@ -4908,7 +5720,7 @@ async function loadCloudData(options={}){
   cloudCharacters=characters||[];
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(currentCloudCharacterMeta()));
   if(options.syncCurrent) syncCurrentCharacterFromCloud();
-  await loadCampaignRolls();
+  await Promise.all([loadCampaignRolls(),loadCampaignInitiative()]);
   renderCloudPanel();
   renderHub();
 }
@@ -4959,7 +5771,14 @@ async function saveCloudCharacter(show=true){
     return;
   }
   markSaving("Salvando...");
-  const payload=selected?cloudCharacterUpdatePayload(sheetDataFromCurrent()):cloudPayloadFromCurrent();
+  const preparedData=await preparePortraitDataForCloud(sheetDataFromCurrent(),selected||currentCharacterId);
+  applyPreparedPortraitFields(preparedData);
+  const payload=selected?cloudCharacterUpdatePayload(preparedData):{
+    ...cloudPayloadFromCurrent(),
+    name:characterNameFromData(preparedData),
+    player_name:preparedData.fields?.jogador||null,
+    sheet_data:preparedData
+  };
   const request=selected
     ? supabaseClient.from("characters").update(payload).eq("id",selected).eq("owner_id",cloudUser.id).select("id,name,campaign_id,updated_at").single()
     : supabaseClient.from("characters").insert(payload).select("id,name,campaign_id,updated_at").single();
@@ -5300,8 +6119,11 @@ async function persistCloudCharacterCampaign(remoteId,campaignId){
   return data;
 }
 async function linkLocalCharacterToCampaign(localId,campaignId){
-  const data=localId===currentCharacterId?sheetDataFromCurrent():localCharacterData(localId);
+  let data=localId===currentCharacterId?sheetDataFromCurrent():localCharacterData(localId);
   if(!data){notify("Ficha local nao encontrada.");return}
+  data=await preparePortraitDataForCloud(data,readCloudCharacterMap()[localId]||localId);
+  cacheLocalCharacterData(localId,data,characterNameFromData(data));
+  if(localId===currentCharacterId) applyPreparedPortraitFields(data);
   const payload=cloudPayloadFromSheetData(data,campaignId);
   const remoteId=readCloudCharacterMap()[localId]||"";
   clearCloudAutosaveTimer(remoteId);
@@ -5522,7 +6344,7 @@ function renderOriginBenefits(){
   $$("[data-ob]").forEach(e=>e.oninput=()=>{state.originBenefits[+e.dataset.ob]=e.value;save(false)});
   $$("[data-obdel]").forEach(e=>e.onclick=()=>{state.originBenefits.splice(+e.dataset.obdel,1);renderOriginBenefits();save(false)});
 }
-function renderAll(){normalizeState();renderClassLevels();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderPartners();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();recalc();syncCloudReadOnlyControls()}
+function renderAll(){normalizeState();syncClassSpellAttr();renderClassLevels();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderPartners();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();recalc();syncCloudReadOnlyControls()}
 function showFatalError(error){
   console.error(error);
   const banner=document.createElement("div");
@@ -5539,6 +6361,61 @@ try{
   showFatalError(error);
 }
 
+$("#portraitUploadBtn")?.addEventListener("click",()=>$("#portraitFileInput")?.click());
+$("#portraitFileInput")?.addEventListener("change",event=>{
+  const file=event.target.files?.[0];
+  event.target.value="";
+  if(!file) return;
+  openPortraitCrop(file).catch(error=>notify(`Não foi possível abrir a imagem: ${escapeHtml(error?.message||error)}`));
+});
+$("#portraitRemoveBtn")?.addEventListener("click",removeCharacterPortrait);
+$("#portraitCropClose")?.addEventListener("click",closePortraitCrop);
+$("#portraitCropCancel")?.addEventListener("click",closePortraitCrop);
+$$("[data-close-portrait-crop]").forEach(element=>element.addEventListener("click",closePortraitCrop));
+$("#portraitChooseAnother")?.addEventListener("click",()=>$("#portraitFileInput")?.click());
+$("#portraitCropConfirm")?.addEventListener("click",()=>confirmPortraitCrop().catch(error=>{
+  console.error(error);
+  markSaveError("Erro no retrato");
+  notify(`Não foi possível salvar o retrato: ${escapeHtml(error?.message||error)}`);
+}));
+$("#portraitCropZoom")?.addEventListener("input",event=>{
+  const source=portraitCropState.source;
+  if(!source) return;
+  const crop=portraitCropArea(),centerX=crop.x+crop.size/2,centerY=crop.y+crop.size/2;
+  const imageCenterX=(centerX-portraitCropState.x)/portraitCropState.scale;
+  const imageCenterY=(centerY-portraitCropState.y)/portraitCropState.scale;
+  portraitCropState.scale=portraitCropState.minScale*Number(event.target.value||1);
+  portraitCropState.x=centerX-imageCenterX*portraitCropState.scale;
+  portraitCropState.y=centerY-imageCenterY*portraitCropState.scale;
+  clampPortraitCropPosition();drawPortraitCrop();
+});
+portraitCropCanvas()?.addEventListener("pointerdown",event=>{
+  if(!portraitCropState.source) return;
+  const canvas=portraitCropCanvas(),rect=canvas.getBoundingClientRect();
+  portraitCropState.dragging=true;portraitCropState.pointerId=event.pointerId;
+  portraitCropState.lastX=event.clientX*canvas.width/rect.width;portraitCropState.lastY=event.clientY*canvas.height/rect.height;
+  canvas.setPointerCapture(event.pointerId);canvas.classList.add("dragging");
+});
+portraitCropCanvas()?.addEventListener("pointermove",event=>{
+  if(!portraitCropState.dragging||event.pointerId!==portraitCropState.pointerId) return;
+  const canvas=portraitCropCanvas(),rect=canvas.getBoundingClientRect();
+  const x=event.clientX*canvas.width/rect.width,y=event.clientY*canvas.height/rect.height;
+  portraitCropState.x+=x-portraitCropState.lastX;portraitCropState.y+=y-portraitCropState.lastY;
+  portraitCropState.lastX=x;portraitCropState.lastY=y;
+  clampPortraitCropPosition();drawPortraitCrop();
+});
+function stopPortraitCropDrag(event){
+  if(event.pointerId!==portraitCropState.pointerId) return;
+  portraitCropState.dragging=false;portraitCropState.pointerId=null;
+  portraitCropCanvas()?.classList.remove("dragging");
+}
+portraitCropCanvas()?.addEventListener("pointerup",stopPortraitCropDrag);
+portraitCropCanvas()?.addEventListener("pointercancel",stopPortraitCropDrag);
+document.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&!$("#portraitCropModal")?.classList.contains("hidden")) closePortraitCrop();
+});
+
+
 $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
   if(e.id==="classe"){
     state.skillData={};
@@ -5550,20 +6427,27 @@ $$("[data-save]").forEach(e=>e.addEventListener("input",()=>{
       levels[0].level=clampClassLevel(e.value);
       setClassLevels(levels);
     }
-    renderPowers();renderPartners();refreshPowerPickerIfOpen();
+    renderPowers();renderPartners();renderSpells();refreshPowerPickerIfOpen();
   }
-  if(e.id==="portraitUrl") renderCharacterPortrait();
+  if(e.id==="portraitUrl"||e.id==="nome") renderCharacterPortrait();
   if(e.id==="spacesLimit"&&$("#spacesLimitAuto")?.checked) $("#spacesLimitAuto").checked=false;
   recalc();
   if(e.id==="divindade") refreshPowerPickerIfOpen();
   save(false);
 }));
-$("#spellAttr").addEventListener("change",()=>{recalc();save(false)});
+$("#spellAttr").addEventListener("change",()=>{syncClassSpellAttr();recalc();save(false)});
 $("#defAttr").addEventListener("change",()=>{recalc();save(false)});
 function syncClassDefenseAttr(){
   if(currentClassLevels().some(entry=>entry.id==="sentinela") && (!value("defAttr") || value("defAttr")==="DES")) $("#defAttr").value="INT";
 }
-$("#classe").addEventListener("change",()=>{state.skillData={};syncClassLevelsFromPrimaryFields();syncClassDefenseAttr();renderPowers();refreshPowerPickerIfOpen();recalc();save(false)});
+function syncClassSpellAttr(){
+  const select=$("#spellAttr"),locked=currentClassLevels().some(entry=>entry.id==="cartomante");
+  if(!select) return;
+  if(locked) select.value="CAR";
+  select.disabled=locked;
+  select.title=locked?"Cartomantes usam Carisma como atributo-chave.":"Atributo-chave das magias.";
+}
+$("#classe").addEventListener("change",()=>{state.skillData={};syncClassLevelsFromPrimaryFields();syncClassDefenseAttr();syncClassSpellAttr();renderPowers();renderSpells();refreshPowerPickerIfOpen();recalc();save(false)});
 $("#multiclassEnabled")?.addEventListener("change",event=>{
   if(!event.target.checked&&currentClassLevels().length>1){
     event.target.checked=true;

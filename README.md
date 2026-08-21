@@ -17,7 +17,7 @@ Ficha digital não oficial para **Tormenta20**, feita para uso durante sessões.
 
 ### Personagem
 
-A ficha controla raça, classes e níveis, origem, divindade, atributos, tamanho e deslocamento. Progressões de classe e habilidades fixas de raça são adicionadas automaticamente em `Poderes`.
+A ficha controla retrato, raça, classes e níveis, origem, divindade, atributos, tamanho e deslocamento. O retrato pode ser enviado e enquadrado na própria interface; no modo nuvem, o arquivo otimizado fica no Supabase Storage. Progressões de classe e habilidades fixas de raça são adicionadas automaticamente em `Poderes`.
 
 PV aceita valores negativos e pontos temporários. PM também possui pontos temporários, gasto e recuperação. A aba `Modificadores` concentra bônus globais e alterações temporárias de atributos.
 
@@ -31,6 +31,7 @@ Ataques calculam acerto e dano em uma única rolagem, incluindo crítico, dano e
 
 - Poderes de classe, raça, origem, gerais e concedidos possuem catálogos integrados.
 - Grimório e catálogo de magias incluem filtros por círculo, tipo e escola.
+- O Cartomante, variante de Arcanista, possui progressão própria e um painel de baralho com mão, Mulligan, Cartas Especiais, Destino Traçado, Tutor Arcano e Exodia.
 - Parceiros possuem graduação limitada pelo patamar e aplicam bônus passivos compatíveis.
 - Poderes, magias, parceiros, ataques e itens usam cards expansíveis.
 
@@ -42,7 +43,7 @@ Armas, armaduras, escudos e esotéricos aceitam melhorias, materiais especiais e
 
 ### Nuvem e campanhas
 
-Com Supabase configurado, cada usuário pode salvar fichas na nuvem, criar ou entrar em campanhas por convite e vincular personagens. O mestre pode gerenciar fichas da campanha, criar fichas ocultas e acompanhar PV, PM, Defesa, condições e rolagens pelo Escudo do Mestre.
+Com Supabase configurado, cada usuário pode salvar fichas na nuvem, criar ou entrar em campanhas por convite e vincular personagens. O mestre pode gerenciar fichas da campanha, criar fichas ocultas e acompanhar PV, PM, Defesa, condições e rolagens pelo Escudo do Mestre. O Escudo também possui encontros com iniciativa automática: enquanto um combate estiver ativo, rolagens da perícia Iniciativa entram na ordem, que pode ser ajustada pelo mestre e avançada por turnos e rodadas.
 
 O dono também pode ativar um link público para uma ficha. Visitantes abrem esse endereço sem conta em modo somente leitura, e o mesmo link pode ser revogado a qualquer momento. Fichas ocultas de campanha nunca entram nesse compartilhamento.
 
@@ -66,9 +67,9 @@ No Netlify, o arquivo `_redirects` já encaminha endereços como `/fichas/...` e
 
 - **Offline:** os personagens ficam no armazenamento do navegador.
 - **Nuvem:** após o login, o Supabase se torna o destino principal.
-- **Backup:** `Exportar JSON` e `Importar JSON` funcionam nos dois modos.
+- **Backup:** `Exportar JSON` e `Importar JSON` funcionam nos dois modos. O retrato não entra no arquivo exportado, mantendo o backup leve para importação online.
 
-Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas e pelo compartilhamento público. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e deixe `supabase_permissions.sql` por último.
+Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas, pelo compartilhamento público e pelo Storage. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e depois `supabase_permissions.sql`. Os arquivos `supabase_campaign_initiative.sql` e `supabase_character_portraits.sql` adicionam, respectivamente, a iniciativa e o bucket seguro de retratos.
 
 ## Arquivos principais
 
@@ -85,9 +86,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Compartilhamento público:** o dono pode ativar, copiar e revogar um link anônimo de visualização somente leitura para uma ficha.
-2. **Links internos corrigidos:** fichas e campanhas abertas por URL carregam estilos, scripts e imagens normalmente em rotas profundas do Netlify.
-3. **Navegação por endereço:** início, listas, campanhas e fichas possuem URLs próprias; voltar e avançar no navegador agora percorrem essas telas normalmente.
+1. **Retratos com recorte:** o campo de URL virou um upload com enquadramento, zoom e exibição integrada na ficha, nos cards, na iniciativa e no Escudo; os backups JSON omitem a imagem para permanecerem leves.
+2. **Iniciativa no Escudo:** combates ativos capturam automaticamente rolagens de Iniciativa, ordenam participantes e controlam turnos e rodadas.
+3. **Cartomante:** a variante de Arcanista recebeu progressão automática, regras completas e gerenciamento de baralho diretamente no Grimório.
 
 ## Aviso
 

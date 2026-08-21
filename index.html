@@ -235,8 +235,21 @@ if(location.protocol!=="file:"){
 <main class="wrap">
 <section class="panel identity">
   <div class="portraitEditor">
-    <div id="characterPortraitPreview" class="characterPortraitPreview hidden"><img id="characterPortraitImage" alt="Retrato do personagem"></div>
-    <label>Retrato (URL)<input id="portraitUrl" data-save placeholder="https://..."></label>
+    <span class="portraitEditorLabel">Retrato</span>
+    <div class="characterPortraitBox">
+      <div id="characterPortraitPreview" class="characterPortraitPreview">
+        <img id="characterPortraitImage" class="hidden" alt="Retrato do personagem">
+        <span id="characterPortraitPlaceholder" class="characterPortraitPlaceholder" aria-hidden="true">?</span>
+      </div>
+      <div id="portraitEditorActions" class="portraitEditorActions">
+        <button id="portraitUploadBtn" type="button">Escolher imagem</button>
+        <button id="portraitRemoveBtn" type="button" class="deleteIconButton hidden" title="Remover retrato" aria-label="Remover retrato"><span class="deleteIconGlyph" aria-hidden="true"></span></button>
+      </div>
+      <small id="portraitEditorHint">JPG, PNG ou WebP. O recorte ser&aacute; quadrado.</small>
+    </div>
+    <input id="portraitUrl" data-save type="hidden">
+    <input id="portraitPath" data-save type="hidden">
+    <input id="portraitFileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
   </div>
   <label>Nome<input id="nome" data-save></label>
   <label>Jogador<input id="jogador" data-save></label>
@@ -464,6 +477,7 @@ if(location.protocol!=="file:"){
       <label>Bônus no limite<input id="pmLimitBonus" data-save type="number" value="0"></label>
       <label>Ajuste livre do limite<input id="pmLimitAdjust" data-save type="number" value="0"></label>
     </div>
+    <div id="cartomantePanel" class="cartomantePanel hidden" aria-live="polite"></div>
     <div id="spellsList" class="cards"></div>
   </article>
 </section>
@@ -573,6 +587,26 @@ if(location.protocol!=="file:"){
   </div>
 </footer>
 
+<div id="portraitCropModal" class="portraitCropModal hidden" role="dialog" aria-modal="true" aria-labelledby="portraitCropTitle">
+  <div class="portraitCropBackdrop" data-close-portrait-crop></div>
+  <article class="portraitCropPanel">
+    <header class="portraitCropHeader">
+      <div><small>Retrato do personagem</small><h2 id="portraitCropTitle">Ajustar imagem</h2></div>
+      <button id="portraitCropClose" type="button" class="portraitCropClose" aria-label="Fechar">&times;</button>
+    </header>
+    <div class="portraitCropStage">
+      <canvas id="portraitCropCanvas" width="760" height="520" aria-label="Área de recorte do retrato"></canvas>
+      <span>Arraste a imagem para enquadrar</span>
+    </div>
+    <label class="portraitZoomControl">Zoom<input id="portraitCropZoom" type="range" min="1" max="3" step="0.01" value="1"></label>
+    <div class="portraitCropActions">
+      <button id="portraitChooseAnother" type="button" class="subtleButton">Escolher outra imagem</button>
+      <button id="portraitCropCancel" type="button" class="subtleButton">Cancelar</button>
+      <button id="portraitCropConfirm" type="button">Confirmar recorte</button>
+    </div>
+  </article>
+</div>
+
 <div id="spellModal" class="spellModal hidden" role="dialog" aria-modal="true" aria-labelledby="spellModalTitle">
   <div class="spellModalBackdrop" data-close-spell-modal></div>
   <article class="spellModalPanel">
@@ -591,6 +625,7 @@ if(location.protocol!=="file:"){
 <script src="t20_expansions.js"></script>
 <script src="class_progression_features.js"></script>
 <script src="class_progression_full_texts.js"></script>
+<script src="cartomante.js"></script>
 <script src="class_powers.js"></script>
 <script src="class_power_details.js"></script>
 <script src="power_catalog.js"></script>
