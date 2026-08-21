@@ -3980,7 +3980,9 @@ function activateSheetTab(tab="resumo"){
   if(!button) return;
   $$('[data-tab]').forEach(candidate=>candidate.classList.toggle("active",candidate===button));
   $$(".tab").forEach(section=>section.classList.toggle("active",section.id===`tab-${button.dataset.tab}`));
-  $("#identityLayout")?.classList.toggle("portraitVisible",button.dataset.tab==="resumo");
+  const portraitVisible=button.dataset.tab==="resumo";
+  $("#identityLayout")?.classList.toggle("portraitVisible",portraitVisible);
+  $(".wrap")?.classList.toggle("portraitRailActive",portraitVisible);
 }
 async function flushPendingRouteSave(){
   const remoteId=mappedCloudCharacterId();
@@ -4137,7 +4139,6 @@ function renderHubCharacters(){
       name:cloudMeta?.name||name,
       imageUrl:characterImageUrlFromData(data),
       summary:characterSummaryFromData(data),
-      meta:`${cloudMeta?"Local + nuvem":"Local"}${cloudMeta&&isPrivateCloudCharacter(cloudMeta)?" &bull; oculta":""}${character.updatedAt?` &bull; atualizado em ${formattedDate(character.updatedAt)}`:""}`,
       campaignId:cloudMeta?.campaign_id||"",
       campaignOnly:!!(cloudMeta&&isCampaignOnlyCharacter(cloudMeta)),
       orphanCloud:!!(cloudMap[character.id]&&cloudUser&&!cloudMeta),
@@ -4151,8 +4152,7 @@ function renderHubCharacters(){
     cloudId:character.id,
     name:character.name||"Personagem sem nome",
     imageUrl:characterImageUrlFromData(character.sheet_data),
-    summary:[character.player_name,"Nuvem"].filter(Boolean).map(escapeHtml).join(" &bull; "),
-    meta:`Nuvem${isPrivateCloudCharacter(character)?" &bull; oculta":""}${character.updated_at?` &bull; atualizado em ${formattedDate(character.updated_at)}`:""}`,
+    summary:characterSummaryFromData(character.sheet_data),
     campaignId:character.campaign_id||"",
     search:[character.name,character.player_name].filter(Boolean).join(" ").toLowerCase()
   }));
@@ -4168,7 +4168,6 @@ function renderHubCharacters(){
       <article class="hubCard ${record.kind==="cloud"?"cloudHubCard":""} ${record.imageUrl?"hasPortrait":""}">
         ${record.imageUrl?`<img class="hubPortrait" src="${escapeHtml(record.imageUrl)}" alt="Retrato de ${escapeHtml(record.name)}">`:""}
         <div class="hubCardBody">
-          <small>${record.meta}</small>
           <strong>${escapeHtml(record.name)}</strong>
           <span>${record.summary||"Sem detalhes"}</span>
         </div>
@@ -4929,7 +4928,7 @@ function renderCampaignDashboard(){
     return `<article class="hubCard cloudHubCard ${imageUrl?"hasPortrait":""}">
       ${imageUrl?`<img class="hubPortrait" src="${escapeHtml(imageUrl)}" alt="Retrato de ${escapeHtml(character.name||"Personagem sem nome")}">`:""}
       <div class="hubCardBody">
-        <small>Nuvem${isPrivateCloudCharacter(character)?` &bull; oculta para jogadores`:""}${character.updated_at?` &bull; atualizado em ${formattedDate(character.updated_at)}`:""}</small>
+        ${isPrivateCloudCharacter(character)?`<small>Oculta para jogadores</small>`:""}
         <strong>${escapeHtml(character.name||"Personagem sem nome")}</strong>
         <span>${[character.player_name,"Ficha da campanha"].filter(Boolean).map(escapeHtml).join(" &bull; ")}</span>
       </div>
