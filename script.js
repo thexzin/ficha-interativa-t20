@@ -3701,7 +3701,7 @@ function portraitCropOutputBlob(){
   const sourceY=(crop.y-portraitCropState.y)/portraitCropState.scale;
   const sourceSize=crop.size/portraitCropState.scale;
   ctx.drawImage(source,sourceX,sourceY,sourceSize,sourceSize,0,0,512,512);
-  return new Promise((resolve,reject)=>output.toBlob(blob=>blob?resolve(blob):reject(new Error("Não foi possível recortar a imagem.")),"image/jpeg",.88));
+  return new Promise((resolve,reject)=>output.toBlob(blob=>blob?resolve(blob):reject(new Error("Não foi possível recortar a imagem.")),"image/png"));
 }
 function blobToDataUrl(blob){
   return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob)});
@@ -3717,8 +3717,10 @@ async function uploadPortraitBlob(blob,referenceId="character"){
   if(!supabaseClient||!cloudUser) throw new Error("Entre na nuvem para enviar o retrato.");
   const safeReference=String(referenceId||"character").replace(/[^a-z0-9_-]/gi,"-").slice(0,80)||"character";
   const token=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const path=`${cloudUser.id}/${safeReference}/${token}.jpg`;
-  const {error}=await supabaseClient.storage.from(PORTRAIT_BUCKET).upload(path,blob,{contentType:"image/jpeg",cacheControl:"31536000",upsert:false});
+  const contentType=/^image\/(?:jpeg|png|webp)$/i.test(blob?.type||"")?blob.type.toLowerCase():"image/png";
+  const extension=contentType==="image/jpeg"?"jpg":contentType.split("/")[1];
+  const path=`${cloudUser.id}/${safeReference}/${token}.${extension}`;
+  const {error}=await supabaseClient.storage.from(PORTRAIT_BUCKET).upload(path,blob,{contentType,cacheControl:"31536000",upsert:false});
   if(error) throw error;
   const {data}=supabaseClient.storage.from(PORTRAIT_BUCKET).getPublicUrl(path);
   if(!data?.publicUrl) throw new Error("O Storage não retornou a URL do retrato.");

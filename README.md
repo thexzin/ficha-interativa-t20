@@ -86,9 +86,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Cabeçalho refinado:** Nome, Jogador, Raça, Classe, Nível, Origem e Divindade ocupam uma única linha mais baixa e compacta em telas amplas.
-2. **Cards mais limpos:** fichas e personagens da campanha exibem apenas informações de jogo, sem local de armazenamento ou data da última edição.
-3. **Retratos com recorte:** o upload com enquadramento agora fica em uma aba própria na margem esquerda de Stats, além de aparecer nos cards, na iniciativa e no Escudo; os backups JSON omitem a imagem para permanecerem leves.
+1. **Transparência nos retratos:** recortes de imagens PNG agora preservam o fundo transparente na ficha, nos cards e na nuvem.
+2. **Cabeçalho refinado:** os sete campos ocupam uma única linha mais baixa, com controles uniformes e um pouco mais de espaço entre eles.
+3. **Cards mais limpos:** fichas e personagens da campanha exibem apenas informações de jogo, sem local de armazenamento ou data da última edição.
 
 ## Aviso
 
