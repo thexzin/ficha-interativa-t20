@@ -91,9 +91,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Proficiências de classe:** o resumo mostra armas e proteções conhecidas pela classe principal, incluindo exceções de variantes e a regra correta de multiclasse.
-2. **Equipamento inicial:** personagens novos recebem automaticamente mochila, saco de dormir e traje de viajante, sem alterar fichas já existentes ou importadas.
-3. **Classe Homebrew Quebra-Escudos:** progressão de 1º a 20º nível, habilidades automáticas e os poderes da classe foram integrados aos seletores e à multiclasse.
+1. **Resumo de classe refinado:** informações de PM aparecem antes das proficiências, que agora encerram o card de forma mais organizada.
+2. **Proficiências de classe:** o resumo mostra armas e proteções conhecidas pela classe principal, incluindo exceções de variantes e a regra correta de multiclasse.
+3. **Equipamento inicial:** personagens novos recebem automaticamente mochila, saco de dormir e traje de viajante, sem alterar fichas já existentes ou importadas.
 
 ## Aviso
 

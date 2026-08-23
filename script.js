@@ -1562,7 +1562,7 @@ function recalc(){
     <small>Classes</small>
     <strong>${escapeHtml(classSummary)}</strong>
     <span>${escapeHtml(classSources||"Fonte não informada")}</span>
-    ${classDetails}${proficiencyHtml}${multiclassNote}${pmAttrNote}
+    ${classDetails}${multiclassNote}${pmAttrNote}${proficiencyHtml}
   </article>`;
   const sizeInput=$("#summarySizeInput");
   if(sizeInput) sizeInput.onchange=()=>{const sizeField=$("#tamanho");if(sizeField) sizeField.value=sizeInput.value===baseSize?"":sizeInput.value;save(false)};
