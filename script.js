@@ -1084,7 +1084,7 @@ function rollAttackDamage(attack){
     total.total+=rolled.total;total.details.push(...rolled.details);return total;
   },{total:0,details:[]});
   const damageAttr=ATTR_KEYS.includes(attack.damageAttr)?attack.damageAttr:"";
-  const damageAttrBonus=damageAttr?permanentAttrNum(damageAttr):0;
+  const damageAttrBonus=damageAttr?attrNum(damageAttr):0;
   const globalDamage=num("globalDamageBonus");
   const itemDamage=Number(itemFx.damage||0);
   const damage={
@@ -1546,7 +1546,7 @@ function recalc(){
   const primaryEntry=classLevels[0];
   const primaryProficiencies=classProficienciesAtLevel(primaryEntry);
   const primaryProficiencyNote=T20_DATA.classes[primaryEntry?.id]?.notaProficiencias||"";
-  const proficiencyHtml=`<div class="classProficiencyBlock"><small>Proficiências da classe principal</small><div class="classProficiencyChips">${primaryProficiencies.map(entry=>`<span>${escapeHtml(entry)}</span>`).join("")||"<span>Nenhuma registrada</span>"}</div>${primaryProficiencyNote?`<p>${escapeHtml(primaryProficiencyNote)}</p>`:""}${classLevels.length>1?`<p>Classes adicionais não concedem perícias ou proficiências iniciais.</p>`:""}</div>`;
+  const proficiencyHtml=`<div class="classProficiencyBlock"><small>Proficiências da classe principal</small><div class="classProficiencyChips">${primaryProficiencies.map(entry=>`<span>${escapeHtml(entry)}</span>`).join("")||"<span>Nenhuma</span>"}</div>${primaryProficiencyNote?`<p>${escapeHtml(primaryProficiencyNote)}</p>`:""}${classLevels.length>1?`<p>Classes adicionais não concedem perícias ou proficiências iniciais.</p>`:""}</div>`;
   const pmAttrNote=classLevelsUseSpellAttrForPm(classLevels)?`<p><b>PM:</b> soma atributo-chave de magia uma vez.</p>`:"";
   $("#summaryText").innerHTML=`<article class="summaryCard">
     <small>Raça</small>
@@ -3222,7 +3222,8 @@ function refreshAttackSummaries(){
     const breakdown=attackBonusBreakdown(normalized);
     const itemFx=breakdown.itemFx||emptyItemEffects();
     const damageAttr=ATTR_KEYS.includes(normalized.damageAttr)?normalized.damageAttr:"";
-    const extra=[String(normalized.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(permanentAttrNum(damageAttr))})`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
+    const globalDamage=num("globalDamageBonus");
+    const extra=[String(normalized.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(attrNum(damageAttr))})`:"",globalDamage?`global ${signedNumber(globalDamage)}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
     const parsed=parseCritical(normalized.crit,normalized.mult),margin=21-parsed.threshold;
     const itemMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?margin:0);
     const linkedItems=linkedAttackItems(normalized),linkedNames=linkedItems.map(item=>item.name||"Arma sem nome").join(", ");
@@ -3247,7 +3248,8 @@ function renderAttackCard(a,i){
   const damage=escapeHtml(a.damage||"sem dano");
   const extraDamage=escapeHtml(a.extraDamage||"");
   const damageAttr=ATTR_KEYS.includes(a.damageAttr)?a.damageAttr:"";
-  const extraSummary=[String(a.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(permanentAttrNum(damageAttr))})`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
+  const globalDamage=num("globalDamageBonus");
+  const extraSummary=[String(a.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(attrNum(damageAttr))})`:"",globalDamage?`global ${signedNumber(globalDamage)}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
   const critFlat=a.critFlat===true;
   const parsedCrit=parseCritical(a.crit,a.mult),baseMargin=21-parsedCrit.threshold;
   const itemCritMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?baseMargin:0);
