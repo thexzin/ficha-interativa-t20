@@ -32,6 +32,7 @@ Ataques calculam acerto e dano em uma única rolagem, incluindo crítico, dano e
 - Poderes de classe, raça, origem, gerais e concedidos possuem catálogos integrados.
 - Grimório e catálogo de magias incluem filtros por círculo, tipo e escola.
 - O Cartomante, variante de Arcanista, possui progressão própria e um painel de baralho com mão, Mulligan, Cartas Especiais, Destino Traçado, Tutor Arcano e Exodia.
+- O Quebra-Escudos está disponível como classe Homebrew, com progressão completa, habilidades automáticas e catálogo próprio de poderes.
 - Parceiros possuem graduação limitada pelo patamar e aplicam bônus passivos compatíveis.
 - Poderes, magias, parceiros, ataques e itens usam cards expansíveis.
 
@@ -88,9 +89,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Modificações de outros livros:** melhorias, materiais especiais e encantos de Heróis, Deuses e Ameaças de Arton foram integrados ao inventário com fonte, pré-requisitos, incompatibilidades, preços e efeitos automáticos compatíveis.
-2. **Controle rápido do mestre:** o Escudo aplica dano, cura, gasto e recuperação de PM diretamente nos cards, incluindo PV/PM temporários e opção de considerar RD.
-3. **Condições e sanfonas:** os cards do Escudo possuem resumo recolhido, detalhes expansíveis e aplicação ou remoção rápida de condições.
+1. **Classe Homebrew Quebra-Escudos:** progressão de 1º a 20º nível, habilidades automáticas e os poderes da classe foram integrados aos seletores e à multiclasse.
+2. **Modificações de outros livros:** melhorias, materiais especiais e encantos de Heróis, Deuses e Ameaças de Arton foram integrados ao inventário com fonte, pré-requisitos, incompatibilidades, preços e efeitos automáticos compatíveis.
+3. **Controle rápido do mestre:** o Escudo aplica dano, cura, gasto e recuperação de PM diretamente nos cards, incluindo PV/PM temporários e opção de considerar RD.
 
 ## Aviso
 

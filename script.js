@@ -1150,7 +1150,7 @@ const CONDITION_LIBRARY={
 };
 
 function fillSelects(){
-  const sourceOrder=["Jogo do Ano","Heróis de Arton","Ameaças de Arton","Deuses de Arton","Atlas de Arton","Personalizada"];
+  const sourceOrder=["Jogo do Ano","Heróis de Arton","Ameaças de Arton","Deuses de Arton","Atlas de Arton","Homebrew","Personalizada"];
   const groupedOptions=(entries,renderOption)=>{
     const grouped={};
     entries.forEach(([k,v])=>(grouped[v.fonte||"Outras fontes"]??=[]).push([k,v]));
@@ -1685,7 +1685,7 @@ function renderPowersLegacy(){
 }
 
 const POWER_TYPES=["Classe","Geral","Raça","Origem","Concedido","Distinção","Outro"];
-const CLASS_POWER_SOURCE_ORDER=["Jogo do Ano","Heróis de Arton","Deuses de Arton"];
+const CLASS_POWER_SOURCE_ORDER=["Jogo do Ano","Heróis de Arton","Deuses de Arton","Homebrew"];
 const POWER_CATALOG_SOURCE_ORDER=["Jogo do Ano","Heróis de Arton","Ameaças de Arton","Deuses de Arton","Atlas de Arton"];
 const GENERAL_POWER_SUBTYPES=["Combate","Magia","Destino"];
 const AUTO_CLASS_FEATURE_FLAG="progressaoClasse";
