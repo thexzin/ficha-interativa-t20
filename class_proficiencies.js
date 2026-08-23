@@ -1,7 +1,6 @@
 (function(){
   if(!window.T20_DATA?.classes) return;
 
-  const standard=["Armas simples","Armaduras leves"];
   const profiles={
     arcanista:[],
     barbaro:["Armas marciais","Escudos"],
@@ -10,7 +9,7 @@
     cacador:["Armas marciais","Escudos"],
     cavaleiro:["Armas marciais","Armaduras pesadas","Escudos"],
     clerigo:["Armaduras pesadas","Escudos"],
-    druida:[],
+    druida:["Escudos"],
     guerreiro:["Armas marciais","Armaduras pesadas","Escudos"],
     inventor:[],
     ladino:[],
@@ -39,13 +38,13 @@
 
   Object.entries(profiles).forEach(([classId,extras])=>{
     const cls=window.T20_DATA.classes[classId];
-    if(cls) cls.proficiencias=[...new Set([...standard,...extras])];
+    if(cls) cls.proficiencias=[...new Set(extras)];
   });
 
   const stoneAxe=window.T20_DATA.classes.machado_de_pedra;
   if(stoneAxe){
-    stoneAxe.proficiencias=["Adaga","Azagaia","Clava","Funda","Lança","Machadinha","Tacape","Escudos"];
-    stoneAxe.notaProficiencias="Não recebe proficiência com armas simples nem armaduras leves; aprende outra arma no 9º nível.";
+    stoneAxe.proficiencias=["Escudos"];
+    stoneAxe.notaProficiencias="Machado de Pedra permite usar adaga, azagaia, clava, funda, lança, machadinha e tacape, mas isso faz parte da habilidade de classe, não das proficiências iniciais.";
   }
 
   const innovator=window.T20_DATA.classes.inovador;

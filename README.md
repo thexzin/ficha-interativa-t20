@@ -91,9 +91,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Resumo de classe refinado:** informações de PM aparecem antes das proficiências, que agora encerram o card de forma mais organizada.
-2. **Proficiências de classe:** o resumo mostra armas e proteções conhecidas pela classe principal, incluindo exceções de variantes e a regra correta de multiclasse.
-3. **Equipamento inicial:** personagens novos recebem automaticamente mochila, saco de dormir e traje de viajante, sem alterar fichas já existentes ou importadas.
+1. **Proficiências corrigidas:** Druida agora exibe sua proficiência com escudos; o resumo continua mostrando apenas as proficiências adicionais concedidas por cada classe.
+2. **Resumo de classe refinado:** informações de PM aparecem antes das proficiências, que agora encerram o card de forma mais organizada.
+3. **Proficiências de classe:** o resumo mostra armas e proteções conhecidas pela classe principal, incluindo exceções de variantes e a regra correta de multiclasse.
 
 ## Aviso
 
