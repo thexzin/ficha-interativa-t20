@@ -55,6 +55,20 @@ function normalizeCartomanteState(value){
 function defaultState(){
   return {powers:[],spells:[],items:[],partners:[],attacks:[defaultAttack({name:"Ataque desarmado",damage:"1d3"})],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false,cartomante:defaultCartomanteState()};
 }
+const INITIAL_ADVENTURE_GEAR_NAMES=["Mochila","Saco de dormir","Traje de viajante"];
+function defaultInitialAdventureGear(){
+  const catalog=Array.isArray(window.T20_ITEM_CATALOG)?window.T20_ITEM_CATALOG:[];
+  return INITIAL_ADVENTURE_GEAR_NAMES.map(name=>{
+    const entry=catalog.find(item=>item.name===name)||{name,category:"Equipamento de aventura",price:"",spaces:0,source:"Jogo do Ano",notes:""};
+    return normalizeInventoryItemDescription({
+      ...entry,
+      id:makeEntryId("item"),
+      qty:1,
+      equipped:false,
+      initialEquipment:true
+    });
+  });
+}
 function defaultAttack(overrides={}){
   return {
     id:makeEntryId("attack"),
@@ -1365,6 +1379,15 @@ function classUsesSpellAttrForPm(cls){return SPELL_ATTR_PM_CLASSES.has(cls?.idBa
 function hasSpellcastingProgression(){return currentClassLevels().some(entry=>classUsesSpellAttrForPm(T20_DATA.classes[entry.id]))}
 function spellAttrPmBonus(cls){return classUsesSpellAttrForPm(cls)?num(value("spellAttr")):0}
 function classLevelsUseSpellAttrForPm(levels){return levels.some(entry=>classUsesSpellAttrForPm(T20_DATA.classes[entry.id]))}
+function classProficienciesAtLevel(entry){
+  const cls=T20_DATA.classes[entry?.id];
+  if(!cls) return [];
+  const result=[...(Array.isArray(cls.proficiencias)?cls.proficiencias:[])];
+  Object.entries(cls.proficienciasPorNivel||{}).forEach(([level,entries])=>{
+    if(clampClassLevel(entry.level)>=Number(level)&&Array.isArray(entries)) result.push(...entries);
+  });
+  return [...new Set(result)];
+}
 function classResourceBases(levels,{con=0,spellAttrValue=0}={}){
   const rows=sanitizeClassLevels(levels);
   let pvBase=0,pmBase=0;
@@ -1520,6 +1543,10 @@ function recalc(){
     return `<p><b>${escapeHtml(rowCls.nome)} ${clampClassLevel(entry.level)}${variant}:</b> PV ${pvText}; PM ${pmText}.</p>`;
   }).join("");
   const multiclassNote=classLevels.length>1?`<p><b>Multiclasse:</b> a primeira classe usa PV inicial; classes extras usam PV de nível subsequente.</p>`:"";
+  const primaryEntry=classLevels[0];
+  const primaryProficiencies=classProficienciesAtLevel(primaryEntry);
+  const primaryProficiencyNote=T20_DATA.classes[primaryEntry?.id]?.notaProficiencias||"";
+  const proficiencyHtml=`<div class="classProficiencyBlock"><small>Proficiências da classe principal</small><div class="classProficiencyChips">${primaryProficiencies.map(entry=>`<span>${escapeHtml(entry)}</span>`).join("")||"<span>Nenhuma registrada</span>"}</div>${primaryProficiencyNote?`<p>${escapeHtml(primaryProficiencyNote)}</p>`:""}${classLevels.length>1?`<p>Classes adicionais não concedem perícias ou proficiências iniciais.</p>`:""}</div>`;
   const pmAttrNote=classLevelsUseSpellAttrForPm(classLevels)?`<p><b>PM:</b> soma atributo-chave de magia uma vez.</p>`:"";
   $("#summaryText").innerHTML=`<article class="summaryCard">
     <small>Raça</small>
@@ -1535,7 +1562,7 @@ function recalc(){
     <small>Classes</small>
     <strong>${escapeHtml(classSummary)}</strong>
     <span>${escapeHtml(classSources||"Fonte não informada")}</span>
-    ${classDetails}${multiclassNote}${pmAttrNote}
+    ${classDetails}${proficiencyHtml}${multiclassNote}${pmAttrNote}
   </article>`;
   const sizeInput=$("#summarySizeInput");
   if(sizeInput) sizeInput.onchange=()=>{const sizeField=$("#tamanho");if(sizeField) sizeField.value=sizeInput.value===baseSize?"":sizeInput.value;save(false)};
@@ -3662,11 +3689,13 @@ function storeCombatRuntime(runtime){
 function sheetDataFromCurrent(){
   return {fields:collectSavedFields(),state:clonePlain(state)};
 }
-function blankSheetData(name=""){
+function blankSheetData(name="",options={}){
   const fields={};
   $$("[data-save]").forEach(element=>fields[element.id]=defaultSavedFieldValue(element));
   fields.nome=name;
-  return {fields,state:defaultState()};
+  const initialState=defaultState();
+  if(options.initialEquipment===true) initialState.items=defaultInitialAdventureGear();
+  return {fields,state:initialState};
 }
 function applySheetData(data){
   const normalized=normalizeSheetData(data);
@@ -5635,7 +5664,7 @@ function switchCharacter(id){
 }
 function newCharacter(){
   save(false);
-  const data=blankSheetData("Novo personagem");
+  const data=blankSheetData("Novo personagem",{initialEquipment:true});
   createCharacter(data,"Novo personagem");
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value="";
   setCurrentCloudReadOnly(false);
@@ -6299,7 +6328,7 @@ async function createPrivateCampaignCharacter(campaignId=activeHubCampaignId){
   const typedName=prompt("Nome da ficha oculta:", "Ficha oculta");
   if(typedName===null) return;
   const name=typedName.trim()||"Ficha oculta";
-  const sheet=blankSheetData(name);
+  const sheet=blankSheetData(name,{initialEquipment:true});
   sheet.fields.nome=name;
   sheet.fields.jogador="Mestre";
   const payload={

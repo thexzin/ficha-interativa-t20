@@ -17,7 +17,7 @@ Ficha digital não oficial para **Tormenta20**, feita para uso durante sessões.
 
 ### Personagem
 
-A ficha controla retrato, raça, classes e níveis, origem, divindade, atributos, tamanho e deslocamento. O retrato pode ser enviado e enquadrado na própria interface; no modo nuvem, o arquivo otimizado fica no Supabase Storage. Progressões de classe e habilidades fixas de raça são adicionadas automaticamente em `Poderes`.
+A ficha controla retrato, raça, classes e níveis, origem, divindade, atributos, tamanho, deslocamento e proficiências da classe principal. O retrato pode ser enviado e enquadrado na própria interface; no modo nuvem, o arquivo otimizado fica no Supabase Storage. Progressões de classe e habilidades fixas de raça são adicionadas automaticamente em `Poderes`.
 
 PV aceita valores negativos e pontos temporários. PM também possui pontos temporários, gasto e recuperação. A aba `Modificadores` concentra bônus globais e alterações temporárias de atributos.
 
@@ -39,6 +39,8 @@ Ataques calculam acerto e dano em uma única rolagem, incluindo crítico, dano e
 ### Inventário
 
 O Inventário reúne itens mundanos e mágicos dos catálogos incluídos. Itens equipados podem aplicar atributos, Defesa, RD, penalidade de armadura, perícias, resistências, PV, PM, CD, carga e bônus de ataque ou dano.
+
+Personagens novos começam com mochila, saco de dormir e traje de viajante, conforme o equipamento inicial fixo do Capítulo 3. Arma, proteção e dinheiro continuam livres para respeitar as proficiências e escolhas de cada personagem.
 
 Armas, armaduras, escudos, esotéricos e acessórios aceitam melhorias, materiais especiais e encantos do Jogo do Ano, Heróis de Arton, Deuses de Arton e Ameaças de Arton. Os seletores separam as opções por fonte e aplicam bônus permanentes compatíveis automaticamente. O preço final pode ser calculado pela ficha; materiais raros sem preço publicado ficam marcados para ajuste manual.
 
@@ -89,9 +91,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Classe Homebrew Quebra-Escudos:** progressão de 1º a 20º nível, habilidades automáticas e os poderes da classe foram integrados aos seletores e à multiclasse.
-2. **Modificações de outros livros:** melhorias, materiais especiais e encantos de Heróis, Deuses e Ameaças de Arton foram integrados ao inventário com fonte, pré-requisitos, incompatibilidades, preços e efeitos automáticos compatíveis.
-3. **Controle rápido do mestre:** o Escudo aplica dano, cura, gasto e recuperação de PM diretamente nos cards, incluindo PV/PM temporários e opção de considerar RD.
+1. **Proficiências de classe:** o resumo mostra armas e proteções conhecidas pela classe principal, incluindo exceções de variantes e a regra correta de multiclasse.
+2. **Equipamento inicial:** personagens novos recebem automaticamente mochila, saco de dormir e traje de viajante, sem alterar fichas já existentes ou importadas.
+3. **Classe Homebrew Quebra-Escudos:** progressão de 1º a 20º nível, habilidades automáticas e os poderes da classe foram integrados aos seletores e à multiclasse.
 
 ## Aviso
 
