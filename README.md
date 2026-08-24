@@ -46,7 +46,7 @@ Armas, armaduras, escudos, esotéricos e acessórios aceitam melhorias, materiai
 
 ### Nuvem e campanhas
 
-Com Supabase configurado, cada usuário pode salvar fichas na nuvem, criar ou entrar em campanhas por convite e vincular personagens. O dono de uma ficha vinculada pode autorizar ou revogar sua edição pelo mestre no menu de ações da ficha. O mestre também pode gerenciar fichas da campanha, criar fichas ocultas e acompanhar PV, PM, Defesa, condições e rolagens pelo Escudo do Mestre. Os cards do Escudo são expansíveis e permitem aplicar dano, cura, gasto ou recuperação de PM e condições sem abrir a ficha. Esse estado de combate é compartilhado em tempo real e separado do JSON principal para evitar conflitos entre o salvamento do mestre e o do jogador.
+Com Supabase configurado, cada usuário pode salvar fichas na nuvem, criar ou entrar em campanhas por convite e vincular personagens. Enquanto uma ficha estiver vinculada, o mestre da campanha pode editar seu conteúdo automaticamente; ao remover o vínculo, esse acesso termina. O mestre também pode gerenciar fichas da campanha, criar fichas ocultas e acompanhar PV, PM, Defesa, condições e rolagens pelo Escudo do Mestre. Os cards do Escudo são expansíveis e permitem aplicar dano, cura, gasto ou recuperação de PM e condições sem abrir a ficha. Esse estado de combate é compartilhado em tempo real e separado do JSON principal para evitar conflitos entre o salvamento do mestre e o do jogador.
 
 Campanhas também podem possuir Bases compartilhadas. Todos os membros podem editar tipo, porte, cômodos, mobílias, manutenção e residentes; apenas o mestre exclui a Base. Cada personagem pode residir em uma Base, escolher seus benefícios individuais e receber automaticamente os bônus compatíveis em PV, PM, Defesa, resistências, deslocamento, perícias, carga, ataques, dano e custo de magias.
 
@@ -54,7 +54,7 @@ O Escudo também possui encontros com iniciativa automática: enquanto um combat
 
 O dono também pode ativar um link público para uma ficha. Visitantes abrem esse endereço sem conta em modo somente leitura, e o mesmo link pode ser revogado a qualquer momento. Fichas ocultas de campanha nunca entram nesse compartilhamento.
 
-As permissões usam Row-Level Security. O dono sempre edita sua ficha; o mestre só edita o conteúdo quando recebe autorização explícita e nunca pode transferir a propriedade, trocar a campanha ou alterar essa autorização. Outros jogadores permanecem em modo somente leitura, e os recursos do mestre ficam restritos ao criador da campanha.
+As permissões usam Row-Level Security. O dono sempre edita sua ficha; o mestre edita o conteúdo das fichas vinculadas à campanha, mas nunca pode transferir a propriedade, trocar a campanha ou alterar sua privacidade. Outros jogadores permanecem em modo somente leitura, e os recursos do mestre ficam restritos ao criador da campanha.
 
 ## Como executar
 
@@ -76,7 +76,7 @@ No Netlify, o arquivo `_redirects` já encaminha endereços como `/fichas/...` e
 - **Nuvem:** após o login, o Supabase se torna o destino principal.
 - **Backup:** `Exportar JSON` e `Importar JSON` funcionam nos dois modos. O retrato não entra no arquivo exportado, mantendo o backup leve para importação online.
 
-Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas, pelo compartilhamento público e pelo Storage. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e depois `supabase_permissions.sql`. Os arquivos `supabase_campaign_initiative.sql`, `supabase_master_shield_controls.sql`, `supabase_character_portraits.sql`, `supabase_master_character_edit.sql` e `supabase_campaign_bases.sql` adicionam, respectivamente, iniciativa, estado compartilhado de combate, o bucket seguro de retratos, a autorização opcional de edição pelo mestre e Bases colaborativas.
+Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas, pelo compartilhamento público e pelo Storage. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e depois `supabase_permissions.sql`. Os arquivos `supabase_campaign_initiative.sql`, `supabase_master_shield_controls.sql`, `supabase_character_portraits.sql`, `supabase_master_character_edit.sql` e `supabase_campaign_bases.sql` adicionam, respectivamente, iniciativa, estado compartilhado de combate, o bucket seguro de retratos, a edição automática de fichas vinculadas pelo mestre e Bases colaborativas.
 
 ## Arquivos principais
 
@@ -94,9 +94,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Bases de campanha:** membros constroem Bases colaborativas, associam residentes e aplicam automaticamente benefícios de tipos, cômodos e mobílias.
-2. **Edição autorizada pelo mestre:** o jogador pode liberar ou revogar a edição da ficha vinculada; dono, campanha, privacidade e autorização continuam protegidos no banco.
-3. **Raça Vampiro:** adicionada com atributos, características automáticas, dieta, fraquezas e dez Bênçãos Vampíricas selecionáveis.
+1. **Refino das Bases:** Colmeia e Relíquia usam catálogos de magia adequados, a Relíquia respeita o cômodo instalado, Suítes exibem a ocupação real e os controles foram alinhados.
+2. **Edição automática pelo mestre:** fichas vinculadas podem ser editadas pelo criador da campanha sem autorização adicional; remover o vínculo encerra o acesso.
+3. **Bases de campanha:** membros constroem Bases colaborativas, associam residentes e aplicam automaticamente benefícios de tipos, cômodos e mobílias.
 
 ## Aviso
 

@@ -5610,6 +5610,16 @@ function baseChoiceOptions(rows,selected="",placeholder="Escolha..."){
     return `<option value="${escapeHtml(value)}" ${value===String(selected||"")?"selected":""}>${escapeHtml(label)}</option>`;
   }).join("")}`;
 }
+function baseCatalogSpellOptions(allowedTypes=[]){
+  const types=new Set(allowedTypes),byName=new Map();
+  (window.T20_SPELL_CATALOG||[]).forEach(spell=>{
+    const name=String(spell?.name||"").trim(),type=String(spell?.type||"").trim();
+    if(!name||!types.has(type)) return;
+    const key=powerCatalogKey(name);
+    if(!byName.has(key)) byName.set(key,{value:name,label:`${name} (${spell.circle||1}º • ${type})`});
+  });
+  return [...byName.values()].sort((a,b)=>a.value.localeCompare(b.value,"pt-BR"));
+}
 function renderBaseResidentChoice(label,key,options,selected,help=""){
   return `<label class="baseResidentChoice"><span>${escapeHtml(label)}</span><select data-base-resident-choice="${escapeHtml(key)}">${baseChoiceOptions(options,selected)}</select>${help?`<small>${escapeHtml(help)}</small>`:""}</label>`;
 }
@@ -5678,15 +5688,21 @@ function renderCharacterBase(){
   }
   const {base,resident,data,choices}=context,type=baseCatalogEntry("types",base.base_type),size=campaignBaseSize(base),effects=baseResidentEffects(characterId);
   const activeRooms=data.rooms.filter(room=>!room.damaged),roomIds=new Set(activeRooms.map(room=>room.catalogId));
-  const furniture=data.furniture.filter(item=>baseCatalogEntry("furniture",item.catalogId));
+  const activeRoomById=new Map(activeRooms.map(room=>[room.id,room]));
+  const furniture=data.furniture.filter(item=>{
+    const catalogItem=baseCatalogEntry("furniture",item.catalogId);
+    return catalogItem&&(catalogItem.exterior||activeRoomById.has(item.roomId));
+  });
   const attacks=(state.attacks||[]).map(attack=>({value:attack.id,label:attack.name||"Ataque sem nome"}));
   const spells=(state.spells||[]).map(spell=>({value:spell.name,label:`${spell.name||"Magia"} (${spell.circle||1}º)`}));
+  const arcaneSpells=baseCatalogSpellOptions(["Arcana","Universal"]),divineSpells=baseCatalogSpellOptions(["Divina","Universal"]);
   const offices=(state.offices||[]).filter(office=>office.name).map(office=>({value:office.name,label:office.name}));
   const skills=Object.keys(T20_DATA.pericias||{}).sort((a,b)=>a.localeCompare(b,"pt-BR")).map(name=>({value:name,label:name}));
-  const suites=activeRooms.filter(room=>room.catalogId==="suite").map(room=>{
-    const occupants=cloudBaseResidents.filter(entry=>entry.base_id===base.id&&entry.character_id!==characterId&&entry.choices?.suiteRoomId===room.id).length;
-    return {value:room.id,label:`Suite ${activeRooms.filter(entry=>entry.catalogId==="suite").indexOf(room)+1} (${occupants}/2 outros residentes)`};
-  }).filter(room=>room.value===choices.suiteRoomId||!cloudBaseResidents.filter(entry=>entry.base_id===base.id&&entry.choices?.suiteRoomId===room.value).length||cloudBaseResidents.filter(entry=>entry.base_id===base.id&&entry.choices?.suiteRoomId===room.value).length<2);
+  const suiteRooms=activeRooms.filter(room=>room.catalogId==="suite");
+  const suites=suiteRooms.map((room,index)=>{
+    const occupants=cloudBaseResidents.filter(entry=>entry.base_id===base.id&&entry.choices?.suiteRoomId===room.id).length;
+    return {value:room.id,label:`Suite ${index+1} (${occupants}/2 residentes)`,occupants};
+  }).filter(room=>room.value===choices.suiteRoomId||room.occupants<2);
   const controls=[];
   if(roomIds.has("forjaria")) controls.push(renderBaseResidentChoice("Ataque beneficiado pela Forjaria","forgeAttackId",attacks,choices.forgeAttackId));
   if(roomIds.has("patio_treinamento")) controls.push(renderBaseResidentChoice("Ataque treinado no Patio","trainingAttackId",attacks,choices.trainingAttackId));
@@ -5698,8 +5714,9 @@ function renderCharacterBase(){
   if(roomIds.has("estabulo")) controls.push(renderBaseResidentChoice("Parceiro do Estabulo","stablePartner",(state.partners||[]).map(partner=>({value:partner.id||partner.name,label:partner.name||"Parceiro"})),choices.stablePartner));
   if(suites.length) controls.push(renderBaseResidentChoice("Suite do residente","suiteRoomId",suites,choices.suiteRoomId,"Cada Suite acomoda ate dois residentes."));
   if(roomIds.has("memorial")) controls.push(renderBaseResidentChoice("Atributo legado pelo Memorial","memorialAttribute",ATTR_KEYS.map(attr=>({value:attr,label:attr})),choices.memorialAttribute,"Selecione apenas para o personagem que recebeu o legado de um residente falecido."));
-  if(furniture.some(item=>item.catalogId==="colmeia_pergaminhos")) controls.push(renderBaseResidentChoice("Magia da Colmeia de Pergaminhos","learnedArcaneSpell",spells,choices.learnedArcaneSpell));
-  if(furniture.some(item=>item.catalogId==="reliquia_abencoada")) controls.push(renderBaseResidentChoice("Magia da Reliquia Abencoada","learnedDivineSpell",spells,choices.learnedDivineSpell));
+  if(furniture.some(item=>item.catalogId==="colmeia_pergaminhos")) controls.push(renderBaseResidentChoice("Magia da Colmeia de Pergaminhos","learnedArcaneSpell",arcaneSpells,choices.learnedArcaneSpell,"Escolha uma magia arcana ou universal."));
+  const relicInOratory=furniture.some(item=>item.catalogId==="reliquia_abencoada"&&activeRoomById.get(item.roomId)?.catalogId==="oratorio");
+  if(relicInOratory) controls.push(renderBaseResidentChoice("Magia da Reliquia Abencoada","learnedDivineSpell",divineSpells,choices.learnedDivineSpell,"Disponivel apenas para a Reliquia instalada no Oratorio."));
   const labels=baseEffectLabels(effects),used=choices.used||{};
   const featureRows=[...effects.special,...activeRooms.map(room=>baseCatalogEntry("rooms",room.catalogId)?.summary),...furniture.map(item=>baseCatalogEntry("furniture",item.catalogId)?.summary)].filter(Boolean).filter((text,index,list)=>list.indexOf(text)===index);
   content.innerHTML=`<div class="characterBaseHero"><div><small>Residencia</small><h3>${escapeHtml(base.name||"Base sem nome")}</h3><span>${escapeHtml(type?.name||"Sem tipo")} &bull; ${escapeHtml(size.name)} &bull; Seguranca ${campaignBaseSecurity(base)}</span></div><div class="baseMaintenanceState ${data.maintenance_paid?"paid":"pending"}"><small>Manutencao</small><strong>${data.maintenance_paid?"Paga":"Pendente"}</strong><span>${baseCurrency(size.maintenance)}</span></div></div>

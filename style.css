@@ -657,9 +657,9 @@ input,select,textarea{border-color:#694038}.attrs label{position:relative;paddin
 .baseEditorSectionHead{display:flex;align-items:end;justify-content:space-between;gap:1rem}
 .baseEditorSectionHead h3{margin:0;color:#f4ead8;font:700 1rem Cinzel,Georgia,serif}
 .baseEditorSectionHead span{display:block;margin-top:.15rem;color:#a99578;font-size:.72rem}
-.baseAddControl{display:flex;gap:.4rem;align-items:center;min-width:min(100%,360px)}
-.baseAddControl select{min-width:0;min-height:36px;background:#15110e;border-color:#5d3b30;color:#f4ead8}
-.baseAddControl button{min-height:36px;border-color:#755239;background:#2b2118;color:#f2cf86;font-weight:800}
+.baseAddControl{display:flex;gap:.4rem;align-items:stretch;min-width:min(100%,360px)}
+.baseAddControl select{min-width:0;height:40px;min-height:40px;padding:.45rem .62rem;background:#15110e;border-color:#5d3b30;color:#f4ead8}
+.baseAddControl button{height:40px;min-height:40px;padding:.45rem .72rem;border-color:#755239;background:#2b2118;color:#f2cf86;font-weight:800}
 .baseFurnitureAdd{min-width:min(100%,560px)}.baseFurnitureAdd select{flex:1}
 .baseResidentGrid,.baseFeatureGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
 .baseResidentCard,.baseFeatureCard{min-width:0;border:1px solid #49352c;border-radius:6px;background:#191613;padding:.68rem;display:grid;gap:.6rem;align-items:center}
@@ -683,7 +683,7 @@ input,select,textarea{border-color:#694038}.attrs label{position:relative;paddin
 .baseMaintenanceState{min-width:120px;display:grid;gap:.12rem;padding:.5rem .65rem;border:1px solid #654335;background:#17130f;text-align:right}.baseMaintenanceState strong{color:#e4a24b}.baseMaintenanceState.paid strong{color:#86bb70}.baseMaintenanceState span{font-size:.68rem}
 .characterBaseSection{display:grid;gap:.55rem}.characterBaseSection h3{margin:0;color:#e7c680;font:700 .92rem Cinzel,Georgia,serif}
 .baseEffectChips{display:flex;gap:.4rem;flex-wrap:wrap}.baseEffectChips>span:not(.muted){border:1px solid #6c4e32;background:#272016;color:#f0cf8a;padding:.3rem .48rem;font-size:.72rem}
-.baseResidentChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}.baseResidentChoice{color:#caaa79;font-size:.7rem}.baseResidentChoice select,.baseResidentChoice input{min-height:38px;background:#15110e;border-color:#5d3b30;color:#f4ead8}.baseResidentChoice small{color:#8f806e;font-size:.63rem;line-height:1.35}
+.baseResidentChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem .75rem;align-items:start}.baseResidentChoice{min-width:0;display:grid;grid-template-rows:auto 42px auto;align-content:start;gap:.3rem;color:#caaa79;font-size:.7rem}.baseResidentChoice>span{display:flex;align-items:end;min-height:1rem;line-height:1.25}.baseResidentChoice select,.baseResidentChoice input{height:42px;min-height:42px;padding:.48rem .68rem;background:#15110e;border-color:#5d3b30;color:#f4ead8}.baseResidentChoice small{display:block;min-height:.85rem;color:#8f806e;font-size:.63rem;line-height:1.35}
 .baseUseGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem}.baseUseGrid button{display:grid;gap:.12rem;text-align:left;border-color:#785a32;background:#282016;color:#f4ead8}.baseUseGrid button span{color:#caa96f;font-size:.68rem}.baseUseGrid button:disabled{border-color:#3f352c;background:#171513;color:#827667}.baseUseGrid button:disabled span{color:#766b5c}
 .characterBaseRules{border-top:1px solid #3e2b24;padding-top:.7rem}.characterBaseRules summary{color:#d7b574;font-weight:800;cursor:pointer}.characterBaseRules div{columns:2;column-gap:1.3rem;margin-top:.5rem}.characterBaseRules p{break-inside:avoid;margin:.25rem 0;color:#b9a78d;font-size:.74rem;line-height:1.45}
 .skillBadge.baseBonus{border-color:#80622f;background:#2c2417;color:#f2cd7d}
