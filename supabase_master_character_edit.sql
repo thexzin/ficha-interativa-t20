@@ -1,28 +1,5 @@
--- Permissao opcional para o mestre editar o conteudo de uma ficha vinculada.
--- A autorizacao pertence ao jogador e volta a false sempre que a campanha muda.
-
-alter table public.characters
-  add column if not exists allow_master_edit boolean not null default false;
-
-create or replace function public.reset_master_edit_on_campaign_change()
-returns trigger
-language plpgsql
-security invoker
-set search_path = ''
-as $$
-begin
-  if old.campaign_id is distinct from new.campaign_id then
-    new.allow_master_edit := false;
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists reset_master_edit_on_campaign_change on public.characters;
-create trigger reset_master_edit_on_campaign_change
-before update of campaign_id on public.characters
-for each row
-execute function public.reset_master_edit_on_campaign_change();
+-- O mestre pode editar automaticamente o conteudo das fichas vinculadas a sua campanha.
+-- A funcao nao permite alterar dono, campanha, privacidade ou outras colunas protegidas.
 
 create or replace function public.update_character_as_campaign_master(
   character_uuid uuid,
@@ -55,7 +32,6 @@ begin
            updated_at = now()
      where character.id = character_uuid
        and character.campaign_id is not null
-       and coalesce(character.allow_master_edit, false)
        and exists (
          select 1
            from public.campaigns as campaign

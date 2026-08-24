@@ -4273,7 +4273,7 @@ function isOwnCloudCharacter(character){
   return !!(character?.owner_id&&cloudUser&&character.owner_id===cloudUser.id);
 }
 function isMasterEditorForCloudCharacter(character){
-  if(!character?.campaign_id||!character?.allow_master_edit||!cloudUser||isOwnCloudCharacter(character)) return false;
+  if(!character?.campaign_id||!cloudUser||isOwnCloudCharacter(character)) return false;
   const campaign=cloudCampaigns.find(item=>item.id===character.campaign_id);
   return isCampaignOwner(campaign);
 }
@@ -6002,7 +6002,7 @@ async function openPublicCloudCharacter(remoteId,options={}){
 async function openCloudCharacter(remoteId,options={}){
   if(!cloudRequireLogin()) return;
   if(publicViewActive()) leavePublicView();
-  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,allow_master_edit,updated_at").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   const runtime=combatRuntimeForCharacter(remoteId);
   const sheetData=applyCombatRuntimeToSheetData(data.sheet_data,runtime);
@@ -6026,8 +6026,8 @@ async function openCloudCharacter(remoteId,options={}){
   renderAll();
   openSheetView({updateRoute:options.updateRoute});
   const accessNote=currentCloudReadOnly
-    ? "<br><small>Somente leitura: o dono não autorizou a edição pelo mestre.</small>"
-    : (isMasterEditorForCloudCharacter(data)?"<br><small>Edição autorizada pelo jogador.</small>":"");
+    ? "<br><small>Somente leitura: você não é o dono nem o mestre desta campanha.</small>"
+    : (isMasterEditorForCloudCharacter(data)?"<br><small>Edição disponível para o mestre da campanha.</small>":"");
   notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${accessNote}`);
 }
 function createCharacter(data,name){
@@ -6504,7 +6504,7 @@ function renderProfileMenu(){
   const signedIn=!!cloudUser;
   const label=publicViewActive()?"Visitante":(signedIn?(cloudUser.email||"Conectado"):"Offline");
   const masterEditing=isMasterEditorForCloudCharacter(currentCloudCharacterMeta());
-  const status=publicViewActive()?"Ficha pública":(signedIn?(currentCloudReadOnly?"Somente leitura":(masterEditing?"Edição autorizada":"Nuvem conectada")):"Modo local");
+  const status=publicViewActive()?"Ficha pública":(signedIn?(currentCloudReadOnly?"Somente leitura":(masterEditing?"Mestre da campanha":"Nuvem conectada")):"Modo local");
   const initial=(label.trim()[0]||"?").toUpperCase();
   if($("#profileName")) $("#profileName").textContent=label;
   if($("#profileStatus")) $("#profileStatus").textContent=status;
@@ -6562,12 +6562,12 @@ function renderCloudPanel(){
   const cloudSaveButton=$("#cloudSaveCharacterBtn");
   if(cloudSaveButton){
     cloudSaveButton.disabled=currentCloudReadOnly;
-    cloudSaveButton.title=currentCloudReadOnly?"Edição não autorizada pelo dono da ficha":"";
+    cloudSaveButton.title=currentCloudReadOnly?"Esta ficha está disponível apenas para o dono e o mestre da campanha":"";
   }
   const actionSaveCloudButton=$("#actionSaveCloudBtn");
   if(actionSaveCloudButton){
     actionSaveCloudButton.disabled=currentCloudReadOnly;
-    actionSaveCloudButton.title=currentCloudReadOnly?"Edição não autorizada pelo dono da ficha":"";
+    actionSaveCloudButton.title=currentCloudReadOnly?"Esta ficha está disponível apenas para o dono e o mestre da campanha":"";
   }
   const currentCharacter=currentCloudCharacterMeta();
   const canShare=!!(signedIn&&currentCharacter&&isOwnCloudCharacter(currentCharacter)&&!currentCloudReadOnly&&!isPrivateCloudCharacter(currentCharacter));
@@ -6578,14 +6578,6 @@ function renderCloudPanel(){
   }
   const disableShareButton=$("#actionDisableShareBtn");
   if(disableShareButton) disableShareButton.classList.toggle("hidden",!canShare||!currentCharacter?.is_public);
-  const masterPermission=$("#masterEditPermission");
-  const masterPermissionToggle=$("#allowMasterEditToggle");
-  const canConfigureMasterEdit=!!(signedIn&&currentCharacter?.campaign_id&&isOwnCloudCharacter(currentCharacter)&&!publicViewActive());
-  masterPermission?.classList.toggle("hidden",!canConfigureMasterEdit);
-  if(masterPermissionToggle){
-    masterPermissionToggle.checked=!!currentCharacter?.allow_master_edit;
-    masterPermissionToggle.disabled=!canConfigureMasterEdit;
-  }
 }
 function syncCurrentCharacterFromCloud(){
   const remoteId=mappedCloudCharacterId();
@@ -6619,7 +6611,7 @@ async function loadCloudData(options={}){
     renderHub();
     return;
   }
-  const characterColumns="id,owner_id,name,player_name,campaign_id,is_public,is_private,allow_master_edit,updated_at,sheet_data";
+  const characterColumns="id,owner_id,name,player_name,campaign_id,is_public,is_private,updated_at,sheet_data";
   let [{data:campaigns,error:campaignError},{data:characters,error:characterError},runtimeResult]=await Promise.all([
     supabaseClient.from("campaigns").select("id,owner_id,name,invite_code,updated_at").order("updated_at",{ascending:false}),
     supabaseClient.from("characters").select(characterColumns).order("updated_at",{ascending:false}),
@@ -6633,7 +6625,7 @@ async function loadCloudData(options={}){
       .from("characters")
       .select("id,owner_id,name,player_name,campaign_id,is_public,updated_at,sheet_data")
       .order("updated_at",{ascending:false});
-    characters=(fallback.data||[]).map(character=>({...character,is_private:false,allow_master_edit:false}));
+    characters=(fallback.data||[]).map(character=>({...character,is_private:false}));
     characterError=fallback.error;
   }
   if(characterError) throw characterError;
@@ -6691,7 +6683,7 @@ async function persistCloudCharacterContent(remoteId,payload){
       .update(payload)
       .eq("id",remoteId)
       .eq("owner_id",cloudUser.id)
-      .select("id,name,campaign_id,allow_master_edit,updated_at")
+      .select("id,name,campaign_id,updated_at")
       .single();
     if(error) throw error;
     return data;
@@ -6710,7 +6702,7 @@ async function persistCloudCharacterContent(remoteId,payload){
       throw error;
     }
     const row=Array.isArray(data)?data[0]:data;
-    if(!row) throw new Error("A permissão de edição pelo mestre não está mais ativa.");
+    if(!row) throw new Error("Esta ficha não está mais vinculada a uma campanha criada por você.");
     return row;
   }
   throw new Error("Esta ficha está em modo somente leitura.");
@@ -6731,7 +6723,7 @@ async function saveCloudCharacter(show=true){
     setCurrentCloudReadOnly(true);
     renderCloudPanel();
     markSaveWarning("Somente leitura");
-    notify("Ficha em modo somente leitura. Apenas o dono ou um mestre autorizado pode salvar alterações.");
+    notify("Ficha em modo somente leitura. Apenas o dono ou o mestre da campanha pode salvar alterações.");
     return;
   }
   markSaving("Salvando...");
@@ -6811,41 +6803,11 @@ async function disableCurrentCharacterShare(){
   renderCloudPanel();
   notify("Link público desativado.");
 }
-async function setMasterEditPermission(enabled){
-  if(!cloudRequireLogin()) return;
-  const character=currentCloudCharacterMeta();
-  if(!character||!isOwnCloudCharacter(character)){
-    notify("Apenas o dono da ficha pode alterar esta permissão.");
-    return;
-  }
-  if(!character.campaign_id){
-    notify("Vincule a ficha a uma campanha antes de liberar a edição.");
-    return;
-  }
-  const {data,error}=await supabaseClient
-    .from("characters")
-    .update({allow_master_edit:!!enabled,updated_at:new Date().toISOString()})
-    .eq("id",character.id)
-    .eq("owner_id",cloudUser.id)
-    .select("id,allow_master_edit,updated_at")
-    .single();
-  if(error){
-    if(/allow_master_edit|column|schema cache/i.test(String(error.message||""))){
-      throw new Error("A permissão de edição pelo mestre ainda não foi instalada no Supabase.");
-    }
-    throw error;
-  }
-  character.allow_master_edit=!!data.allow_master_edit;
-  character.updated_at=data.updated_at||character.updated_at;
-  renderCloudPanel();
-  renderHub();
-  notify(data.allow_master_edit?"O mestre da campanha agora pode editar esta ficha.":"A edição pelo mestre foi desativada.");
-}
 async function loadSelectedCloudCharacter(){
   if(!cloudRequireLogin()) return;
   const remoteId=value("cloudCharacterSelect");
   if(!remoteId){notify("Escolha uma ficha da nuvem para carregar.");return}
-  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,allow_master_edit,updated_at").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   if(!confirm(`Carregar "${data.name||"personagem"}" da nuvem e substituir a ficha atual neste navegador?`)) return;
   const sheetData=applyCombatRuntimeToSheetData(data.sheet_data,combatRuntimeForCharacter(remoteId));
@@ -6861,8 +6823,8 @@ async function loadSelectedCloudCharacter(){
   renderAll();
   openSheetView();
   const accessNote=currentCloudReadOnly
-    ? "<br><small>Somente leitura: o dono não autorizou a edição pelo mestre.</small>"
-    : (isMasterEditorForCloudCharacter(data)?"<br><small>Edição autorizada pelo jogador.</small>":"");
+    ? "<br><small>Somente leitura: você não é o dono nem o mestre desta campanha.</small>"
+    : (isMasterEditorForCloudCharacter(data)?"<br><small>Edição disponível para o mestre da campanha.</small>":"");
   notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${accessNote}`);
 }
 async function createCloudCampaign(){
@@ -7619,12 +7581,6 @@ $("#actionShareCharacterBtn")?.addEventListener("click",()=>{
 $("#actionDisableShareBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
   runCloudAction(disableCurrentCharacterShare);
-});
-$("#allowMasterEditToggle")?.addEventListener("change",event=>{
-  runCloudAction(async()=>{
-    try{await setMasterEditPermission(event.target.checked)}
-    catch(error){renderCloudPanel();throw error}
-  });
 });
 $("#actionLinkCampaignBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
