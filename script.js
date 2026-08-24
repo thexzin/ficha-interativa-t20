@@ -20,9 +20,14 @@ let cloudCampaignRolls=[];
 let cloudCampaignEncounters=[];
 let cloudInitiativeEntries=[];
 let cloudCharacterRuntimeStates=[];
+let cloudCampaignBases=[];
+let cloudBaseResidents=[];
 let campaignInitiativeAvailable=true;
 let combatRuntimeAvailable=true;
 let combatRuntimeChannel=null;
+let campaignBasesAvailable=true;
+let campaignBasesChannel=null;
+let activeCampaignBaseId="";
 
 function makeEntryId(prefix="entry"){
   if(globalThis.crypto?.randomUUID) return `${prefix}-${crypto.randomUUID()}`;
@@ -351,7 +356,154 @@ function partnerSpellCost(spell,partners=state?.partners||[]){
     if(circle===2&&partnerRankIndex(partner.rank)>=1) return 1;
     return 0;
   });
-  return Math.max(base>0?1:0,base-reduction);
+  return Math.max(base>0?1:0,base-reduction-baseSpellCostReduction(spell));
+}
+
+function emptyBaseEffects(){
+  return {
+    attrs:Object.fromEntries(ATTR_KEYS.map(attr=>[attr,0])),skills:{},trainedSkills:new Set(),officeBonuses:{},attackChoices:[],damageChoices:[],
+    defense:0,resistance:0,pvMax:0,pmMax:0,load:0,movement:0,security:0,
+    unarmedDamage:0,extraWorn:0,spellDiscounts:[],special:[],uses:[]
+  };
+}
+function baseCatalog(){return window.T20_BASE_CATALOG||{types:[],sizes:[],rooms:[],furniture:[]}}
+function baseCatalogEntry(collection,id){return (baseCatalog()[collection]||[]).find(entry=>entry.id===id)||null}
+function normalizeCampaignBaseData(value){
+  const source=value&&typeof value==="object"&&!Array.isArray(value)?value:{};
+  const normalizeRoom=(room,index)=>typeof room==="string"
+    ? {id:`room-${index}-${room}`,catalogId:room,damaged:false}
+    : {id:String(room?.id||makeEntryId("room")),catalogId:String(room?.catalogId||room?.type||""),damaged:room?.damaged===true};
+  const normalizeFurniture=(item,index)=>typeof item==="string"
+    ? {id:`furniture-${index}-${item}`,catalogId:item,roomId:"",choiceSkill:"",choiceType:""}
+    : {id:String(item?.id||makeEntryId("furniture")),catalogId:String(item?.catalogId||item?.type||""),roomId:String(item?.roomId||""),choiceSkill:String(item?.choiceSkill||""),choiceType:String(item?.choiceType||"")};
+  return {
+    security_adjustment:Number(source.security_adjustment||0),
+    maintenance_paid:source.maintenance_paid===true,
+    rooms:(Array.isArray(source.rooms)?source.rooms:[]).map(normalizeRoom).filter(room=>baseCatalogEntry("rooms",room.catalogId)),
+    furniture:(Array.isArray(source.furniture)?source.furniture:[]).map(normalizeFurniture).filter(item=>baseCatalogEntry("furniture",item.catalogId)),
+    notes:String(source.notes||"")
+  };
+}
+function campaignBaseContextForCharacter(characterId){
+  if(!characterId) return null;
+  const resident=cloudBaseResidents.find(entry=>entry.character_id===characterId);
+  if(!resident) return null;
+  const base=cloudCampaignBases.find(entry=>entry.id===resident.base_id);
+  return base?{base,resident,data:normalizeCampaignBaseData(base.base_data),choices:resident.choices&&typeof resident.choices==="object"?resident.choices:{}}:null;
+}
+function currentBaseCharacterId(){return mappedCloudCharacterId()||publicViewCharacter?.id||""}
+function currentCampaignBaseContext(){return campaignBaseContextForCharacter(currentBaseCharacterId())}
+function canonicalBaseSkillName(raw){
+  const key=powerCatalogKey(raw);
+  return Object.keys(T20_DATA.pericias||{}).find(name=>powerCatalogKey(name)===key)||String(raw||"");
+}
+function mergeBaseEffect(target,source){
+  if(!source) return;
+  ["defense","resistance","pvMax","pmMax","load","movement","security","unarmedDamage","extraWorn"].forEach(key=>target[key]+=Number(source[key]||0));
+  ATTR_KEYS.forEach(attr=>{target.attrs[attr]=Number(target.attrs[attr]||0)+Number(source.attrs?.[attr]||0)});
+  Object.entries(source.skills||{}).forEach(([skill,bonus])=>{
+    const name=canonicalBaseSkillName(skill);
+    target.skills[name]=Number(target.skills[name]||0)+Number(bonus||0);
+  });
+}
+function addBaseSpecial(target,text){if(text&&!target.special.includes(text)) target.special.push(text)}
+function addBaseUse(target,text){if(text&&!target.uses.includes(text)) target.uses.push(text)}
+function baseResidentEffects(characterId=currentBaseCharacterId(),options={}){
+  const result=emptyBaseEffects(),context=campaignBaseContextForCharacter(characterId);
+  if(!context) return result;
+  const {base,data,choices}=context;
+  const type=baseCatalogEntry("types",base.base_type);
+  mergeBaseEffect(result,type?.effects);
+  (type?.uses||[]).forEach(use=>addBaseUse(result,use));
+  if(type?.summary&&!type?.effects) addBaseSpecial(result,type.summary);
+
+  const roomEntries=data.rooms.filter(room=>!room.damaged);
+  const roomById=new Map(roomEntries.map(room=>[room.id,room]));
+  const roomCatalogByEntry=new Map(roomEntries.map(room=>[room.id,baseCatalogEntry("rooms",room.catalogId)]));
+  const furnitureEntries=data.furniture.filter(item=>{
+    const catalogItem=baseCatalogEntry("furniture",item.catalogId);
+    return catalogItem&&(catalogItem.exterior||roomById.has(item.roomId));
+  });
+
+  roomEntries.forEach(room=>{
+    const entry=baseCatalogEntry("rooms",room.catalogId);
+    if(!entry) return;
+    mergeBaseEffect(result,entry.effects);
+    (entry.special||[]).forEach(text=>addBaseSpecial(result,text));
+    (entry.uses||[]).forEach(use=>addBaseUse(result,use));
+    if(entry.id==="oficina_trabalho"&&choices.officeName){
+      const hasAnvil=furnitureEntries.some(item=>item.roomId===room.id&&item.catalogId==="bigorna");
+      result.officeBonuses[powerCatalogKey(choices.officeName)]=hasAnvil?3:1;
+    }
+    if(entry.id==="forjaria"&&choices.forgeAttackId){
+      const hasAnvil=furnitureEntries.some(item=>item.roomId===room.id&&item.catalogId==="bigorna");
+      result.damageChoices.push({attackId:String(choices.forgeAttackId),amount:hasAnvil?2:1,label:"Forjaria"});
+    }
+    if(entry.id==="patio_treinamento"&&choices.trainingAttackId) result.attackChoices.push({attackId:String(choices.trainingAttackId),amount:1,label:"Patio de Treinamento"});
+    if(entry.id==="laboratorio_arcano"&&choices.arcaneSpell) result.spellDiscounts.push({name:String(choices.arcaneSpell),kind:"arcana",amount:1});
+    if(entry.id==="tabernaculo"&&choices.divineSpell) result.spellDiscounts.push({name:String(choices.divineSpell),kind:"divina",amount:1});
+    if(entry.id==="lavanderia"&&choices.clothingSkill){
+      const skill=canonicalBaseSkillName(choices.clothingSkill);
+      result.skills[skill]=Number(result.skills[skill]||0)+1;
+    }
+    if(entry.id==="suite"&&String(choices.suiteRoomId||"")===room.id){
+      result.pvMax+=3;
+      if(furnitureEntries.some(item=>item.roomId===room.id&&item.catalogId==="colchao_penas")) result.pvMax+=3;
+    }
+    if(entry.id==="memorial"&&ATTR_KEYS.includes(choices.memorialAttribute)) result.attrs[choices.memorialAttribute]+=1;
+  });
+
+  furnitureEntries.forEach(item=>{
+    const entry=baseCatalogEntry("furniture",item.catalogId),roomEntry=roomCatalogByEntry.get(item.roomId);
+    if(!entry) return;
+    mergeBaseEffect(result,entry.effects);
+    (entry.special||[]).forEach(text=>addBaseSpecial(result,text));
+    (entry.uses||[]).forEach(use=>addBaseUse(result,use));
+    if(entry.id==="mapa_mundi"&&roomEntry?.id==="sala_guerra"){
+      result.skills[canonicalBaseSkillName("Guerra")]=Number(result.skills[canonicalBaseSkillName("Guerra")]||0)+1;
+      result.skills[canonicalBaseSkillName("Iniciativa")]=Number(result.skills[canonicalBaseSkillName("Iniciativa")]||0)+1;
+    }
+    if(entry.id==="mapa_mundi"&&roomEntry?.id==="sala_mapas") addBaseSpecial(result,"Buscas e perigos complexos de viagem +3");
+    if(entry.id==="idolo_dourado"&&item.choiceSkill){
+      const skill=canonicalBaseSkillName(item.choiceSkill);
+      result.skills[skill]=Number(result.skills[skill]||0)+1;
+    }
+    if(entry.id==="prateleiras_reforcadas"&&item.choiceSkill) result.trainedSkills.add(canonicalBaseSkillName(item.choiceSkill));
+    if(entry.id==="espelho_corpo"&&roomEntry?.id==="suite"){
+      Object.entries(T20_DATA.pericias||{}).filter(([,attr])=>attr==="CAR").forEach(([skill])=>{result.skills[skill]=Number(result.skills[skill]||0)+1});
+    }
+    if(entry.id==="espelho_corpo"&&roomEntry?.id==="chapelaria") result.extraWorn+=1;
+    if(entry.id==="reliquia_abencoada"&&roomEntry?.id==="sala_estar") result.resistance+=1;
+  });
+  result.security+=Number(data.security_adjustment||0);
+  return result;
+}
+function baseSkillBonus(skillName,officeName="",characterId=currentBaseCharacterId()){
+  const effects=baseResidentEffects(characterId);
+  let bonus=Number(effects.skills[canonicalBaseSkillName(skillName)]||0);
+  if(powerCatalogKey(skillName)===powerCatalogKey("Oficio")&&officeName) bonus+=Number(effects.officeBonuses[powerCatalogKey(officeName)]||0);
+  if(RESISTANCE_SKILLS.has(skillName)) bonus+=Number(effects.resistance||0);
+  return bonus;
+}
+function baseTrainsSkill(skillName,characterId=currentBaseCharacterId()){return baseResidentEffects(characterId).trainedSkills.has(canonicalBaseSkillName(skillName))}
+function baseAttributeBonus(attr,characterId=currentBaseCharacterId()){return Number(baseResidentEffects(characterId).attrs?.[attr]||0)}
+function attackMatchesBaseChoice(attack,choice){
+  if(!choice) return false;
+  return String(attack?.id||"")===String(choice)||powerCatalogKey(attack?.name)===powerCatalogKey(choice);
+}
+function baseCombatBonuses(attack,characterId=currentBaseCharacterId()){
+  const effects=baseResidentEffects(characterId);
+  const unarmed=/desarmad|garra|mordida|arma natural/i.test(String(attack?.name||"")+" "+String(attack?.notes||""));
+  return {
+    attack:effects.attackChoices.filter(choice=>attackMatchesBaseChoice(attack,choice.attackId)).reduce((sum,choice)=>sum+choice.amount,0),
+    damage:effects.damageChoices.filter(choice=>attackMatchesBaseChoice(attack,choice.attackId)).reduce((sum,choice)=>sum+choice.amount,0)+(unarmed?effects.unarmedDamage:0)
+  };
+}
+function baseSpellCostReduction(spell,characterId=currentBaseCharacterId()){
+  const name=powerCatalogKey(spell?.name);
+  return baseResidentEffects(characterId).spellDiscounts
+    .filter(entry=>powerCatalogKey(entry.name)===name)
+    .reduce((sum,entry)=>sum+Number(entry.amount||0),0);
 }
 function partnerAutomationText(partner){
   if(partner.active===false) return "Inativo: nenhum benefício entra nos cálculos.";
@@ -921,7 +1073,7 @@ function itemAutomaticEffectLabels(item){
 }
 const rawNum=id=>Number($("#"+id)?.value||0);
 const num=id=>rawNum(id);
-const permanentAttrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+itemAttributeBonus(id)+powerAttributeBonus(id):rawNum(id);
+const permanentAttrNum=id=>ATTR_KEYS.includes(id)?rawNum(id)+itemAttributeBonus(id)+powerAttributeBonus(id)+baseAttributeBonus(id):rawNum(id);
 const attrNum=id=>ATTR_KEYS.includes(id)?permanentAttrNum(id)+rawNum(`${id}Temp`):rawNum(id);
 const value=id=>$("#"+id)?.value||"";
 const DELETE_ICON_HTML='<span class="deleteIconGlyph" aria-hidden="true"></span>';
@@ -1039,20 +1191,21 @@ function attackBonusBreakdown(attack){
   const partnerBonus=partnerAttackBonus(attack);
   const itemFx=equippedItemAttackEffects(attack);
   const itemBonus=Number(itemFx.attack||0);
-  const attackOnly=num("globalAttackBonus")+Number(fx.attack||0)+partnerBonus+itemBonus;
+  const baseBonus=baseCombatBonuses(attack).attack;
+  const attackOnly=num("globalAttackBonus")+Number(fx.attack||0)+partnerBonus+itemBonus+baseBonus;
   if(skillName==="Manual"){
     const total=manual+num("globalTestBonus")+attackOnly;
-    return {total,skillName,attr:"",manual,partnerBonus,itemBonus,itemFx};
+    return {total,skillName,attr:"",manual,partnerBonus,itemBonus,baseBonus,itemFx};
   }
   const cls=primaryClass()||{pericias:[]};
   const defaultAttr=T20_DATA.pericias[skillName]||"FOR";
   const data=state.skillData?.[skillName]||{};
-  const trained=data.trained===true || (data.trained===undefined&&(cls.pericias||[]).includes(skillName));
+  const trained=data.trained===true || (data.trained===undefined&&(cls.pericias||[]).includes(skillName)) || baseTrainsSkill(skillName);
   const attr=attackAttribute(attack,skillName);
   const skillBase=halfLevel()+attrNum(attr)+(trained?trainingBonus():0)+Number(data.adjust||0)
     +num("globalTestBonus")+num("skillGlobalBonus")
-    +Number(fx.allSkills||0)+Number(fx.attrs?.[attr]||0)+Number(fx.skills?.[skillName]||0);
-  return {total:skillBase+attackOnly+manual,skillName,attr,manual,trained,skillBase,partnerBonus,itemBonus,itemFx};
+    +baseSkillBonus(skillName)+Number(fx.allSkills||0)+Number(fx.attrs?.[attr]||0)+Number(fx.skills?.[skillName]||0);
+  return {total:skillBase+attackOnly+manual,skillName,attr,manual,trained,skillBase,partnerBonus,itemBonus,baseBonus,itemFx};
 }
 function rollAttackD20(attack){
   const best=Math.max(0,Math.min(5,Math.floor(Number(attack?.bestDice)||0)));
@@ -1087,9 +1240,10 @@ function rollAttackDamage(attack){
   const damageAttrBonus=damageAttr?attrNum(damageAttr):0;
   const globalDamage=num("globalDamageBonus");
   const itemDamage=Number(itemFx.damage||0);
+  const baseDamageBonus=baseCombatBonuses(attack).damage;
   const damage={
-    total:baseDamage.total+extraDamage.total+damageAttrBonus+globalDamage+itemDamage,
-    details:[...baseDamage.details,...extraDamage.details,...(damageAttr?[`${damageAttr} ${signedNumber(damageAttrBonus)}`]:[]),...(globalDamage?[signedNumber(globalDamage)]:[]),...(itemDamage?[`Item ${signedNumber(itemDamage)}`]:[])]
+    total:baseDamage.total+extraDamage.total+damageAttrBonus+globalDamage+itemDamage+baseDamageBonus,
+    details:[...baseDamage.details,...extraDamage.details,...(damageAttr?[`${damageAttr} ${signedNumber(damageAttrBonus)}`]:[]),...(globalDamage?[signedNumber(globalDamage)]:[]),...(itemDamage?[`Item ${signedNumber(itemDamage)}`]:[]),...(baseDamageBonus?[`Base ${signedNumber(baseDamageBonus)}`]:[])]
   };
   const attackTotalClass=isFumble?"fumbleTotal":isCritical?"criticalTotal":"";
   const rollLabel=isFumble?"Falha":isCritical?"Cr&iacute;tico":"Ataque";
@@ -1100,11 +1254,13 @@ function rollAttackDamage(attack){
   const globalDamageLine=globalDamage?`<br>Dano global: ${signedNumber(globalDamage)}`:"";
   const itemDamageLine=itemDamage?`<br>Item equipado: ${signedNumber(itemDamage)} dano`:"";
   const itemAttackLine=attackBreakdown.itemBonus?`<br>Bônus do item: ${signedNumber(attackBreakdown.itemBonus)} ataque`:"";
+  const baseAttackLine=attackBreakdown.baseBonus?`<br>Base: ${signedNumber(attackBreakdown.baseBonus)} ataque`:"";
+  const baseDamageBonusLine=baseDamageBonus?`<br>Base: ${signedNumber(baseDamageBonus)} dano`:"";
   const diceLine=attackDice.rolls.length>1?` [${attackDice.rolls.join(", ")}] (${attackDice.mode})`:` [${d20}]`;
   const skillLine=attackBreakdown.skillName==="Manual"?"Manual":`${attackBreakdown.skillName} (${attackBreakdown.attr})`;
   notify(`<div class="combatRollToast">
     <div class="combatRollTop"><strong>${title}</strong><span>${rollLabel}</span></div>
-    <div class="combatRollFormula">Ataque: ${attackDice.rolls.length}d20${diceLine} ${signedNumber(bonus)}<br>Per&iacute;cia: ${skillLine}${itemAttackLine}<br>Dano base: ${baseDamageLine}${extraDamageLine}${damageAttrLine}${globalDamageLine}${itemDamageLine}${isCritical?`<br>Cr&iacute;tico: ${critical.threshold}/x${critical.multiplier}`:""}</div>
+    <div class="combatRollFormula">Ataque: ${attackDice.rolls.length}d20${diceLine} ${signedNumber(bonus)}<br>Per&iacute;cia: ${skillLine}${itemAttackLine}${baseAttackLine}<br>Dano base: ${baseDamageLine}${extraDamageLine}${damageAttrLine}${globalDamageLine}${itemDamageLine}${baseDamageBonusLine}${isCritical?`<br>Cr&iacute;tico: ${critical.threshold}/x${critical.multiplier}`:""}</div>
     <div class="combatRollTotals">
       <div><strong class="${attackTotalClass}">${totalAttack}</strong><small>Ataque</small></div>
       <div><strong>${damage.total}</strong><small>Dano</small></div>
@@ -1447,6 +1603,7 @@ function renderGlobalModifierSummary(){
 }
 function recalc(){
   const itemFx=equippedItemEffects();
+  const baseFx=baseResidentEffects();
   const itemAttributeSources=equippedItemAttributeContributions();
   const powerAttributeSources=powerAttributeContributions();
   const classLevels=currentClassLevels(), cls=primaryClass()||{nome:"Classe",pv1:0,pvNivel:0,pmNivel:0}, race=T20_DATA.racas[value("raca")], lvl=totalClassLevel(classLevels), con=permanentAttrNum("CON");
@@ -1455,7 +1612,7 @@ function recalc(){
   const pvBase=bases.pvBase, pmBase=bases.pmBase;
   $("#pvBase").value=pvBase;$("#pmBase").value=pmBase;
   const pvTemp=Math.max(0,num("pvBonus")),pmTemp=Math.max(0,num("pmBonus"));
-  const pvMax=pvBase+num("pvAjuste")+itemFx.pvMax,pmMax=pmBase+num("pmAjuste")+itemFx.pmMax;
+  const pvMax=pvBase+num("pvAjuste")+itemFx.pvMax+baseFx.pvMax,pmMax=pmBase+num("pmAjuste")+itemFx.pmMax+baseFx.pmMax;
   const pvAtual=num("pvAtual"),deathLimit=deathLimitFromPvMax(pvMax),deathThreshold=deathLimit-1,isDying=pvAtual<0,isDead=pvAtual<deathLimit;
   $("#pvMaxView").textContent=isDying?deathLimit:pvMax;$("#pvMaxView").dataset.max=pvMax;$("#pmMaxView").textContent=pmMax;$("#pmMaxView").dataset.max=pmMax;$("#pvAtualView").textContent=pvAtual;$("#pmAtualView").textContent=num("pmAtual");
   $("#pvTempView").textContent=pvTemp?` +${pvTemp} temp`:"";$("#pmTempView").textContent=pmTemp?` +${pmTemp} temp`:"";
@@ -1463,7 +1620,7 @@ function recalc(){
   const defenseAttr=ATTR_KEYS.includes(value("defAttr"))?value("defAttr"):"DES";
   const defenseAttrBonus=$("#defUseDex")?.checked!==false?permanentAttrNum(defenseAttr):0;
   if($("#defUseDexState")) $("#defUseDexState").textContent=$("#defUseDex")?.checked!==false?"Sim":"Não";
-  $("#defView").textContent=10+defenseAttrBonus+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+num("globalDefenseBonus")+partnerDefenseBonus()+itemFx.defense+conditionFx.defense;
+  $("#defView").textContent=10+defenseAttrBonus+num("armadura")+num("escudo")+num("defBonus")+num("defAjuste")+num("globalDefenseBonus")+partnerDefenseBonus()+itemFx.defense+baseFx.defense+conditionFx.defense;
   const protection=equippedProtectionBreakdown();
   if($("#armorItemBonus")) $("#armorItemBonus").textContent=protection.armorDefense?`Item ${signedNumber(protection.armorDefense)}`:"";
   if($("#shieldItemBonus")) $("#shieldItemBonus").textContent=protection.shieldDefense?`Item ${signedNumber(protection.shieldDefense)}`:"";
@@ -1481,14 +1638,16 @@ function recalc(){
   $("#spellCd").textContent=10+halfLevel()+attrNum(value("spellAttr"))+num("spellCdBonus")+partnerSpellCdBonus()+itemFx.spellCd;
   $("#pmLimit").textContent=Math.max(0,lvl+num("pmLimitBonus")+num("pmLimitAdjust")+itemFx.pmLimit);
   ATTR_KEYS.forEach(attr=>{
-    const indicator=$(`[data-itemattr="${attr}"]`),total=$(`[data-attrtotal="${attr}"]`),itemBonus=Number(itemFx.attrs[attr]||0),powerBonus=(powerAttributeSources[attr]||[]).reduce((sum,source)=>sum+source.value,0),bonus=itemBonus+powerBonus;
+    const indicator=$(`[data-itemattr="${attr}"]`),total=$(`[data-attrtotal="${attr}"]`),itemBonus=Number(itemFx.attrs[attr]||0),powerBonus=(powerAttributeSources[attr]||[]).reduce((sum,source)=>sum+source.value,0),baseBonus=Number(baseFx.attrs[attr]||0),bonus=itemBonus+powerBonus+baseBonus;
     const itemSources=(itemAttributeSources[attr]||[]).map(source=>({...source,kind:"Item"}));
     const powerSources=(powerAttributeSources[attr]||[]).map(source=>({...source,kind:"Poder"}));
-    const sources=[...itemSources,...powerSources];
+    const baseSources=baseBonus?[{name:"Memorial",value:baseBonus,kind:"Base"}]:[];
+    const sources=[...itemSources,...powerSources,...baseSources];
     if(total) total.textContent=rawNum(attr)+bonus;
     if(indicator){
       const detail=sources.map(source=>`${source.kind}: ${source.name} ${signedNumber(source.value)}`).join("; ");
-      const originLabel=itemSources.length&&powerSources.length?"Bônus":powerSources.length?"Poderes":"Itens";
+      const sourceKinds=new Set(sources.map(source=>source.kind));
+      const originLabel=sourceKinds.size>1?"Bônus":sourceKinds.has("Poder")?"Poderes":sourceKinds.has("Base")?"Base":"Itens";
       indicator.textContent=sources.length?`${originLabel} ${signedNumber(bonus)}`:"";
       indicator.classList.toggle("active",sources.length>0);
       indicator.title=detail;
@@ -1529,8 +1688,9 @@ function recalc(){
   const baseSizeText=`Base ${baseSize}`;
   const baseMove=raceBaseMove(race);
   const customMove=value("deslocamento");
-  const moveValue=customMove!==""?customMove:baseMove;
-  const baseMoveText=`Base ${baseMove}m`;
+  const rawMove=Number(customMove!==""?customMove:baseMove);
+  const moveValue=rawMove+Number(baseFx.movement||0);
+  const baseMoveText=`Base ${baseMove}m${baseFx.movement?` • Base de campanha ${signedNumber(baseFx.movement)}m`:""}`;
   const classSummary=classListLabel(classLevels);
   const classSources=[...new Set(classLevels.map(entry=>T20_DATA.classes[entry.id]?.fonte).filter(Boolean))].join(" • ");
   const classDetails=classLevels.map((entry,index)=>{
@@ -1567,7 +1727,7 @@ function recalc(){
   const sizeInput=$("#summarySizeInput");
   if(sizeInput) sizeInput.onchange=()=>{const sizeField=$("#tamanho");if(sizeField) sizeField.value=sizeInput.value===baseSize?"":sizeInput.value;save(false)};
   const moveInput=$("#summaryMoveInput");
-  if(moveInput) moveInput.oninput=()=>{const moveField=$("#deslocamento");if(moveField) moveField.value=moveInput.value;save(false)};
+  if(moveInput) moveInput.oninput=()=>{const moveField=$("#deslocamento");if(moveField) moveField.value=Number(moveInput.value||0)-Number(baseFx.movement||0);save(false)};
   renderProgress();renderSkills();renderInventorySummary();renderGlobalModifierSummary();refreshAttackSummaries();renderCartomantePanel();
 }
 function classProgressionForClassId(classId){
@@ -1648,6 +1808,10 @@ function skillBadges(name){
 function partnerSkillBadge(bonus){
   return bonus?`<span class="skillBadge partnerBonus">Parceiro ${signedNumber(bonus)}</span>`:"";
 }
+function baseSkillBadge(bonus,trained=false){
+  if(!bonus&&!trained) return "";
+  return `<span class="skillBadge baseBonus">Base${bonus?` ${signedNumber(bonus)}`:""}${trained?" • treinada":""}</span>`;
+}
 function renderSkills(){
   const cls=primaryClass()||{pericias:[]}, fx=activeConditionEffects();
   const globalSkillBonus=num("skillGlobalBonus");
@@ -1660,11 +1824,13 @@ function renderSkills(){
       state.offices.forEach((office,idx)=>{
         const attr=validSkillAttr(office.attr,defaultAttr);
         office.attr=attr;
-        const locked=skillIsLocked(name,office.trained);
+        const baseTrained=baseTrainsSkill(name),effectiveTrained=office.trained||baseTrained;
+        const locked=skillIsLocked(name,effectiveTrained);
         const partnerBonus=partnerSkillBonus(name);
-        const total=halfLevel()+attrNum(attr)+(office.trained?trainingBonus():0)+Number(office.adjust||0)+globalTestBonus+globalSkillBonus+partnerBonus+itemSkillBonus(name)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
-        rows.push(`<div class="skill office-skill ${office.trained?"trained":""} ${locked?"locked":""}">
-          <span class="skillName">Ofício <select class="skillAttrSelect" data-officeattr="${idx}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}${partnerSkillBadge(partnerBonus)}</span>
+        const baseBonus=baseSkillBonus(name,office.name);
+        const total=halfLevel()+attrNum(attr)+(effectiveTrained?trainingBonus():0)+Number(office.adjust||0)+globalTestBonus+globalSkillBonus+partnerBonus+baseBonus+itemSkillBonus(name)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+        rows.push(`<div class="skill office-skill ${effectiveTrained?"trained":""} ${locked?"locked":""}">
+          <span class="skillName">Ofício <select class="skillAttrSelect" data-officeattr="${idx}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}${partnerSkillBadge(partnerBonus)}${baseSkillBadge(baseBonus,baseTrained)}</span>
           <input class="officeName" data-officename="${idx}" value="${escapeHtml(office.name||"")}" placeholder="Ex.: Alquimia">
           <label><input type="checkbox" data-officetrain="${idx}" ${office.trained?"checked":""}> Treino</label>
           <input type="number" data-officeadj="${idx}" value="${office.adjust||0}">
@@ -1680,12 +1846,14 @@ function renderSkills(){
     state.skillData[name]=d;
     const attr=d.attr;
     const armorPenalty=ARMOR_PENALTY_SKILLS.has(name)?armorPenaltyValue():0;
-    const locked=skillIsLocked(name,d.trained);
+    const baseTrained=baseTrainsSkill(name),effectiveTrained=d.trained||baseTrained;
+    const locked=skillIsLocked(name,effectiveTrained);
     const resistanceBonus=RESISTANCE_SKILLS.has(name)?globalResistanceBonus:0;
     const partnerBonus=partnerSkillBonus(name);
-    const total=halfLevel()+attrNum(attr)+(d.trained?trainingBonus():0)+Number(d.adjust||0)+globalTestBonus+globalSkillBonus+resistanceBonus+partnerBonus+itemSkillBonus(name)+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
-    rows.push(`<div class="skill ${d.trained?"trained":""} ${locked?"locked":""} ${armorPenalty?"hasArmorPenalty":""}">
-      <span class="skillName">${escapeHtml(name)} <select class="skillAttrSelect" data-skattr="${escapeHtml(name)}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}${partnerSkillBadge(partnerBonus)}</span>
+    const baseBonus=baseSkillBonus(name);
+    const total=halfLevel()+attrNum(attr)+(effectiveTrained?trainingBonus():0)+Number(d.adjust||0)+globalTestBonus+globalSkillBonus+resistanceBonus+partnerBonus+baseBonus+itemSkillBonus(name)+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+    rows.push(`<div class="skill ${effectiveTrained?"trained":""} ${locked?"locked":""} ${armorPenalty?"hasArmorPenalty":""}">
+      <span class="skillName">${escapeHtml(name)} <select class="skillAttrSelect" data-skattr="${escapeHtml(name)}" title="Atributo-chave">${skillAttrOptions(attr)}</select>${skillBadges(name)}${partnerSkillBadge(partnerBonus)}${baseSkillBadge(baseBonus,baseTrained)}</span>
       <label><input type="checkbox" data-sktrain="${escapeHtml(name)}" ${d.trained?"checked":""}> Treino</label>
       <input type="number" data-skadj="${escapeHtml(name)}" value="${d.adjust||0}">
       <span class="total">${skillTotalText(total,locked)}</span>
@@ -3021,7 +3189,7 @@ function baseLoadLimitFromStrength(){return baseLoadLimitForStrength(permanentAt
 function renderInventorySummary(){
   const used=state.items.reduce((sum,it)=>sum+Number(it.qty||0)*itemEffectiveSpaces(it),0);
   const auto=$("#spacesLimitAuto")?.checked!==false;
-  const calculatedLimit=baseLoadLimitFromStrength()+Number(equippedItemEffects().load||0);
+  const calculatedLimit=baseLoadLimitFromStrength()+Number(equippedItemEffects().load||0)+Number(baseResidentEffects().load||0);
   if(auto&&$("#spacesLimit")) $("#spacesLimit").value=calculatedLimit;
   const limit=Math.max(0,num("spacesLimit"));
   const absoluteMax=limit*2;
@@ -3221,9 +3389,10 @@ function refreshAttackSummaries(){
     const normalized=normalizeAttack(attack);
     const breakdown=attackBonusBreakdown(normalized);
     const itemFx=breakdown.itemFx||emptyItemEffects();
+    const baseDamage=baseCombatBonuses(normalized).damage;
     const damageAttr=ATTR_KEYS.includes(normalized.damageAttr)?normalized.damageAttr:"";
     const globalDamage=num("globalDamageBonus");
-    const extra=[String(normalized.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(attrNum(damageAttr))})`:"",globalDamage?`global ${signedNumber(globalDamage)}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
+    const extra=[String(normalized.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(attrNum(damageAttr))})`:"",globalDamage?`global ${signedNumber(globalDamage)}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:"",baseDamage?`base ${signedNumber(baseDamage)}`:""].filter(Boolean).join(" + ")||"-";
     const parsed=parseCritical(normalized.crit,normalized.mult),margin=21-parsed.threshold;
     const itemMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?margin:0);
     const linkedItems=linkedAttackItems(normalized),linkedNames=linkedItems.map(item=>item.name||"Arma sem nome").join(", ");
@@ -3244,12 +3413,13 @@ function renderAttackCard(a,i){
   const bonus=Number(a.bonus||0);
   const attackBreakdown=attackBonusBreakdown(a);
   const itemFx=attackBreakdown.itemFx||emptyItemEffects();
+  const baseDamageBonus=baseCombatBonuses(a).damage;
   const bonusText=signedNumber(attackBreakdown.total);
   const damage=escapeHtml(a.damage||"sem dano");
   const extraDamage=escapeHtml(a.extraDamage||"");
   const damageAttr=ATTR_KEYS.includes(a.damageAttr)?a.damageAttr:"";
   const globalDamage=num("globalDamageBonus");
-  const extraSummary=[String(a.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(attrNum(damageAttr))})`:"",globalDamage?`global ${signedNumber(globalDamage)}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:""].filter(Boolean).join(" + ")||"-";
+  const extraSummary=[String(a.extraDamage||""),...(itemFx.extraDamage||[]),damageAttr?`${damageAttr} (${signedNumber(attrNum(damageAttr))})`:"",globalDamage?`global ${signedNumber(globalDamage)}`:"",itemFx.damage?`item ${signedNumber(itemFx.damage)}`:"",baseDamageBonus?`base ${signedNumber(baseDamageBonus)}`:""].filter(Boolean).join(" + ")||"-";
   const critFlat=a.critFlat===true;
   const parsedCrit=parseCritical(a.crit,a.mult),baseMargin=21-parsedCrit.threshold;
   const itemCritMargin=Number(itemFx.critRange||0)+(itemFx.doubleThreat?baseMargin:0);
@@ -4052,14 +4222,7 @@ async function saveCloudCharacterSnapshot(snapshot){
   const originalPortrait=String(snapshot.data?.fields?.portraitUrl||"");
   const preparedData=await preparePortraitDataForCloud(snapshot.data,snapshot.remoteId);
   const payload=cloudCharacterUpdatePayload(preparedData);
-  const {data,error}=await supabaseClient
-    .from("characters")
-    .update(payload)
-    .eq("id",snapshot.remoteId)
-    .eq("owner_id",cloudUser.id)
-    .select("id,name,campaign_id,updated_at")
-    .single();
-  if(error) throw error;
+  const data=await persistCloudCharacterContent(snapshot.remoteId,payload);
   if(snapshot.localId){
     setCloudMappingForLocal(snapshot.localId,data.id);
     cacheLocalCharacterData(snapshot.localId,payload.sheet_data,data.name||payload.name,data.updated_at);
@@ -4108,6 +4271,14 @@ function localCloudIdSet(){
 }
 function isOwnCloudCharacter(character){
   return !!(character?.owner_id&&cloudUser&&character.owner_id===cloudUser.id);
+}
+function isMasterEditorForCloudCharacter(character){
+  if(!character?.campaign_id||!character?.allow_master_edit||!cloudUser||isOwnCloudCharacter(character)) return false;
+  const campaign=cloudCampaigns.find(item=>item.id===character.campaign_id);
+  return isCampaignOwner(campaign);
+}
+function canEditCloudCharacter(character){
+  return !!character&&(isOwnCloudCharacter(character)||isMasterEditorForCloudCharacter(character));
 }
 function ownCloudCharacters(){
   return cloudUser?cloudCharacters.filter(isOwnCloudCharacter):[];
@@ -4538,7 +4709,7 @@ function openCampaignDashboard(campaignId,options={}){
   if(!document.body.classList.contains("auth-gated")&&!document.body.classList.contains("hub-open")) save(false);
   document.body.classList.add("hub-open");
   activeHubCampaignId=campaignId;
-  activeCampaignDashboardTab="fichas";
+  activeCampaignDashboardTab=["fichas","jogadores","bases","escudo"].includes(options.panel)?options.panel:"fichas";
   shieldCharacterFilter="";
   shieldSortMode="risco";
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=campaignId;
@@ -4583,20 +4754,21 @@ function sheetSummaryFromCloudCharacter(character){
   const data=cloudSheetData(character);
   const fields=data.fields||{},savedState=data.state||{};
   const itemFx=equippedItemEffects(savedState.items||[]);
+  const baseFx=baseResidentEffects(character.id,{savedState,fields});
   const classLevels=classLevelsForSheet(fields,savedState);
   const race=T20_DATA.racas[fields.raca]||{};
   const lvl=totalClassLevel(classLevels);
-  const con=sheetNum(fields,"CON")+Number(itemFx.attrs.CON||0);
+  const con=sheetNum(fields,"CON")+Number(itemFx.attrs.CON||0)+Number(baseFx.attrs.CON||0);
   const spellAttr=ATTR_KEYS.includes(fields.spellAttr)?fields.spellAttr:"INT";
-  const bases=classResourceBases(classLevels,{con,spellAttrValue:sheetNum(fields,spellAttr)+Number(itemFx.attrs[spellAttr]||0)});
+  const bases=classResourceBases(classLevels,{con,spellAttrValue:sheetNum(fields,spellAttr)+Number(itemFx.attrs[spellAttr]||0)+Number(baseFx.attrs[spellAttr]||0)});
   const pvBase=bases.pvBase;
   const pmBase=bases.pmBase;
-  const pvMax=pvBase+sheetNum(fields,"pvAjuste")+itemFx.pvMax;
-  const pmMax=pmBase+sheetNum(fields,"pmAjuste")+itemFx.pmMax;
+  const pvMax=pvBase+sheetNum(fields,"pvAjuste")+itemFx.pvMax+baseFx.pvMax;
+  const pmMax=pmBase+sheetNum(fields,"pmAjuste")+itemFx.pmMax+baseFx.pmMax;
   const defenseAttr=ATTR_KEYS.includes(fields.defAttr)?fields.defAttr:"DES";
-  const defenseAttrBonus=sheetBool(fields,"defUseDex",true)?sheetNum(fields,defenseAttr)+Number(itemFx.attrs[defenseAttr]||0):0;
+  const defenseAttrBonus=sheetBool(fields,"defUseDex",true)?sheetNum(fields,defenseAttr)+Number(itemFx.attrs[defenseAttr]||0)+Number(baseFx.attrs[defenseAttr]||0):0;
   const conditionFx=sheetConditionEffects(savedState);
-  const defense=10+defenseAttrBonus+sheetNum(fields,"armadura")+sheetNum(fields,"escudo")+sheetNum(fields,"defBonus")+sheetNum(fields,"defAjuste")+sheetNum(fields,"globalDefenseBonus")+partnerDefenseBonus(savedState.partners)+itemFx.defense+conditionFx.defense;
+  const defense=10+defenseAttrBonus+sheetNum(fields,"armadura")+sheetNum(fields,"escudo")+sheetNum(fields,"defBonus")+sheetNum(fields,"defAjuste")+sheetNum(fields,"globalDefenseBonus")+partnerDefenseBonus(savedState.partners)+itemFx.defense+baseFx.defense+conditionFx.defense;
   const activeConditions=activeConditionNamesFromSheet(data);
   const deathLimit=deathLimitFromPvMax(pvMax);
   const pvAtual=sheetNum(fields,"pvAtual");
@@ -4608,7 +4780,7 @@ function sheetSummaryFromCloudCharacter(character){
     className:classListLabel(classLevels),
     raceName:race.nome||fields.raca||"Raca nao definida",
     level:lvl,
-    attrs:Object.fromEntries(ATTR_KEYS.map(key=>[key,sheetNum(fields,key)+Number(itemFx.attrs[key]||0)])),
+    attrs:Object.fromEntries(ATTR_KEYS.map(key=>[key,sheetNum(fields,key)+Number(itemFx.attrs[key]||0)+Number(baseFx.attrs[key]||0)])),
     pvAtual,
     pvMax,
     pvTemp:Math.max(0,sheetNum(fields,"pvBonus")),
@@ -4617,7 +4789,7 @@ function sheetSummaryFromCloudCharacter(character){
     pmTemp:Math.max(0,sheetNum(fields,"pmBonus")),
     defense,
     rd:sheetNum(fields,"rd")+itemFx.rd,
-    deslocamento:sheetNum(fields,"deslocamento")||race.deslocamento||9,
+    deslocamento:(sheetNum(fields,"deslocamento")||race.deslocamento||9)+baseFx.movement,
     tamanho:fields.tamanho||race.tamanho||"Medio",
     conditions:activeConditions,
     conditionState:clonePlain(savedState.conditions||{}),
@@ -5213,6 +5385,331 @@ function syncCampaignRollPolling(){
     }
   },4000);
 }
+function campaignBasesFor(campaignId){return cloudCampaignBases.filter(base=>base.campaign_id===campaignId)}
+function campaignBaseSize(base){return baseCatalogEntry("sizes",base?.size)||baseCatalog().sizes?.[0]||{rooms:0,cost:0,maintenance:0,name:"Minima"}}
+function campaignBaseSecurity(base){
+  if(!base) return 0;
+  const data=normalizeCampaignBaseData(base.base_data),type=baseCatalogEntry("types",base.base_type);
+  let total=Number(type?.effects?.security||0)+Number(data.security_adjustment||0);
+  data.rooms.filter(room=>!room.damaged).forEach(room=>{total+=Number(baseCatalogEntry("rooms",room.catalogId)?.effects?.security||0)});
+  data.furniture.forEach(item=>{total+=Number(baseCatalogEntry("furniture",item.catalogId)?.effects?.security||0)});
+  return Math.max(0,total);
+}
+function campaignBaseRoomName(room){return baseCatalogEntry("rooms",room?.catalogId)?.name||"Comodo"}
+function baseSizeAtLeast(current,minimum){
+  const ids=(baseCatalog().sizes||[]).map(entry=>entry.id);
+  return ids.indexOf(current)>=ids.indexOf(minimum);
+}
+function availableRoomsForBase(base){
+  const data=normalizeCampaignBaseData(base.base_data),existing=new Set(data.rooms.map(room=>room.catalogId));
+  return (baseCatalog().rooms||[]).filter(room=>{
+    if(room.minSize&&!baseSizeAtLeast(base.size,room.minSize)) return false;
+    if((room.requires||[]).some(required=>!existing.has(required))) return false;
+    if(!room.repeatable&&existing.has(room.id)) return false;
+    return true;
+  });
+}
+function furnitureEligibleRooms(base,furnitureId){
+  const data=normalizeCampaignBaseData(base.base_data),furniture=baseCatalogEntry("furniture",furnitureId);
+  if(!furniture) return [];
+  if(furniture.exterior) return [{id:"",name:"Exterior da base",catalogId:"exterior"}];
+  return data.rooms.filter(room=>{
+    if(room.damaged) return false;
+    if(furniture.rooms?.length&&!furniture.rooms.includes(room.catalogId)) return false;
+    const roomCatalog=baseCatalogEntry("rooms",room.catalogId),slots=Number(roomCatalog?.furnitureSlots||1);
+    const occupied=data.furniture.filter(item=>item.roomId===room.id).length;
+    const duplicate=data.furniture.some(item=>item.roomId===room.id&&item.catalogId===furnitureId);
+    return occupied<slots&&!duplicate;
+  }).map(room=>({...room,name:campaignBaseRoomName(room)}));
+}
+function availableFurnitureForBase(base){
+  const data=normalizeCampaignBaseData(base.base_data),sizeIndex=(baseCatalog().sizes||[]).findIndex(size=>size.id===base.size),basicIndex=(baseCatalog().sizes||[]).findIndex(size=>size.id==="basica");
+  return (baseCatalog().furniture||[]).filter(item=>{
+    if(item.id==="gargula_animada"){
+      const limit=Math.max(0,sizeIndex-basicIndex),current=data.furniture.filter(row=>row.catalogId===item.id).length;
+      return current<limit;
+    }
+    return furnitureEligibleRooms(base,item.id).length>0;
+  });
+}
+function baseCurrency(value){return `T$ ${Number(value||0).toLocaleString("pt-BR")}`}
+function baseSkillSelectOptions(selected="",allowed=[]){
+  const names=(allowed.length?allowed:Object.keys(T20_DATA.pericias||{})).map(canonicalBaseSkillName).filter((name,index,list)=>name&&list.indexOf(name)===index).sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  return `<option value="">Escolha...</option>${names.map(name=>`<option value="${escapeHtml(name)}" ${name===selected?"selected":""}>${escapeHtml(name)}</option>`).join("")}`;
+}
+async function refreshCampaignBaseViews(){
+  await loadCampaignBases();
+  renderHub();renderCharacterBase();recalc();
+}
+async function createCampaignBase(campaignId){
+  if(!cloudRequireLogin()||!campaignId||!campaignBasesAvailable) return;
+  const name=prompt("Nome da nova base:","Nova base");
+  if(name===null) return;
+  const {data,error}=await supabaseClient.from("campaign_bases").insert({campaign_id:campaignId,created_by:cloudUser.id,name:name.trim()||"Nova base",base_type:"residencia",size:"minima"}).select("id").single();
+  if(error) throw error;
+  activeCampaignBaseId=data.id;
+  await refreshCampaignBaseViews();
+  notify("Base criada para a campanha.");
+}
+async function updateCampaignBase(baseId,patch){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId);
+  if(!base) return;
+  const payload={...patch,updated_at:new Date().toISOString()};
+  if(payload.base_data) payload.base_data=normalizeCampaignBaseData(payload.base_data);
+  const {error}=await supabaseClient.from("campaign_bases").update(payload).eq("id",baseId);
+  if(error) throw error;
+  await refreshCampaignBaseViews();
+}
+async function deleteCampaignBase(baseId){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId),campaign=cloudCampaigns.find(entry=>entry.id===base?.campaign_id);
+  if(!base||!isCampaignOwner(campaign)){notify("Apenas o mestre pode excluir uma base.");return}
+  if(!confirm(`Excluir ${base.name||"esta base"}? Os personagens deixarao de receber seus beneficios.`)) return;
+  const {error}=await supabaseClient.from("campaign_bases").delete().eq("id",baseId);
+  if(error) throw error;
+  activeCampaignBaseId="";
+  await refreshCampaignBaseViews();
+  notify("Base excluida.");
+}
+async function addRoomToCampaignBase(baseId,roomId){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId),room=baseCatalogEntry("rooms",roomId);
+  if(!base||!room) return;
+  const data=normalizeCampaignBaseData(base.base_data),size=campaignBaseSize(base);
+  if(data.rooms.length>=Number(size.rooms||0)){notify("Esta base atingiu o limite de comodos do porte atual.");return}
+  if(!availableRoomsForBase(base).some(entry=>entry.id===roomId)){notify("Os pre-requisitos deste comodo ainda nao foram atendidos.");return}
+  data.rooms.push({id:makeEntryId("room"),catalogId:roomId,damaged:false});
+  await updateCampaignBase(baseId,{base_data:data});
+}
+async function removeRoomFromCampaignBase(baseId,roomEntryId){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId);if(!base) return;
+  const data=normalizeCampaignBaseData(base.base_data),room=data.rooms.find(entry=>entry.id===roomEntryId);if(!room) return;
+  const dependents=data.rooms.filter(entry=>(baseCatalogEntry("rooms",entry.catalogId)?.requires||[]).includes(room.catalogId));
+  if(dependents.length){notify(`Remova antes: ${dependents.map(campaignBaseRoomName).join(", ")}.`);return}
+  if(!confirm(`Remover ${campaignBaseRoomName(room)} e suas mobilias?`)) return;
+  data.rooms=data.rooms.filter(entry=>entry.id!==roomEntryId);
+  data.furniture=data.furniture.filter(item=>item.roomId!==roomEntryId);
+  await updateCampaignBase(baseId,{base_data:data});
+}
+async function toggleCampaignBaseRoomDamage(baseId,roomEntryId,damaged){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId);if(!base) return;
+  const data=normalizeCampaignBaseData(base.base_data),room=data.rooms.find(entry=>entry.id===roomEntryId);if(!room) return;
+  room.damaged=!!damaged;await updateCampaignBase(baseId,{base_data:data});
+}
+async function addFurnitureToCampaignBase(baseId,furnitureId,roomId){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId),entry=baseCatalogEntry("furniture",furnitureId);if(!base||!entry) return;
+  const eligible=furnitureEligibleRooms(base,furnitureId);
+  if(!eligible.some(room=>room.id===roomId)){notify("Escolha um comodo compativel com espaco livre.");return}
+  const data=normalizeCampaignBaseData(base.base_data);
+  data.furniture.push({id:makeEntryId("furniture"),catalogId:furnitureId,roomId,choiceSkill:"",choiceType:""});
+  await updateCampaignBase(baseId,{base_data:data});
+}
+async function removeFurnitureFromCampaignBase(baseId,furnitureEntryId){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId);if(!base) return;
+  const data=normalizeCampaignBaseData(base.base_data),item=data.furniture.find(entry=>entry.id===furnitureEntryId);if(!item) return;
+  if(!confirm(`Remover ${baseCatalogEntry("furniture",item.catalogId)?.name||"esta mobilia"}?`)) return;
+  data.furniture=data.furniture.filter(entry=>entry.id!==furnitureEntryId);
+  await updateCampaignBase(baseId,{base_data:data});
+}
+async function updateCampaignBaseFurnitureChoice(baseId,furnitureEntryId,key,value){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId);if(!base) return;
+  const data=normalizeCampaignBaseData(base.base_data),item=data.furniture.find(entry=>entry.id===furnitureEntryId);if(!item) return;
+  item[key]=value;await updateCampaignBase(baseId,{base_data:data});
+}
+async function setCampaignBaseResident(baseId,characterId,active){
+  if(!baseId||!characterId) return;
+  if(active){
+    const {error:removeError}=await supabaseClient.from("campaign_base_residents").delete().eq("character_id",characterId);
+    if(removeError) throw removeError;
+    const {error}=await supabaseClient.from("campaign_base_residents").insert({base_id:baseId,character_id:characterId,choices:{}});
+    if(error) throw error;
+  }else{
+    const {error}=await supabaseClient.from("campaign_base_residents").delete().eq("base_id",baseId).eq("character_id",characterId);
+    if(error) throw error;
+  }
+  await refreshCampaignBaseViews();
+}
+function renderCampaignBaseFurnitureChoice(base,item,catalogItem,room){
+  if(catalogItem.id==="prateleiras_reforcadas") return `<label>Pericia treinada<select data-base-furniture-choice="${escapeHtml(item.id)}" data-choice-key="choiceSkill">${baseSkillSelectOptions(item.choiceSkill)}</select></label>`;
+  if(catalogItem.id==="idolo_dourado"){
+    const skills=Object.keys(baseCatalogEntry("rooms",room?.catalogId)?.effects?.skills||{});
+    return skills.length?`<label>Bonus aumentado<select data-base-furniture-choice="${escapeHtml(item.id)}" data-choice-key="choiceSkill">${baseSkillSelectOptions(item.choiceSkill,skills)}</select></label>`:"";
+  }
+  if(catalogItem.id==="criatura_empalhada") return `<label>Tipo de criatura<input data-base-furniture-choice="${escapeHtml(item.id)}" data-choice-key="choiceType" value="${escapeHtml(item.choiceType||"")}" placeholder="Ex.: monstro"></label>`;
+  return "";
+}
+function renderCampaignBases(campaign,campaignOwner){
+  if(!campaignBasesAvailable) return `<div class="baseSchemaNotice"><strong>Bases ainda nao instaladas</strong><span>Execute <code>supabase_campaign_bases.sql</code> no SQL Editor do Supabase e recarregue a pagina.</span></div>`;
+  const bases=campaignBasesFor(campaign.id);
+  if(!activeCampaignBaseId||!bases.some(base=>base.id===activeCampaignBaseId)) activeCampaignBaseId=bases[0]?.id||"";
+  const selected=bases.find(base=>base.id===activeCampaignBaseId);
+  const list=`<aside class="campaignBaseList"><button type="button" class="baseCreateButton" data-create-campaign-base="${escapeHtml(campaign.id)}">+ Nova base</button>${bases.map(base=>{
+    const data=normalizeCampaignBaseData(base.base_data),type=baseCatalogEntry("types",base.base_type),size=campaignBaseSize(base),residents=cloudBaseResidents.filter(row=>row.base_id===base.id).length;
+    return `<button type="button" class="campaignBaseListItem ${base.id===activeCampaignBaseId?"active":""}" data-select-campaign-base="${escapeHtml(base.id)}"><strong>${escapeHtml(base.name||"Base sem nome")}</strong><span>${escapeHtml(type?.name||"Sem tipo")} &bull; ${escapeHtml(size.name)} &bull; ${residents} residente${residents===1?"":"s"}</span></button>`;
+  }).join("")}</aside>`;
+  if(!selected) return `<div class="campaignBasesLayout">${list}<div class="baseEmptyState"><strong>Nenhuma base criada</strong><span>Qualquer membro pode iniciar a construcao da primeira base da campanha.</span></div></div>`;
+  const data=normalizeCampaignBaseData(selected.base_data),type=baseCatalogEntry("types",selected.base_type),size=campaignBaseSize(selected),roomsAvailable=availableRoomsForBase(selected),furnitureAvailable=availableFurnitureForBase(selected);
+  const residents=cloudBaseResidents.filter(row=>row.base_id===selected.id),characters=campaignCharactersForView(campaign,campaignOwner);
+  const roomOptions=roomsAvailable.map(room=>`<option value="${room.id}">${escapeHtml(room.name)}</option>`).join("");
+  const furnitureOptions=furnitureAvailable.map(item=>`<option value="${item.id}">${escapeHtml(item.name)} - ${baseCurrency(item.price)}</option>`).join("");
+  const roomCards=data.rooms.map(room=>{const entry=baseCatalogEntry("rooms",room.catalogId),furnitureCount=data.furniture.filter(item=>item.roomId===room.id).length,slots=Number(entry?.furnitureSlots||1);return `<article class="baseFeatureCard ${room.damaged?"damaged":""}"><div><small>Comodo${room.damaged?" danificado":""}</small><strong>${escapeHtml(entry?.name||"Comodo")}</strong><span>${escapeHtml(entry?.summary||"")}</span><em>${furnitureCount}/${slots} mobilia${slots===1?"":"s"}</em></div><div class="baseFeatureActions"><label title="Comodos danificados nao fornecem beneficios"><input type="checkbox" data-base-room-damaged="${escapeHtml(room.id)}" ${room.damaged?"checked":""}> Danificado</label><button type="button" class="deleteIconButton" data-remove-base-room="${escapeHtml(room.id)}" title="Remover comodo" aria-label="Remover comodo">${DELETE_ICON_HTML}</button></div></article>`}).join("");
+  const furnitureCards=data.furniture.map(item=>{const entry=baseCatalogEntry("furniture",item.catalogId),room=data.rooms.find(row=>row.id===item.roomId);return `<article class="baseFeatureCard"><div><small>${entry?.exterior?"Exterior":escapeHtml(campaignBaseRoomName(room))}</small><strong>${escapeHtml(entry?.name||"Mobilia")}</strong><span>${escapeHtml(entry?.summary||"")}</span><em>${baseCurrency(entry?.price)}</em></div>${renderCampaignBaseFurnitureChoice(selected,item,entry,room)}<button type="button" class="deleteIconButton" data-remove-base-furniture="${escapeHtml(item.id)}" title="Remover mobilia" aria-label="Remover mobilia">${DELETE_ICON_HTML}</button></article>`}).join("");
+  const residentCards=characters.map(character=>{const current=cloudBaseResidents.find(row=>row.character_id===character.id),here=current?.base_id===selected.id,other=current&&!here?cloudCampaignBases.find(base=>base.id===current.base_id):null;return `<article class="baseResidentCard ${here?"active":""}">${characterImageUrlFromData(character.sheet_data)?`<img src="${escapeHtml(characterImageUrlFromData(character.sheet_data))}" alt="">`:""}<div><strong>${escapeHtml(character.name||"Personagem sem nome")}</strong><span>${here?"Residente desta base":other?`Residente de ${escapeHtml(other.name||"outra base")}`:"Sem base"}</span></div><button type="button" data-toggle-base-resident="${escapeHtml(character.id)}" data-resident-active="${here?"1":"0"}">${here?"Remover":other?"Transferir":"Associar"}</button></article>`}).join("");
+  return `<div class="campaignBasesLayout">${list}<section class="campaignBaseEditor">
+    <div class="campaignBaseEditorHead"><div><small>Base compartilhada</small><input data-base-field="name" value="${escapeHtml(selected.name||"")}" aria-label="Nome da base"><span>${escapeHtml(type?.summary||"")}</span></div><div class="campaignBaseHeadActions"><button type="button" data-start-base-adventure="${escapeHtml(selected.id)}">Nova aventura</button>${campaignOwner?`<button type="button" class="deleteIconButton" data-delete-campaign-base="${escapeHtml(selected.id)}" title="Excluir base" aria-label="Excluir base">${DELETE_ICON_HTML}</button>`:""}</div></div>
+    <div class="campaignBaseStats">
+      <label>Tipo<select data-base-field="base_type">${(baseCatalog().types||[]).map(entry=>`<option value="${entry.id}" ${entry.id===selected.base_type?"selected":""}>${escapeHtml(entry.name)}</option>`).join("")}</select></label>
+      <label>Porte<select data-base-field="size">${(baseCatalog().sizes||[]).map(entry=>`<option value="${entry.id}" ${entry.id===selected.size?"selected":""}>${escapeHtml(entry.name)}</option>`).join("")}</select></label>
+      <label>Ajuste de Seguranca<input data-base-data-field="security_adjustment" type="number" value="${data.security_adjustment}"></label>
+      <label class="baseMaintenanceToggle"><span>Manutencao paga</span><input data-base-data-field="maintenance_paid" type="checkbox" ${data.maintenance_paid?"checked":""}></label>
+      <div><small>Seguranca</small><strong>${campaignBaseSecurity(selected)}</strong></div>
+      <div><small>Comodos</small><strong>${data.rooms.length}/${size.rooms}</strong></div>
+      <div><small>Manutencao</small><strong>${baseCurrency(size.maintenance)}</strong></div>
+      <div><small>Valor do porte</small><strong>${baseCurrency(size.cost)}</strong></div>
+    </div>
+    ${data.rooms.length>size.rooms?`<div class="baseWarning">O porte atual comporta ${size.rooms} comodos, mas a base possui ${data.rooms.length}.</div>`:""}
+    <section class="baseEditorSection"><div class="baseEditorSectionHead"><div><h3>Residentes</h3><span>Associar um personagem ativa os beneficios na ficha.</span></div></div><div class="baseResidentGrid">${residentCards||'<span class="muted">Nenhuma ficha disponivel.</span>'}</div></section>
+    <section class="baseEditorSection"><div class="baseEditorSectionHead"><div><h3>Comodos</h3><span>Cada comodo custa T$ 1.000 e ocupa um espaco do porte.</span></div><div class="baseAddControl"><select id="baseRoomAddSelect" ${roomsAvailable.length&&data.rooms.length<size.rooms?"":"disabled"}><option value="">Escolha...</option>${roomOptions}</select><button id="baseRoomAddBtn" type="button" ${roomsAvailable.length&&data.rooms.length<size.rooms?"":"disabled"}>Adicionar</button></div></div><div class="baseFeatureGrid">${roomCards||'<span class="muted">Este porte ainda nao possui espaco para comodos.</span>'}</div></section>
+    <section class="baseEditorSection"><div class="baseEditorSectionHead"><div><h3>Mobilias</h3><span>Instale cada mobilia em um comodo compativel.</span></div><div class="baseAddControl baseFurnitureAdd"><select id="baseFurnitureAddSelect" ${furnitureAvailable.length?"":"disabled"}><option value="">Escolha...</option>${furnitureOptions}</select><select id="baseFurnitureRoomSelect" disabled><option value="">Comodo...</option></select><button id="baseFurnitureAddBtn" type="button" disabled>Adicionar</button></div></div><div class="baseFeatureGrid">${furnitureCards||'<span class="muted">Nenhuma mobilia instalada.</span>'}</div></section>
+    <section class="baseEditorSection"><label>Notas da base<textarea data-base-data-field="notes" rows="4" placeholder="Localizacao, aparencia, funcionarios, dividas...">${escapeHtml(data.notes)}</textarea></label></section>
+  </section></div>`;
+}
+function bindCampaignBaseEditor(campaign,campaignOwner){
+  $$('[data-create-campaign-base]').forEach(button=>button.onclick=()=>runCloudAction(()=>createCampaignBase(button.dataset.createCampaignBase)));
+  $$('[data-select-campaign-base]').forEach(button=>button.onclick=()=>{activeCampaignBaseId=button.dataset.selectCampaignBase;renderCampaignDashboard()});
+  const base=cloudCampaignBases.find(entry=>entry.id===activeCampaignBaseId);if(!base) return;
+  $$('[data-base-field]').forEach(control=>control.onchange=()=>runCloudAction(async()=>{
+    if(control.dataset.baseField==="size"&&normalizeCampaignBaseData(base.base_data).rooms.length>Number(baseCatalogEntry("sizes",control.value)?.rooms||0)){
+      notify("Remova os comodos excedentes antes de reduzir o porte.");renderCampaignDashboard();return;
+    }
+    await updateCampaignBase(base.id,{[control.dataset.baseField]:control.value});
+  }));
+  $$('[data-base-data-field]').forEach(control=>control.onchange=()=>runCloudAction(async()=>{
+    const data=normalizeCampaignBaseData(base.base_data),key=control.dataset.baseDataField;
+    data[key]=control.type==="checkbox"?control.checked:(control.type==="number"?Number(control.value||0):control.value);
+    await updateCampaignBase(base.id,{base_data:data});
+  }));
+  $$('[data-delete-campaign-base]').forEach(button=>button.onclick=()=>runCloudAction(()=>deleteCampaignBase(button.dataset.deleteCampaignBase)));
+  $$('[data-start-base-adventure]').forEach(button=>button.onclick=()=>runCloudAction(()=>resetCampaignBaseAdventure(button.dataset.startBaseAdventure)));
+  $$('[data-toggle-base-resident]').forEach(button=>button.onclick=()=>runCloudAction(()=>setCampaignBaseResident(base.id,button.dataset.toggleBaseResident,button.dataset.residentActive!=="1")));
+  $("#baseRoomAddBtn")?.addEventListener("click",()=>runCloudAction(()=>addRoomToCampaignBase(base.id,value("baseRoomAddSelect"))));
+  $$('[data-remove-base-room]').forEach(button=>button.onclick=()=>runCloudAction(()=>removeRoomFromCampaignBase(base.id,button.dataset.removeBaseRoom)));
+  $$('[data-base-room-damaged]').forEach(control=>control.onchange=()=>runCloudAction(()=>toggleCampaignBaseRoomDamage(base.id,control.dataset.baseRoomDamaged,control.checked)));
+  const furnitureSelect=$("#baseFurnitureAddSelect"),roomSelect=$("#baseFurnitureRoomSelect"),addFurniture=$("#baseFurnitureAddBtn");
+  const syncFurnitureRooms=()=>{
+    const rooms=furnitureEligibleRooms(base,furnitureSelect?.value||"");
+    if(roomSelect){roomSelect.innerHTML=`<option value="">Comodo...</option>${rooms.map(room=>`<option value="${escapeHtml(room.id)}">${escapeHtml(room.name)}</option>`).join("")}`;roomSelect.disabled=!rooms.length}
+    if(addFurniture) addFurniture.disabled=!furnitureSelect?.value||!rooms.length;
+  };
+  furnitureSelect?.addEventListener("change",syncFurnitureRooms);roomSelect?.addEventListener("change",()=>{if(addFurniture)addFurniture.disabled=!furnitureSelect.value||(!roomSelect.value&&!baseCatalogEntry("furniture",furnitureSelect.value)?.exterior)});
+  addFurniture?.addEventListener("click",()=>runCloudAction(()=>addFurnitureToCampaignBase(base.id,furnitureSelect.value,roomSelect.value)));
+  $$('[data-remove-base-furniture]').forEach(button=>button.onclick=()=>runCloudAction(()=>removeFurnitureFromCampaignBase(base.id,button.dataset.removeBaseFurniture)));
+  $$('[data-base-furniture-choice]').forEach(control=>control.onchange=()=>runCloudAction(()=>updateCampaignBaseFurnitureChoice(base.id,control.dataset.baseFurnitureChoice,control.dataset.choiceKey,control.value)));
+}
+function baseChoiceOptions(rows,selected="",placeholder="Escolha..."){
+  return `<option value="">${escapeHtml(placeholder)}</option>${rows.map(row=>{
+    const value=String(row.value??row.id??row.name??""),label=String(row.label??row.name??value);
+    return `<option value="${escapeHtml(value)}" ${value===String(selected||"")?"selected":""}>${escapeHtml(label)}</option>`;
+  }).join("")}`;
+}
+function renderBaseResidentChoice(label,key,options,selected,help=""){
+  return `<label class="baseResidentChoice"><span>${escapeHtml(label)}</span><select data-base-resident-choice="${escapeHtml(key)}">${baseChoiceOptions(options,selected)}</select>${help?`<small>${escapeHtml(help)}</small>`:""}</label>`;
+}
+function baseEffectLabels(effects){
+  const labels=[];
+  ATTR_KEYS.forEach(attr=>{if(effects.attrs?.[attr])labels.push(`${attr} ${signedNumber(effects.attrs[attr])}`)});
+  Object.entries(effects.skills||{}).forEach(([skill,bonus])=>{if(bonus)labels.push(`${skill} ${signedNumber(bonus)}`)});
+  [["Defesa",effects.defense],["Resistencias",effects.resistance],["PV max.",effects.pvMax],["PM max.",effects.pmMax],["Carga",effects.load],["Deslocamento",effects.movement]].forEach(([label,bonus])=>{if(bonus)labels.push(`${label} ${signedNumber(bonus)}${label==="Deslocamento"?"m":""}`)});
+  effects.trainedSkills.forEach(skill=>labels.push(`${skill} treinada`));
+  effects.attackChoices.forEach(choice=>labels.push(`${choice.label}: ataque ${signedNumber(choice.amount)}`));
+  effects.damageChoices.forEach(choice=>labels.push(`${choice.label}: dano ${signedNumber(choice.amount)}`));
+  if(effects.unarmedDamage) labels.push(`Dano desarmado/natural ${signedNumber(effects.unarmedDamage)}`);
+  Object.entries(effects.officeBonuses).forEach(([office,bonus])=>labels.push(`Oficio (${office}) ${signedNumber(bonus)}`));
+  effects.spellDiscounts.forEach(entry=>labels.push(`${entry.name}: -${entry.amount} PM`));
+  return labels;
+}
+async function updateBaseResidentChoices(resident,key,newValue){
+  if(!resident) return;
+  const choices={...(resident.choices||{}),[key]:newValue};
+  const {error}=await supabaseClient.from("campaign_base_residents").update({choices,updated_at:new Date().toISOString()}).eq("base_id",resident.base_id).eq("character_id",resident.character_id);
+  if(error) throw error;
+  await refreshCampaignBaseViews();
+}
+function characterPatamarDice(){
+  const level=totalClassLevel(currentClassLevels());
+  return level>=17?4:level>=11?3:level>=5?2:1;
+}
+async function useBaseBenefit(resident,use){
+  const used={...(resident.choices?.used||{})};
+  if(used[use]) return;
+  if(use==="Receber PM temporarios"){
+    const dice=characterPatamarDice(),rolls=Array.from({length:dice},()=>Math.floor(Math.random()*4)+1),total=rolls.reduce((sum,value)=>sum+value,0);
+    setNumberField("pmBonus",num("pmBonus")+total);
+    save(false);
+    notify(`Ala dos Criados: ${dice}d4 [${rolls.join(", ")}] = ${total} PM temporarios.`);
+  }
+  used[use]=true;
+  await updateBaseResidentChoices(resident,"used",used);
+}
+async function resetCampaignBaseAdventure(baseId){
+  const base=cloudCampaignBases.find(entry=>entry.id===baseId);if(!base) return;
+  if(!confirm("Iniciar uma nova aventura? Usos dos residentes serao restaurados e a manutencao ficara pendente.")) return;
+  const data=normalizeCampaignBaseData(base.base_data);data.maintenance_paid=false;
+  const residents=cloudBaseResidents.filter(entry=>entry.base_id===baseId);
+  const {error}=await supabaseClient.from("campaign_bases").update({base_data:data,updated_at:new Date().toISOString()}).eq("id",baseId);
+  if(error) throw error;
+  await Promise.all(residents.map(resident=>supabaseClient.from("campaign_base_residents").update({choices:{...(resident.choices||{}),used:{}},updated_at:new Date().toISOString()}).eq("base_id",baseId).eq("character_id",resident.character_id)));
+  await refreshCampaignBaseViews();
+  notify("Nova aventura iniciada para a base.");
+}
+function renderCharacterBase(){
+  const content=$("#characterBaseContent"),button=$("#openLinkedBaseCampaignBtn");if(!content) return;
+  const characterId=currentBaseCharacterId(),context=campaignBaseContextForCharacter(characterId),meta=currentCloudCharacterMeta(characterId);
+  if(button){button.classList.toggle("hidden",!context);button.disabled=!context}
+  if(!cloudUser&&!publicViewActive()){
+    content.innerHTML='<div class="baseEmptyState"><strong>Base de campanha</strong><span>Entre na nuvem e vincule a ficha a uma campanha para usar bases compartilhadas.</span></div>';return;
+  }
+  if(!campaignBasesAvailable){
+    content.innerHTML='<div class="baseSchemaNotice"><strong>Bases ainda nao instaladas</strong><span>O mestre precisa executar <code>supabase_campaign_bases.sql</code> no Supabase.</span></div>';return;
+  }
+  if(!characterId||!meta?.campaign_id){
+    content.innerHTML='<div class="baseEmptyState"><strong>Sem campanha vinculada</strong><span>Associe esta ficha a uma campanha antes de escolher uma residencia.</span></div>';return;
+  }
+  if(!context){
+    content.innerHTML='<div class="baseEmptyState"><strong>Este personagem ainda nao reside em uma base</strong><span>Abra a campanha, entre em Bases e associe o personagem.</span></div>';return;
+  }
+  const {base,resident,data,choices}=context,type=baseCatalogEntry("types",base.base_type),size=campaignBaseSize(base),effects=baseResidentEffects(characterId);
+  const activeRooms=data.rooms.filter(room=>!room.damaged),roomIds=new Set(activeRooms.map(room=>room.catalogId));
+  const furniture=data.furniture.filter(item=>baseCatalogEntry("furniture",item.catalogId));
+  const attacks=(state.attacks||[]).map(attack=>({value:attack.id,label:attack.name||"Ataque sem nome"}));
+  const spells=(state.spells||[]).map(spell=>({value:spell.name,label:`${spell.name||"Magia"} (${spell.circle||1}º)`}));
+  const offices=(state.offices||[]).filter(office=>office.name).map(office=>({value:office.name,label:office.name}));
+  const skills=Object.keys(T20_DATA.pericias||{}).sort((a,b)=>a.localeCompare(b,"pt-BR")).map(name=>({value:name,label:name}));
+  const suites=activeRooms.filter(room=>room.catalogId==="suite").map(room=>{
+    const occupants=cloudBaseResidents.filter(entry=>entry.base_id===base.id&&entry.character_id!==characterId&&entry.choices?.suiteRoomId===room.id).length;
+    return {value:room.id,label:`Suite ${activeRooms.filter(entry=>entry.catalogId==="suite").indexOf(room)+1} (${occupants}/2 outros residentes)`};
+  }).filter(room=>room.value===choices.suiteRoomId||!cloudBaseResidents.filter(entry=>entry.base_id===base.id&&entry.choices?.suiteRoomId===room.value).length||cloudBaseResidents.filter(entry=>entry.base_id===base.id&&entry.choices?.suiteRoomId===room.value).length<2);
+  const controls=[];
+  if(roomIds.has("forjaria")) controls.push(renderBaseResidentChoice("Ataque beneficiado pela Forjaria","forgeAttackId",attacks,choices.forgeAttackId));
+  if(roomIds.has("patio_treinamento")) controls.push(renderBaseResidentChoice("Ataque treinado no Patio","trainingAttackId",attacks,choices.trainingAttackId));
+  if(roomIds.has("oficina_trabalho")) controls.push(renderBaseResidentChoice("Oficio da Oficina","officeName",offices,choices.officeName));
+  if(roomIds.has("laboratorio_arcano")) controls.push(renderBaseResidentChoice("Magia do Laboratorio Arcano","arcaneSpell",spells,choices.arcaneSpell,"Reducao de 1 PM, custo minimo 1."));
+  if(roomIds.has("tabernaculo")) controls.push(renderBaseResidentChoice("Magia do Tabernaculo","divineSpell",spells,choices.divineSpell,"Reducao de 1 PM, custo minimo 1."));
+  if(roomIds.has("lavanderia")) controls.push(renderBaseResidentChoice("Pericia do vestuario na Lavanderia","clothingSkill",skills,choices.clothingSkill));
+  if(roomIds.has("armorial")) controls.push(`<label class="baseResidentChoice"><span>Proficiencia do Armorial</span><input data-base-resident-choice="armorialItem" value="${escapeHtml(choices.armorialItem||"")}" placeholder="Item escolhido"><small>Pode ser trocada no inicio da aventura.</small></label>`);
+  if(roomIds.has("estabulo")) controls.push(renderBaseResidentChoice("Parceiro do Estabulo","stablePartner",(state.partners||[]).map(partner=>({value:partner.id||partner.name,label:partner.name||"Parceiro"})),choices.stablePartner));
+  if(suites.length) controls.push(renderBaseResidentChoice("Suite do residente","suiteRoomId",suites,choices.suiteRoomId,"Cada Suite acomoda ate dois residentes."));
+  if(roomIds.has("memorial")) controls.push(renderBaseResidentChoice("Atributo legado pelo Memorial","memorialAttribute",ATTR_KEYS.map(attr=>({value:attr,label:attr})),choices.memorialAttribute,"Selecione apenas para o personagem que recebeu o legado de um residente falecido."));
+  if(furniture.some(item=>item.catalogId==="colmeia_pergaminhos")) controls.push(renderBaseResidentChoice("Magia da Colmeia de Pergaminhos","learnedArcaneSpell",spells,choices.learnedArcaneSpell));
+  if(furniture.some(item=>item.catalogId==="reliquia_abencoada")) controls.push(renderBaseResidentChoice("Magia da Reliquia Abencoada","learnedDivineSpell",spells,choices.learnedDivineSpell));
+  const labels=baseEffectLabels(effects),used=choices.used||{};
+  const featureRows=[...effects.special,...activeRooms.map(room=>baseCatalogEntry("rooms",room.catalogId)?.summary),...furniture.map(item=>baseCatalogEntry("furniture",item.catalogId)?.summary)].filter(Boolean).filter((text,index,list)=>list.indexOf(text)===index);
+  content.innerHTML=`<div class="characterBaseHero"><div><small>Residencia</small><h3>${escapeHtml(base.name||"Base sem nome")}</h3><span>${escapeHtml(type?.name||"Sem tipo")} &bull; ${escapeHtml(size.name)} &bull; Seguranca ${campaignBaseSecurity(base)}</span></div><div class="baseMaintenanceState ${data.maintenance_paid?"paid":"pending"}"><small>Manutencao</small><strong>${data.maintenance_paid?"Paga":"Pendente"}</strong><span>${baseCurrency(size.maintenance)}</span></div></div>
+    <section class="characterBaseSection"><h3>Beneficios automaticos</h3><div class="baseEffectChips">${labels.length?labels.map(label=>`<span>${escapeHtml(label)}</span>`).join(""):'<span class="muted">Nenhum bonus numerico ativo.</span>'}</div></section>
+    ${controls.length?`<section class="characterBaseSection"><h3>Escolhas do residente</h3><div class="baseResidentChoices">${controls.join("")}</div></section>`:""}
+    ${effects.uses.length?`<section class="characterBaseSection"><h3>Usos por aventura</h3><div class="baseUseGrid">${effects.uses.map(use=>`<button type="button" data-use-base-benefit="${escapeHtml(use)}" ${used[use]?"disabled":""}><strong>${escapeHtml(use)}</strong><span>${used[use]?"Usado nesta aventura":"Disponivel"}</span></button>`).join("")}</div></section>`:""}
+    <details class="characterBaseRules"><summary>Comodos, mobilias e efeitos situacionais</summary><div>${featureRows.map(text=>`<p>${escapeHtml(text)}</p>`).join("")||"<p>Nenhum efeito situacional.</p>"}</div></details>`;
+  $$('[data-base-resident-choice]').forEach(control=>control.onchange=()=>runCloudAction(()=>updateBaseResidentChoices(resident,control.dataset.baseResidentChoice,control.value)));
+  $$('[data-use-base-benefit]').forEach(control=>control.onclick=()=>runCloudAction(()=>useBaseBenefit(resident,control.dataset.useBaseBenefit)));
+}
 function renderCampaignDashboard(){
   const section=$("#hubCampaignDashboard");
   if(!section) return;
@@ -5246,6 +5743,12 @@ function renderCampaignDashboard(){
     return;
   }
   syncCampaignRollPolling();
+  if(activeCampaignDashboardTab==="bases"){
+    content.className="campaignDashboardContent";
+    content.innerHTML=renderCampaignBases(campaign,campaignOwner);
+    bindCampaignBaseEditor(campaign,campaignOwner);
+    return;
+  }
   if(activeCampaignDashboardTab==="jogadores"){
     const players=new Map();
     characters.forEach(character=>{
@@ -5499,7 +6002,7 @@ async function openPublicCloudCharacter(remoteId,options={}){
 async function openCloudCharacter(remoteId,options={}){
   if(!cloudRequireLogin()) return;
   if(publicViewActive()) leavePublicView();
-  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,updated_at").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,allow_master_edit,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   const runtime=combatRuntimeForCharacter(remoteId);
   const sheetData=applyCombatRuntimeToSheetData(data.sheet_data,runtime);
@@ -5522,7 +6025,10 @@ async function openCloudCharacter(remoteId,options={}){
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id||"";
   renderAll();
   openSheetView({updateRoute:options.updateRoute});
-  notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
+  const accessNote=currentCloudReadOnly
+    ? "<br><small>Somente leitura: o dono não autorizou a edição pelo mestre.</small>"
+    : (isMasterEditorForCloudCharacter(data)?"<br><small>Edição autorizada pelo jogador.</small>":"");
+  notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${accessNote}`);
 }
 function createCharacter(data,name){
   const normalized=normalizeSheetData(data);
@@ -5787,7 +6293,7 @@ function syncCloudCharacterSelection(){
   else select.value="";
 }
 function isCloudCharacterReadOnly(character){
-  return !!(character?.owner_id&&cloudUser&&character.owner_id!==cloudUser.id);
+  return !!(character?.owner_id&&cloudUser&&!canEditCloudCharacter(character));
 }
 function syncCloudReadOnlyControls(){
   const controls=$$(".wrap input:not([readonly]), .wrap select, .wrap textarea:not([readonly])");
@@ -5811,6 +6317,51 @@ function currentCloudCharacterMeta(remoteId=mappedCloudCharacterId()){
 }
 function currentCampaignIdForRoll(){
   return currentCloudCharacterMeta()?.campaign_id||"";
+}
+function missingCampaignBasesSchema(error){
+  const message=String(error?.message||error?.details||"");
+  return ["42P01","PGRST205","PGRST204"].includes(error?.code)||/campaign_bases|campaign_base_residents/i.test(message);
+}
+async function loadCampaignBases(){
+  if(!supabaseClient||!cloudUser){
+    cloudCampaignBases=[];cloudBaseResidents=[];return;
+  }
+  const [{data:bases,error:baseError},{data:residents,error:residentError}]=await Promise.all([
+    supabaseClient.from("campaign_bases").select("id,campaign_id,created_by,name,base_type,size,base_data,created_at,updated_at").order("updated_at",{ascending:false}),
+    supabaseClient.from("campaign_base_residents").select("base_id,character_id,choices,created_at,updated_at")
+  ]);
+  const error=baseError||residentError;
+  if(error){
+    if(missingCampaignBasesSchema(error)){
+      campaignBasesAvailable=false;cloudCampaignBases=[];cloudBaseResidents=[];return;
+    }
+    throw error;
+  }
+  campaignBasesAvailable=true;
+  cloudCampaignBases=(bases||[]).map(base=>({...base,base_data:normalizeCampaignBaseData(base.base_data)}));
+  cloudBaseResidents=(residents||[]).map(resident=>({...resident,choices:resident.choices&&typeof resident.choices==="object"?resident.choices:{}}));
+  if(activeCampaignBaseId&&!cloudCampaignBases.some(base=>base.id===activeCampaignBaseId)) activeCampaignBaseId="";
+}
+async function handleCampaignBaseRealtime(){
+  try{
+    await loadCampaignBases();
+    renderHub();renderCharacterBase();recalc();
+  }catch(error){console.warn("Falha ao atualizar bases em tempo real:",error)}
+}
+function stopCampaignBasesRealtime(){
+  if(campaignBasesChannel&&supabaseClient) supabaseClient.removeChannel(campaignBasesChannel);
+  campaignBasesChannel=null;
+}
+function startCampaignBasesRealtime(){
+  stopCampaignBasesRealtime();
+  if(!campaignBasesAvailable||!supabaseClient||!cloudUser) return;
+  campaignBasesChannel=supabaseClient
+    .channel(`campaign-bases-${cloudUser.id}`)
+    .on("postgres_changes",{event:"*",schema:"public",table:"campaign_bases"},handleCampaignBaseRealtime)
+    .on("postgres_changes",{event:"*",schema:"public",table:"campaign_base_residents"},handleCampaignBaseRealtime)
+    .subscribe(status=>{
+      if(status==="CHANNEL_ERROR") console.warn("Realtime de bases indisponivel; as alteracoes aparecerao ao recarregar os dados.");
+    });
 }
 async function loadCampaignRolls(){
   if(!supabaseClient||!cloudUser){
@@ -5952,7 +6503,8 @@ function toggleSheetActionMenu(){
 function renderProfileMenu(){
   const signedIn=!!cloudUser;
   const label=publicViewActive()?"Visitante":(signedIn?(cloudUser.email||"Conectado"):"Offline");
-  const status=publicViewActive()?"Ficha pública":(signedIn?(currentCloudReadOnly?"Somente leitura":"Nuvem conectada"):"Modo local");
+  const masterEditing=isMasterEditorForCloudCharacter(currentCloudCharacterMeta());
+  const status=publicViewActive()?"Ficha pública":(signedIn?(currentCloudReadOnly?"Somente leitura":(masterEditing?"Edição autorizada":"Nuvem conectada")):"Modo local");
   const initial=(label.trim()[0]||"?").toUpperCase();
   if($("#profileName")) $("#profileName").textContent=label;
   if($("#profileStatus")) $("#profileStatus").textContent=status;
@@ -6010,12 +6562,12 @@ function renderCloudPanel(){
   const cloudSaveButton=$("#cloudSaveCharacterBtn");
   if(cloudSaveButton){
     cloudSaveButton.disabled=currentCloudReadOnly;
-    cloudSaveButton.title=currentCloudReadOnly?"Somente o dono pode salvar esta ficha na nuvem":"";
+    cloudSaveButton.title=currentCloudReadOnly?"Edição não autorizada pelo dono da ficha":"";
   }
   const actionSaveCloudButton=$("#actionSaveCloudBtn");
   if(actionSaveCloudButton){
     actionSaveCloudButton.disabled=currentCloudReadOnly;
-    actionSaveCloudButton.title=currentCloudReadOnly?"Somente o dono pode salvar esta ficha na nuvem":"";
+    actionSaveCloudButton.title=currentCloudReadOnly?"Edição não autorizada pelo dono da ficha":"";
   }
   const currentCharacter=currentCloudCharacterMeta();
   const canShare=!!(signedIn&&currentCharacter&&isOwnCloudCharacter(currentCharacter)&&!currentCloudReadOnly&&!isPrivateCloudCharacter(currentCharacter));
@@ -6026,6 +6578,14 @@ function renderCloudPanel(){
   }
   const disableShareButton=$("#actionDisableShareBtn");
   if(disableShareButton) disableShareButton.classList.toggle("hidden",!canShare||!currentCharacter?.is_public);
+  const masterPermission=$("#masterEditPermission");
+  const masterPermissionToggle=$("#allowMasterEditToggle");
+  const canConfigureMasterEdit=!!(signedIn&&currentCharacter?.campaign_id&&isOwnCloudCharacter(currentCharacter)&&!publicViewActive());
+  masterPermission?.classList.toggle("hidden",!canConfigureMasterEdit);
+  if(masterPermissionToggle){
+    masterPermissionToggle.checked=!!currentCharacter?.allow_master_edit;
+    masterPermissionToggle.disabled=!canConfigureMasterEdit;
+  }
 }
 function syncCurrentCharacterFromCloud(){
   const remoteId=mappedCloudCharacterId();
@@ -6052,12 +6612,14 @@ async function loadCloudData(options={}){
     cloudCampaignEncounters=[];
     cloudInitiativeEntries=[];
     cloudCharacterRuntimeStates=[];
+    cloudCampaignBases=[];
+    cloudBaseResidents=[];
     setCurrentCloudReadOnly(false);
     renderCloudPanel();
     renderHub();
     return;
   }
-  const characterColumns="id,owner_id,name,player_name,campaign_id,is_public,is_private,updated_at,sheet_data";
+  const characterColumns="id,owner_id,name,player_name,campaign_id,is_public,is_private,allow_master_edit,updated_at,sheet_data";
   let [{data:campaigns,error:campaignError},{data:characters,error:characterError},runtimeResult]=await Promise.all([
     supabaseClient.from("campaigns").select("id,owner_id,name,invite_code,updated_at").order("updated_at",{ascending:false}),
     supabaseClient.from("characters").select(characterColumns).order("updated_at",{ascending:false}),
@@ -6071,7 +6633,7 @@ async function loadCloudData(options={}){
       .from("characters")
       .select("id,owner_id,name,player_name,campaign_id,is_public,updated_at,sheet_data")
       .order("updated_at",{ascending:false});
-    characters=(fallback.data||[]).map(character=>({...character,is_private:false}));
+    characters=(fallback.data||[]).map(character=>({...character,is_private:false,allow_master_edit:false}));
     characterError=fallback.error;
   }
   if(characterError) throw characterError;
@@ -6089,7 +6651,9 @@ async function loadCloudData(options={}){
   }));
   setCurrentCloudReadOnly(isCloudCharacterReadOnly(currentCloudCharacterMeta()));
   if(options.syncCurrent) syncCurrentCharacterFromCloud();
-  await Promise.all([loadCampaignRolls(),loadCampaignInitiative()]);
+  await Promise.all([loadCampaignRolls(),loadCampaignInitiative(),loadCampaignBases()]);
+  renderCharacterBase();
+  recalc();
   renderCloudPanel();
   renderHub();
 }
@@ -6113,12 +6677,43 @@ function cloudPayloadFromCurrent(remoteId=""){
 function cloudCharacterUpdatePayload(data){
   const normalized=normalizeSheetData(data);
   return {
-    owner_id:cloudUser.id,
     name:characterNameFromData(normalized),
     player_name:normalized.fields?.jogador||null,
     sheet_data:normalized,
     updated_at:new Date().toISOString()
   };
+}
+async function persistCloudCharacterContent(remoteId,payload){
+  const character=cloudCharacters.find(entry=>entry.id===remoteId);
+  if(isOwnCloudCharacter(character)){
+    const {data,error}=await supabaseClient
+      .from("characters")
+      .update(payload)
+      .eq("id",remoteId)
+      .eq("owner_id",cloudUser.id)
+      .select("id,name,campaign_id,allow_master_edit,updated_at")
+      .single();
+    if(error) throw error;
+    return data;
+  }
+  if(isMasterEditorForCloudCharacter(character)){
+    const {data,error}=await supabaseClient.rpc("update_character_as_campaign_master",{
+      character_uuid:remoteId,
+      character_name:payload.name,
+      character_player_name:payload.player_name,
+      character_sheet_data:payload.sheet_data
+    });
+    if(error){
+      if(/update_character_as_campaign_master|function|schema cache/i.test(String(error.message||""))){
+        throw new Error("A edição pelo mestre ainda não foi instalada no Supabase.");
+      }
+      throw error;
+    }
+    const row=Array.isArray(data)?data[0]:data;
+    if(!row) throw new Error("A permissão de edição pelo mestre não está mais ativa.");
+    return row;
+  }
+  throw new Error("Esta ficha está em modo somente leitura.");
 }
 async function saveCloudCharacter(show=true){
   if(!cloudRequireLogin()) return;
@@ -6136,7 +6731,7 @@ async function saveCloudCharacter(show=true){
     setCurrentCloudReadOnly(true);
     renderCloudPanel();
     markSaveWarning("Somente leitura");
-    notify("Ficha em modo somente leitura. Apenas o dono pode salvar alteracoes na nuvem.");
+    notify("Ficha em modo somente leitura. Apenas o dono ou um mestre autorizado pode salvar alterações.");
     return;
   }
   markSaving("Salvando...");
@@ -6152,11 +6747,14 @@ async function saveCloudCharacter(show=true){
     player_name:preparedData.fields?.jogador||null,
     sheet_data:preparedData
   };
-  const request=selected
-    ? supabaseClient.from("characters").update(payload).eq("id",selected).eq("owner_id",cloudUser.id).select("id,name,campaign_id,updated_at").single()
-    : supabaseClient.from("characters").insert(payload).select("id,name,campaign_id,updated_at").single();
-  const {data,error}=await request;
-  if(error) throw error;
+  let data;
+  if(selected){
+    data=await persistCloudCharacterContent(selected,payload);
+  }else{
+    const result=await supabaseClient.from("characters").insert(payload).select("id,name,campaign_id,updated_at").single();
+    if(result.error) throw result.error;
+    data=result.data;
+  }
   setMappedCloudCharacterId(data.id);
   cacheLocalCharacterData(currentCharacterId,payload.sheet_data,data.name||payload.name,data.updated_at);
   await loadCloudData();
@@ -6213,11 +6811,41 @@ async function disableCurrentCharacterShare(){
   renderCloudPanel();
   notify("Link público desativado.");
 }
+async function setMasterEditPermission(enabled){
+  if(!cloudRequireLogin()) return;
+  const character=currentCloudCharacterMeta();
+  if(!character||!isOwnCloudCharacter(character)){
+    notify("Apenas o dono da ficha pode alterar esta permissão.");
+    return;
+  }
+  if(!character.campaign_id){
+    notify("Vincule a ficha a uma campanha antes de liberar a edição.");
+    return;
+  }
+  const {data,error}=await supabaseClient
+    .from("characters")
+    .update({allow_master_edit:!!enabled,updated_at:new Date().toISOString()})
+    .eq("id",character.id)
+    .eq("owner_id",cloudUser.id)
+    .select("id,allow_master_edit,updated_at")
+    .single();
+  if(error){
+    if(/allow_master_edit|column|schema cache/i.test(String(error.message||""))){
+      throw new Error("A permissão de edição pelo mestre ainda não foi instalada no Supabase.");
+    }
+    throw error;
+  }
+  character.allow_master_edit=!!data.allow_master_edit;
+  character.updated_at=data.updated_at||character.updated_at;
+  renderCloudPanel();
+  renderHub();
+  notify(data.allow_master_edit?"O mestre da campanha agora pode editar esta ficha.":"A edição pelo mestre foi desativada.");
+}
 async function loadSelectedCloudCharacter(){
   if(!cloudRequireLogin()) return;
   const remoteId=value("cloudCharacterSelect");
   if(!remoteId){notify("Escolha uma ficha da nuvem para carregar.");return}
-  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,updated_at").eq("id",remoteId).single();
+  const {data,error}=await supabaseClient.from("characters").select("id,name,owner_id,player_name,sheet_data,campaign_id,is_public,is_private,allow_master_edit,updated_at").eq("id",remoteId).single();
   if(error) throw error;
   if(!confirm(`Carregar "${data.name||"personagem"}" da nuvem e substituir a ficha atual neste navegador?`)) return;
   const sheetData=applyCombatRuntimeToSheetData(data.sheet_data,combatRuntimeForCharacter(remoteId));
@@ -6232,7 +6860,10 @@ async function loadSelectedCloudCharacter(){
   if($("#cloudCampaignSelect")) $("#cloudCampaignSelect").value=data.campaign_id||"";
   renderAll();
   openSheetView();
-  notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${currentCloudReadOnly?"<br><small>Somente leitura: apenas o dono pode salvar alteracoes na nuvem.</small>":""}`);
+  const accessNote=currentCloudReadOnly
+    ? "<br><small>Somente leitura: o dono não autorizou a edição pelo mestre.</small>"
+    : (isMasterEditorForCloudCharacter(data)?"<br><small>Edição autorizada pelo jogador.</small>":"");
+  notify(`Ficha carregada da nuvem: <b>${escapeHtml(data.name||"personagem")}</b>${accessNote}`);
 }
 async function createCloudCampaign(){
   if(!cloudRequireLogin()) return;
@@ -6598,11 +7229,14 @@ async function cloudSignOut(){
   combatRuntimeSaveTimers.forEach(timer=>clearTimeout(timer));
   combatRuntimeSaveTimers.clear();
   stopCombatRuntimeRealtime();
+  stopCampaignBasesRealtime();
   await supabaseClient.auth.signOut();
   cloudUser=null;
   cloudCharacters=[];
   cloudCampaigns=[];
   cloudCharacterRuntimeStates=[];
+  cloudCampaignBases=[];
+  cloudBaseResidents=[];
   setCurrentCloudReadOnly(false);
   if(publicViewActive()) leavePublicView();
   localStorage.removeItem(AUTH_MODE_KEY);
@@ -6628,6 +7262,7 @@ async function initCloud(){
     else showAuthGate();
     await loadCloudData({syncCurrent:true});
     startCombatRuntimeRealtime();
+    startCampaignBasesRealtime();
     browserRoutingReady=true;
     if(cloudUser||sessionStorage.getItem(AUTH_MODE_KEY)==="offline"||routedCloudCharacterId()) await applyBrowserRoute({flush:false});
     supabaseClient.auth.onAuthStateChange(async(_event,session)=>{
@@ -6635,8 +7270,8 @@ async function initCloud(){
       if(cloudUser) enterApp("cloud");
       try{
         await loadCloudData({syncCurrent:!!cloudUser});
-        if(cloudUser) startCombatRuntimeRealtime();
-        else stopCombatRuntimeRealtime();
+        if(cloudUser){startCombatRuntimeRealtime();startCampaignBasesRealtime()}
+        else{stopCombatRuntimeRealtime();stopCampaignBasesRealtime()}
         if(cloudUser) await initializeBrowserRouting();
       }catch(err){console.error(err);renderCloudPanel()}
     });
@@ -6725,7 +7360,7 @@ function renderOriginBenefits(){
   $$("[data-ob]").forEach(e=>e.oninput=()=>{state.originBenefits[+e.dataset.ob]=e.value;save(false)});
   $$("[data-obdel]").forEach(e=>e.onclick=()=>{state.originBenefits.splice(+e.dataset.obdel,1);renderOriginBenefits();save(false)});
 }
-function renderAll(){normalizeState();syncClassSpellAttr();renderClassLevels();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderPartners();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();recalc();syncCloudReadOnlyControls()}
+function renderAll(){normalizeState();syncClassSpellAttr();renderClassLevels();renderOffices();renderPowers();renderSpells();renderSpellCatalog();renderItems();renderPartners();renderAttacks();renderConditions();renderOriginBenefits();renderCharacterManager();renderCharacterPortrait();renderCharacterBase();recalc();syncCloudReadOnlyControls()}
 function showFatalError(error){
   console.error(error);
   const banner=document.createElement("div");
@@ -6967,6 +7602,12 @@ $("#actionOpenCampaignBtn")?.addEventListener("click",()=>{
   if(!campaignId){notify("Esta ficha ainda nao esta vinculada a uma campanha.");return}
   openCampaignDashboard(campaignId);
 });
+$("#openLinkedBaseCampaignBtn")?.addEventListener("click",()=>{
+  const context=currentCampaignBaseContext();
+  if(!context){notify("Este personagem ainda nao esta associado a uma base.");return}
+  activeCampaignBaseId=context.base.id;
+  openCampaignDashboard(context.base.campaign_id,{panel:"bases"});
+});
 $("#actionSaveCloudBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
   runCloudAction(()=>saveCloudCharacter(true));
@@ -6978,6 +7619,12 @@ $("#actionShareCharacterBtn")?.addEventListener("click",()=>{
 $("#actionDisableShareBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
   runCloudAction(disableCurrentCharacterShare);
+});
+$("#allowMasterEditToggle")?.addEventListener("change",event=>{
+  runCloudAction(async()=>{
+    try{await setMasterEditPermission(event.target.checked)}
+    catch(error){renderCloudPanel();throw error}
+  });
 });
 $("#actionLinkCampaignBtn")?.addEventListener("click",()=>{
   closeSheetActionMenu();
@@ -7066,7 +7713,7 @@ $("#campaignShieldBtn")?.addEventListener("click",()=>{
 });
 $("#campaignDeleteBtn")?.addEventListener("click",()=>runCloudAction(()=>deleteCloudCampaign(activeHubCampaignId)));
 $$("[data-campaign-panel]").forEach(button=>button.addEventListener("click",()=>{
-  const nextPanel=["fichas","jogadores","escudo"].includes(button.dataset.campaignPanel)?button.dataset.campaignPanel:"fichas";
+  const nextPanel=["fichas","jogadores","bases","escudo"].includes(button.dataset.campaignPanel)?button.dataset.campaignPanel:"fichas";
   const campaign=cloudCampaigns.find(item=>item.id===activeHubCampaignId);
   if(nextPanel==="escudo"&&!isCampaignOwner(campaign)){
     notify("O Escudo do Mestre fica disponivel apenas para quem criou a campanha.");

@@ -13,7 +13,7 @@ if(location.protocol!=="file:"){
 </script>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260824-2">
 </head>
 <body class="auth-gated">
 <section id="authGate" class="authGate" aria-label="Entrada da ficha">
@@ -81,6 +81,11 @@ if(location.protocol!=="file:"){
         <button id="actionSaveCloudBtn" type="button">Salvar na nuvem</button>
         <button id="actionShareCharacterBtn" type="button">Ativar link público</button>
         <button id="actionDisableShareBtn" type="button" class="danger hidden">Desativar link público</button>
+        <label id="masterEditPermission" class="sheetPermissionToggle hidden">
+          <span><strong>Edição pelo mestre</strong><small>Permitir que o mestre da campanha edite esta ficha</small></span>
+          <input id="allowMasterEditToggle" type="checkbox" aria-label="Permitir edição pelo mestre">
+          <i aria-hidden="true"></i>
+        </label>
         <button id="actionOpenCampaignBtn" type="button">Abrir campanha vinculada</button>
         <button id="actionLinkCampaignBtn" type="button">Vincular a campanha</button>
         <button id="actionExportBtn" type="button">Exportar JSON</button>
@@ -120,6 +125,7 @@ if(location.protocol!=="file:"){
     <button data-tab="inventario">Inventário</button>
     <span class="tabSpacer" aria-hidden="true"></span>
     <button data-tab="parceiros" class="tabUtility">Parceiros</button>
+    <button data-tab="base" class="tabUtility">Base</button>
     <button data-tab="notas" class="tabUtility">Notas</button>
     <button data-tab="condicoes" class="tabUtility">Condições</button>
     <button data-tab="magias" class="tabUtility">Magias</button>
@@ -225,6 +231,7 @@ if(location.protocol!=="file:"){
       <nav class="campaignDashboardTabs" aria-label="Areas da campanha">
         <button type="button" class="active" data-campaign-panel="fichas">Fichas</button>
         <button type="button" data-campaign-panel="jogadores">Jogadores</button>
+        <button type="button" data-campaign-panel="bases">Bases</button>
         <button type="button" data-campaign-panel="escudo">Escudo</button>
       </nav>
       <div id="campaignDashboardContent" class="campaignDashboardContent"></div>
@@ -552,6 +559,16 @@ if(location.protocol!=="file:"){
   </article>
 </section>
 
+<section id="tab-base" class="tab">
+  <article class="panel characterBasePanel">
+    <div class="sectionHead">
+      <div><h2>Base</h2><p class="muted">Consulte a base deste residente e configure seus benefícios individuais.</p></div>
+      <button id="openLinkedBaseCampaignBtn" type="button">Abrir na campanha</button>
+    </div>
+    <div id="characterBaseContent" class="characterBaseContent"></div>
+  </article>
+</section>
+
 <section id="tab-notas" class="tab">
   <article class="panel">
     <h2>Notas</h2>
@@ -642,7 +659,8 @@ if(location.protocol!=="file:"){
 <script src="jda_catalog_fixes.js"></script>
 <script src="expansion_race_abilities.js?v=20260823-1"></script>
 <script src="origin_expansion_fixes.js"></script>
+<script src="base_catalog.js?v=20260824-2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=20260823-6"></script>
+<script src="script.js?v=20260824-3"></script>
 </body>
 </html>
