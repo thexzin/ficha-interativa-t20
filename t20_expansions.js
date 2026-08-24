@@ -50,6 +50,14 @@
   };
 
   Object.assign(window.T20_DATA.racas, ameacasRacas);
+  window.T20_DATA.racas.vampiro = {
+    nome: "Vampiro",
+    fonte: "Material fornecido",
+    atributos: "Car +1, +1 em dois atributos (exceto Con), Con -1",
+    tamanho: "Médio",
+    deslocamento: 9,
+    pagina: "73–75"
+  };
   Object.assign(window.T20_DATA.classes, {
     sentinela: {
       nome: "Sentinela",

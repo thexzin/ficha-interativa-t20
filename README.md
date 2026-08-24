@@ -91,9 +91,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Atributos temporários em combate:** os modificadores de atributo agora entram tanto no teste de ataque quanto no dano configurado com esse atributo, além de perícias e CD.
-2. **Proficiências corrigidas:** Druida agora exibe sua proficiência com escudos; o resumo continua mostrando apenas as proficiências adicionais concedidas por cada classe.
-3. **Resumo de classe refinado:** informações de PM aparecem antes das proficiências, que agora encerram o card de forma mais organizada.
+1. **Raça Vampiro:** adicionada com atributos, características automáticas, dieta, fraquezas e dez Bênçãos Vampíricas selecionáveis.
+2. **Atributos temporários em combate:** os modificadores de atributo agora entram tanto no teste de ataque quanto no dano configurado com esse atributo, além de perícias e CD.
+3. **Proficiências corrigidas:** Druida agora exibe sua proficiência com escudos; o resumo continua mostrando apenas as proficiências adicionais concedidas por cada classe.
 
 ## Aviso
 
