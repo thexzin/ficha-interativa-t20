@@ -94,9 +94,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Refino das Bases:** Colmeia e Relíquia usam catálogos de magia adequados, a Relíquia respeita o cômodo instalado, Suítes exibem a ocupação real e os controles foram alinhados.
-2. **Edição automática pelo mestre:** fichas vinculadas podem ser editadas pelo criador da campanha sem autorização adicional; remover o vínculo encerra o acesso.
-3. **Bases de campanha:** membros constroem Bases colaborativas, associam residentes e aplicam automaticamente benefícios de tipos, cômodos e mobílias.
+1. **Quebra-Escudos revisado:** progressão, habilidades automáticas, custos, pré-requisitos e 26 poderes atualizados conforme a nova versão da classe.
+2. **Refino das Bases:** Colmeia e Relíquia usam catálogos de magia adequados, a Relíquia respeita o cômodo instalado, Suítes exibem a ocupação real e os controles foram alinhados.
+3. **Edição automática pelo mestre:** fichas vinculadas podem ser editadas pelo criador da campanha sem autorização adicional; remover o vínculo encerra o acesso.
 
 ## Aviso
 
