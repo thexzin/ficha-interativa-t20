@@ -32,7 +32,7 @@ Ataques calculam acerto e dano em uma única rolagem, incluindo crítico, dano e
 - Poderes de classe, raça, origem, gerais e concedidos possuem catálogos integrados.
 - Grimório e catálogo de magias incluem filtros por círculo, tipo e escola.
 - O Cartomante, variante de Arcanista, possui progressão própria e um painel de baralho com mão, Mulligan, Cartas Especiais, Destino Traçado, Tutor Arcano e Exodia.
-- O Quebra-Escudos está disponível como classe Homebrew, com progressão completa, habilidades automáticas e catálogo próprio de poderes.
+- O Quebra-Escudos está disponível como classe Homebrew, com progressão completa, habilidades automáticas e catálogo próprio de 27 poderes.
 - Parceiros possuem graduação limitada pelo patamar e aplicam bônus passivos compatíveis.
 - Poderes, magias, parceiros, ataques e itens usam cards expansíveis.
 
@@ -94,8 +94,8 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Recuperação de senha:** a entrada agora envia o email de recuperação e recebe o link do Supabase em um formulário próprio para cadastrar a nova senha.
-2. **Quebra-Escudos revisado:** progressão, habilidades automáticas, custos, pré-requisitos e 26 poderes atualizados conforme a nova versão da classe.
+1. **Quebra-Escudos revisado:** Golpe de Impacto passa a ser obtido no 2º nível e Alavanca de Demolição entra no catálogo, agora com 27 poderes.
+2. **Recuperação de senha:** a entrada agora envia o email de recuperação e recebe o link do Supabase em um formulário próprio para cadastrar a nova senha.
 3. **Refino das Bases:** Colmeia e Relíquia usam catálogos de magia adequados, a Relíquia respeita o cômodo instalado, Suítes exibem a ocupação real e os controles foram alinhados.
 
 ## Aviso

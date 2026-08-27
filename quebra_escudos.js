@@ -16,8 +16,8 @@
     atributoChave:"FOR",
     proficiencias:["Armas marciais","Armaduras pesadas","Escudos"],
     progressao:{
-      1:"Brecha na Guarda, Golpe de Impacto (+1d6)",
-      2:"Poder de Quebra-Escudos",
+      1:"Brecha na Guarda",
+      2:"Poder de Quebra-Escudos, Golpe de Impacto (+1d6)",
       3:"Poder de Quebra-Escudos, Ruptura de Armadura (RD 2)",
       4:"Poder de Quebra-Escudos",
       5:"Poder de Quebra-Escudos, Golpe de Impacto (+2d6)",
@@ -51,7 +51,7 @@
       name:"Golpe de Impacto",
       cost:"1 PM",
       action:"Ao acertar um ataque",
-      desc:"Quando desfere um golpe com uma arma de impacto, você concentra massa e aceleração. Você pode gastar 1 PM ao acertar um ataque corpo a corpo para causar +1d6 de dano de impacto e aplicar uma manobra tática. Repelir empurra o alvo 3m em linha reta, se ele for de tamanho até uma categoria superior à sua. Desestabilizar reduz o deslocamento do alvo em 6m até o início do seu próximo turno. Abertura concede +1 no próximo teste de manobra realizado contra o alvo antes do fim da rodada. A cada 4 níveis além do 1º (5º, 9º, 13º e 17º níveis), o dano extra aumenta em +1d6, mantendo o custo fixo de 1 PM. Em acerto crítico, os efeitos táticos aplicados são dobrados sem custo adicional."
+      desc:"A partir do 2º nível, quando desfere um golpe com uma arma de impacto, você concentra massa e aceleração. Você pode gastar 1 PM ao acertar um ataque corpo a corpo para causar +1d6 de dano de impacto e aplicar uma manobra tática. Repelir empurra o alvo 3m em linha reta, se ele for de tamanho até uma categoria superior à sua. Desestabilizar reduz o deslocamento do alvo em 6m até o início do seu próximo turno. Abertura concede +1 no próximo teste de manobra realizado contra o alvo antes do fim da rodada. A cada 4 níveis além do 1º (5º, 9º, 13º e 17º níveis), o dano extra aumenta em +1d6, mantendo o custo fixo de 1 PM. Em acerto crítico, os efeitos táticos aplicados são dobrados sem custo adicional."
     },
     [`${classId}|rupturadearmadura`]:{
       name:"Ruptura de Armadura",
@@ -77,6 +77,12 @@
     {
       name:"Abalo Sísmico",
       desc:"Quando acerta um acerto crítico usando uma arma de impacto, todas as criaturas inimigas adjacentes ao alvo sofrem dano de impacto igual ao seu modificador de Força."
+    },
+    {
+      name:"Alavanca de Demolição",
+      cost:"1 PM",
+      action:"Teste de manobra de combate",
+      desc:"Você utiliza o peso de sua arma e os desequilíbrios do adversário a seu favor. Pode gastar 1 PM para receber +1 em testes de manobra de combate para cada Brecha acumulada no alvo. Além disso, se vencer o teste de manobra por 5 ou mais, o alvo sofre dano de impacto igual ao seu modificador de Força. Pré-requisitos: Força 3, treinado em Luta, 6º nível."
     },
     {
       name:"Aproveitar Brecha",
