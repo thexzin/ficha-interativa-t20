@@ -33,8 +33,10 @@ body.public-view .saveStatus span{color:var(--gold)}
 .authFeature{min-height:118px;display:grid;gap:.38rem;align-content:start;border:1px solid #543b31;border-radius:8px;background:linear-gradient(145deg,rgba(48,41,31,.92),rgba(23,19,15,.78));padding:.85rem;box-shadow:0 12px 28px rgba(0,0,0,.18)}
 .authFeature strong{font-family:Cinzel,Georgia,serif;color:#f4ead8;font-size:1rem;line-height:1.2}.authFeature span{color:#cdb896;font-size:.86rem;line-height:1.45}
 .authCard{display:grid;gap:1rem;border:1px solid #7a4639;border-radius:12px;background:linear-gradient(145deg,#272018,#17130f);padding:1.15rem;box-shadow:0 18px 60px rgba(0,0,0,.42),4px 4px 0 #6b1d18}
+.authCardPanel{display:grid;gap:1rem}.authCardPanel.hidden{display:none}
 .authCardHead{display:grid;gap:.28rem;border-bottom:1px solid rgba(122,70,57,.55);padding-bottom:.85rem}.authCardHead strong{font-family:Cinzel,Georgia,serif;color:#f4ead8;font-size:1.25rem}.authCardHead span{color:var(--muted);font-size:.86rem;line-height:1.45}
 .authFields{display:grid;grid-template-columns:1fr 1fr;gap:.65rem}.authFields label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)}.authActions{display:grid;grid-template-columns:1fr 1fr;gap:.55rem}.authActions .secondary{grid-column:1/-1;background:#17130f;color:var(--muted)}.authCard small{color:var(--muted);line-height:1.4}
+.authActions .authTextButton{grid-column:1/-1;padding:.25rem;border:0;background:transparent;color:#f3c879;text-decoration:underline;text-underline-offset:.2rem;box-shadow:none}.authActions .authTextButton:hover{color:#ffe2a6}.authResetFields{grid-template-columns:1fr}
 .authPath{display:grid;gap:.42rem;border-top:1px solid rgba(122,70,57,.45);padding-top:.8rem}.authPath b{color:#f3c879}
 @media(max-width:760px){.authLayout{grid-template-columns:1fr}.authFeatureGrid{grid-template-columns:1fr}.authFeature{min-height:auto}.authIntro h1{font-size:1.85rem}.authLead{font-size:.95rem}}
 .appModeNav{position:relative;display:flex;gap:1.05rem;align-items:center;min-height:38px;padding:.1rem .2rem 0;color:#f4ead8;font-size:1rem;overflow:auto;scrollbar-width:thin}

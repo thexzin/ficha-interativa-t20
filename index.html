@@ -13,7 +13,7 @@ if(location.protocol!=="file:"){
 </script>
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="favicon.png">
-<link rel="stylesheet" href="style.css?v=20260824-3">
+<link rel="stylesheet" href="style.css?v=20260827-1">
 </head>
 <body class="auth-gated">
 <section id="authGate" class="authGate" aria-label="Entrada da ficha">
@@ -25,22 +25,42 @@ if(location.protocol!=="file:"){
         <p class="authLead">Entre na nuvem para sincronizar seus personagens ou continue offline neste navegador.</p>
       </div>
       <div class="authCard">
-        <div class="authCardHead">
-          <strong>Entrar</strong>
-          <span>Use uma conta para salvar na nuvem. O modo offline fica neste navegador.</span>
+        <div id="authLoginPanel" class="authCardPanel">
+          <div class="authCardHead">
+            <strong>Entrar</strong>
+            <span>Use uma conta para salvar na nuvem. O modo offline fica neste navegador.</span>
+          </div>
+          <div class="authFields">
+            <label>Email<input id="cloudEmail" type="email" autocomplete="email" placeholder="email@exemplo.com"></label>
+            <label>Senha<input id="cloudPassword" type="password" autocomplete="current-password" placeholder="senha"></label>
+          </div>
+          <div class="authActions">
+            <button id="cloudSignInBtn" type="button">Entrar</button>
+            <button id="cloudSignUpBtn" type="button">Criar conta</button>
+            <button id="cloudForgotPasswordBtn" type="button" class="authTextButton">Esqueci minha senha</button>
+            <button id="offlineModeBtn" type="button" class="secondary">Continuar offline</button>
+          </div>
+          <div class="authPath">
+            <small><b>Nuvem</b> sincroniza fichas, campanhas e escudo.</small>
+            <small><b>Offline</b> salva apenas neste navegador, com exportacao/importacao JSON.</small>
+          </div>
         </div>
-        <div class="authFields">
-          <label>Email<input id="cloudEmail" type="email" autocomplete="email" placeholder="email@exemplo.com"></label>
-          <label>Senha<input id="cloudPassword" type="password" autocomplete="current-password" placeholder="senha"></label>
-        </div>
-        <div class="authActions">
-          <button id="cloudSignInBtn" type="button">Entrar</button>
-          <button id="cloudSignUpBtn" type="button">Criar conta</button>
-          <button id="offlineModeBtn" type="button" class="secondary">Continuar offline</button>
-        </div>
-        <div class="authPath">
-          <small><b>Nuvem</b> sincroniza fichas, campanhas e escudo.</small>
-          <small><b>Offline</b> salva apenas neste navegador, com exportacao/importacao JSON.</small>
+        <div id="authPasswordResetPanel" class="authCardPanel hidden">
+          <div class="authCardHead">
+            <strong>Criar nova senha</strong>
+            <span>Digite e confirme a nova senha para recuperar o acesso à sua conta.</span>
+          </div>
+          <div class="authFields authResetFields">
+            <label>Nova senha<input id="cloudNewPassword" type="password" autocomplete="new-password" placeholder="nova senha"></label>
+            <label>Confirmar senha<input id="cloudNewPasswordConfirm" type="password" autocomplete="new-password" placeholder="repita a senha"></label>
+          </div>
+          <div class="authActions">
+            <button id="cloudUpdatePasswordBtn" type="button">Atualizar senha</button>
+            <button id="cloudCancelPasswordResetBtn" type="button" class="secondary">Cancelar</button>
+          </div>
+          <div class="authPath">
+            <small>Depois da alteração, sua conta será conectada automaticamente.</small>
+          </div>
         </div>
       </div>
     </div>
@@ -656,6 +676,6 @@ if(location.protocol!=="file:"){
 <script src="origin_expansion_fixes.js"></script>
 <script src="base_catalog.js?v=20260824-2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=20260824-5"></script>
+<script src="script.js?v=20260827-1"></script>
 </body>
 </html>

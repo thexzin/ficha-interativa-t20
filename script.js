@@ -14,6 +14,7 @@ const PORTRAIT_MAX_SOURCE_BYTES=12*1024*1024;
 
 let supabaseClient=null;
 let cloudUser=null;
+let passwordRecoveryActive=false;
 let cloudCharacters=[];
 let cloudCampaigns=[];
 let cloudCampaignRolls=[];
@@ -7201,6 +7202,56 @@ async function cloudSignUp(){
     notify("Conta criada. Confirme o email antes de entrar, se a confirmacao estiver ativa.");
   }
 }
+function passwordRecoveryRequested(){
+  const hash=new URLSearchParams(location.hash.replace(/^#/,""));
+  const search=new URLSearchParams(location.search);
+  return hash.get("type")==="recovery"||search.get("type")==="recovery";
+}
+function passwordRecoveryRedirectUrl(){
+  if(location.protocol==="http:"||location.protocol==="https:") return `${location.origin}/`;
+  return "https://fichatormenta20.netlify.app/";
+}
+function renderPasswordRecoveryMode(active){
+  passwordRecoveryActive=!!active;
+  document.body.classList.add("auth-gated");
+  document.body.classList.remove("hub-open");
+  $("#authLoginPanel")?.classList.toggle("hidden",passwordRecoveryActive);
+  $("#authPasswordResetPanel")?.classList.toggle("hidden",!passwordRecoveryActive);
+  if(passwordRecoveryActive) requestAnimationFrame(()=>$("#cloudNewPassword")?.focus());
+}
+async function requestPasswordRecovery(){
+  if(!supabaseClient){notify("Biblioteca do Supabase nao carregou.");return}
+  const email=value("cloudEmail").trim();
+  if(!email){notify("Informe o email da conta.");$("#cloudEmail")?.focus();return}
+  const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:passwordRecoveryRedirectUrl()});
+  if(error) throw error;
+  notify("Email de recuperação enviado. Verifique também a caixa de spam.");
+}
+async function completePasswordRecovery(){
+  if(!supabaseClient){notify("Biblioteca do Supabase nao carregou.");return}
+  const password=value("cloudNewPassword"),confirmation=value("cloudNewPasswordConfirm");
+  if(password.length<6){notify("A nova senha precisa ter pelo menos 6 caracteres.");return}
+  if(password!==confirmation){notify("As senhas informadas não são iguais.");return}
+  const {data,error}=await supabaseClient.auth.updateUser({password});
+  if(error) throw error;
+  cloudUser=data.user||cloudUser;
+  renderPasswordRecoveryMode(false);
+  history.replaceState(history.state,"",location.pathname||"/");
+  $("#cloudNewPassword").value="";
+  $("#cloudNewPasswordConfirm").value="";
+  enterApp("cloud");
+  await loadCloudData({syncCurrent:true});
+  await initializeBrowserRouting();
+  notify("Senha atualizada. Sua conta já está conectada.");
+}
+async function cancelPasswordRecovery(){
+  if(supabaseClient) await supabaseClient.auth.signOut();
+  cloudUser=null;
+  passwordRecoveryActive=false;
+  history.replaceState(history.state,"",location.pathname||"/");
+  renderPasswordRecoveryMode(false);
+  showAuthGate();
+}
 async function cloudSignOut(){
   if(!supabaseClient) return;
   cloudAutosaveTimers.forEach(timer=>clearTimeout(timer));
@@ -7231,21 +7282,30 @@ async function initCloud(){
     await initializeBrowserRouting();
     return;
   }
+  passwordRecoveryActive=passwordRecoveryRequested();
   supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
   try{
     const {data,error}=await supabaseClient.auth.getSession();
     if(error) throw error;
     cloudUser=data.session?.user||null;
-    if(cloudUser) enterApp("cloud");
+    if(passwordRecoveryActive) renderPasswordRecoveryMode(true);
+    else if(cloudUser) enterApp("cloud");
     else if(sessionStorage.getItem(AUTH_MODE_KEY)==="offline") enterApp("offline");
     else showAuthGate();
-    await loadCloudData({syncCurrent:true});
-    startCombatRuntimeRealtime();
-    startCampaignBasesRealtime();
+    if(!passwordRecoveryActive){
+      await loadCloudData({syncCurrent:true});
+      startCombatRuntimeRealtime();
+      startCampaignBasesRealtime();
+    }
     browserRoutingReady=true;
-    if(cloudUser||sessionStorage.getItem(AUTH_MODE_KEY)==="offline"||routedCloudCharacterId()) await applyBrowserRoute({flush:false});
-    supabaseClient.auth.onAuthStateChange(async(_event,session)=>{
+    if(!passwordRecoveryActive&&(cloudUser||sessionStorage.getItem(AUTH_MODE_KEY)==="offline"||routedCloudCharacterId())) await applyBrowserRoute({flush:false});
+    supabaseClient.auth.onAuthStateChange(async(event,session)=>{
       cloudUser=session?.user||null;
+      if(event==="PASSWORD_RECOVERY"){
+        renderPasswordRecoveryMode(true);
+        return;
+      }
+      if(passwordRecoveryActive) return;
       if(cloudUser) enterApp("cloud");
       try{
         await loadCloudData({syncCurrent:!!cloudUser});
@@ -7518,6 +7578,9 @@ function saveFromHeader(){
 $("#saveBtn").onclick=saveFromHeader;
 $("#cloudSignInBtn")?.addEventListener("click",()=>runCloudAction(cloudSignIn));
 $("#cloudSignUpBtn")?.addEventListener("click",()=>runCloudAction(cloudSignUp));
+$("#cloudForgotPasswordBtn")?.addEventListener("click",()=>runCloudAction(requestPasswordRecovery));
+$("#cloudUpdatePasswordBtn")?.addEventListener("click",()=>runCloudAction(completePasswordRecovery));
+$("#cloudCancelPasswordResetBtn")?.addEventListener("click",()=>runCloudAction(cancelPasswordRecovery));
 $("#offlineModeBtn")?.addEventListener("click",async()=>{enterApp("offline");await initializeBrowserRouting()});
 $("#cloudOpenLoginBtn")?.addEventListener("click",()=>{
   localStorage.removeItem(AUTH_MODE_KEY);
