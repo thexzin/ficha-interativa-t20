@@ -8,18 +8,9 @@ set is_public = false
 where is_public is distinct from false;
 
 drop policy if exists characters_select_public_link on public.characters;
-create policy characters_select_public_link
-on public.characters
-for select
-to anon, authenticated
-using (
-  coalesce(is_public, false)
-  and not coalesce(is_private, false)
-);
-
 revoke select on table public.characters from anon;
-grant select (id, name, player_name, sheet_data, updated_at, is_public, is_private)
-on public.characters to anon;
+revoke select (id, name, player_name, sheet_data, updated_at, is_public, is_private)
+on public.characters from anon;
 
 create or replace function public.get_public_character(character_uuid uuid)
 returns table (
@@ -31,7 +22,7 @@ returns table (
 )
 language sql
 stable
-security invoker
+security definer
 set search_path = ''
 as $$
   select
@@ -47,5 +38,5 @@ as $$
   limit 1;
 $$;
 
-revoke all on function public.get_public_character(uuid) from public;
+revoke all on function public.get_public_character(uuid) from public, anon, authenticated;
 grant execute on function public.get_public_character(uuid) to anon, authenticated;

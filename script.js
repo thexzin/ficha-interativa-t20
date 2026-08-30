@@ -5996,9 +5996,7 @@ async function openPublicCloudCharacter(remoteId,options={}){
   let publicRuntime=null;
   if(combatRuntimeAvailable){
     const runtimeResult=await supabaseClient
-      .from("character_runtime_states")
-      .select("character_id,pv_current,pm_current,pv_temp,pm_temp,conditions,custom_conditions,updated_by,updated_at")
-      .eq("character_id",remoteId)
+      .rpc("get_public_character_runtime",{character_uuid:remoteId})
       .maybeSingle();
     if(!runtimeResult.error) publicRuntime=runtimeResult.data;
   }

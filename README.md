@@ -76,7 +76,7 @@ No Netlify, o arquivo `_redirects` já encaminha endereços como `/fichas/...` e
 - **Nuvem:** após o login, o Supabase se torna o destino principal.
 - **Backup:** `Exportar JSON` e `Importar JSON` funcionam nos dois modos. O retrato não entra no arquivo exportado, mantendo o backup leve para importação online.
 
-Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas, pelo compartilhamento público e pelo Storage. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e depois `supabase_permissions.sql`. Os arquivos `supabase_campaign_initiative.sql`, `supabase_master_shield_controls.sql`, `supabase_character_portraits.sql`, `supabase_master_character_edit.sql` e `supabase_campaign_bases.sql` adicionam, respectivamente, iniciativa, estado compartilhado de combate, o bucket seguro de retratos, a edição automática de fichas vinculadas pelo mestre e Bases colaborativas.
+Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pelas campanhas, pelo compartilhamento público e pelo Storage. Em uma instalação nova, aplique primeiro a criação das tabelas e funções e depois `supabase_permissions.sql`. Os arquivos `supabase_campaign_initiative.sql`, `supabase_master_shield_controls.sql`, `supabase_character_portraits.sql`, `supabase_master_character_edit.sql` e `supabase_campaign_bases.sql` adicionam, respectivamente, iniciativa, estado compartilhado de combate, o bucket seguro de retratos, a edição automática de fichas vinculadas pelo mestre e Bases colaborativas. `supabase_public_runtime_hardening.sql` fecha o acesso anônimo direto às tabelas de fichas e estado de combate em instalações existentes.
 
 ## Arquivos principais
 
@@ -94,9 +94,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Quebra-Escudos revisado:** Golpe de Impacto passa a ser obtido no 2º nível e Alavanca de Demolição entra no catálogo, agora com 27 poderes.
-2. **Recuperação de senha:** a entrada agora envia o email de recuperação e recebe o link do Supabase em um formulário próprio para cadastrar a nova senha.
-3. **Refino das Bases:** Colmeia e Relíquia usam catálogos de magia adequados, a Relíquia respeita o cômodo instalado, Suítes exibem a ocupação real e os controles foram alinhados.
+1. **Compartilhamento público protegido:** fichas e estados de combate públicos agora são lidos apenas por RPCs vinculadas ao UUID exato, sem listagem anônima das tabelas nem exposição de `updated_by`.
+2. **Quebra-Escudos revisado:** Golpe de Impacto passa a ser obtido no 2º nível e Alavanca de Demolição entra no catálogo, agora com 27 poderes.
+3. **Recuperação de senha:** a entrada agora envia o email de recuperação e recebe o link do Supabase em um formulário próprio para cadastrar a nova senha.
 
 ## Aviso
 
