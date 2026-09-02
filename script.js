@@ -59,7 +59,7 @@ function normalizeCartomanteState(value){
   return normalized;
 }
 function defaultState(){
-  return {powers:[],spells:[],items:[],partners:[],attacks:[defaultAttack({name:"Ataque desarmado",damage:"1d3"})],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classLevels:[],multiclassEnabled:false,cartomante:defaultCartomanteState()};
+  return {powers:[],spells:[],items:[],partners:[],attacks:[defaultAttack({name:"Ataque desarmado",damage:"1d3"})],skillData:{},conditions:{},customConditions:[],originBenefits:[],offices:[{name:"",trained:false,adjust:0}],suppressedAutoPowers:[],classProgressionVersions:{},classLevels:[],multiclassEnabled:false,cartomante:defaultCartomanteState()};
 }
 const INITIAL_ADVENTURE_GEAR_NAMES=["Mochila","Saco de dormir","Traje de viajante"];
 function defaultInitialAdventureGear(){
@@ -2112,9 +2112,25 @@ function suppressAutoPower(power){
   state.suppressedAutoPowers=Array.isArray(state.suppressedAutoPowers)?state.suppressedAutoPowers:[];
   if(!state.suppressedAutoPowers.includes(key)) state.suppressedAutoPowers.push(key);
 }
+function migrateClassProgressionSuppressions(){
+  state.classProgressionVersions=state.classProgressionVersions&&typeof state.classProgressionVersions==="object"&&!Array.isArray(state.classProgressionVersions)?state.classProgressionVersions:{};
+  state.suppressedAutoPowers=Array.isArray(state.suppressedAutoPowers)?state.suppressedAutoPowers:[];
+  const revisions=window.T20_CLASS_PROGRESSION_REVISIONS||{};
+  currentClassLevels().forEach(entry=>{
+    const revision=revisions[entry.id];
+    if(!revision) return;
+    const currentVersion=Math.max(0,Number(state.classProgressionVersions[entry.id]||0));
+    const targetVersion=Math.max(0,Number(revision.version||0));
+    if(currentVersion>=targetVersion) return;
+    const resetKeys=new Set((revision.resetSuppressions||[]).map(key=>String(key).startsWith("class:")?String(key):`class:${key}`));
+    state.suppressedAutoPowers=state.suppressedAutoPowers.filter(key=>!resetKeys.has(key));
+    state.classProgressionVersions[entry.id]=targetVersion;
+  });
+}
 function syncAutoClassFeatures(){
   state.powers=Array.isArray(state.powers)?state.powers:[];
   state.suppressedAutoPowers=Array.isArray(state.suppressedAutoPowers)?state.suppressedAutoPowers:[];
+  migrateClassProgressionSuppressions();
   const previousPowers=state.powers.filter(power=>!isRaceAttributeModifierPower(power));
   const manual=state.powers.filter(power=>power.autoClassFeature!==AUTO_CLASS_FEATURE_FLAG && power.autoRaceAbility!==AUTO_RACE_ABILITY_FLAG && !isRaceAttributeModifierPower(power));
   const manualClassFeatureKeys=new Set(manual
@@ -3832,6 +3848,7 @@ function normalizeLoadedState(saved){
     originBenefits:Array.isArray(saved.originBenefits)?saved.originBenefits:base.originBenefits,
     offices:Array.isArray(saved.offices)&&saved.offices.length?saved.offices:base.offices,
     suppressedAutoPowers:Array.isArray(saved.suppressedAutoPowers)?saved.suppressedAutoPowers:base.suppressedAutoPowers,
+    classProgressionVersions:saved.classProgressionVersions&&typeof saved.classProgressionVersions==="object"&&!Array.isArray(saved.classProgressionVersions)?saved.classProgressionVersions:base.classProgressionVersions,
     classLevels:Array.isArray(saved.classLevels)?saved.classLevels:base.classLevels,
     multiclassEnabled:saved.multiclassEnabled===true,
     cartomante:normalizeCartomanteState(saved.cartomante)

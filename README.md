@@ -94,9 +94,9 @@ Os arquivos `supabase_*.sql` contêm o esquema, funções e políticas usados pe
 
 Esta seção mantém **somente as três mudanças mais recentes**. Ao registrar uma nova, remova a mais antiga.
 
-1. **Digitação estável no Escudo:** atualizações periódicas e em tempo real aguardam o mestre terminar de editar iniciativa, PV, PM ou outros campos antes de redesenhar o painel; ajustes numéricos de Perícias também preservam foco e teclado.
-2. **Compartilhamento público protegido:** fichas e estados de combate públicos agora são lidos apenas por RPCs vinculadas ao UUID exato, sem listagem anônima das tabelas nem exposição de `updated_by`.
-3. **Quebra-Escudos revisado:** Golpe de Impacto passa a ser obtido no 2º nível e Alavanca de Demolição entra no catálogo, agora com 27 poderes.
+1. **Progressão antiga do Quebra-Escudos:** fichas criadas antes da revisão removem uma única vez o bloqueio legado de Golpe de Impacto e passam a receber normalmente sua progressão atual a partir do 2º nível.
+2. **Digitação estável no Escudo:** atualizações periódicas e em tempo real aguardam o mestre terminar de editar iniciativa, PV, PM ou outros campos antes de redesenhar o painel; ajustes numéricos de Perícias também preservam foco e teclado.
+3. **Compartilhamento público protegido:** fichas e estados de combate públicos agora são lidos apenas por RPCs vinculadas ao UUID exato, sem listagem anônima das tabelas nem exposição de `updated_by`.
 
 ## Aviso
 

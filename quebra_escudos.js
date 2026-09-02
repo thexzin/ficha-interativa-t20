@@ -4,6 +4,12 @@
   const classId="quebra_escudos";
   const source="Homebrew";
 
+  window.T20_CLASS_PROGRESSION_REVISIONS=window.T20_CLASS_PROGRESSION_REVISIONS||{};
+  window.T20_CLASS_PROGRESSION_REVISIONS[classId]={
+    version:2,
+    resetSuppressions:[`${classId}|golpedeimpacto`]
+  };
+
   window.T20_DATA.classes[classId]={
     nome:"Quebra-Escudos",
     pv1:20,
