@@ -141,6 +141,7 @@ let activeHubSection="fichas";
 let activeHubCampaignId="";
 let activeCampaignDashboardTab="fichas";
 let campaignRollPollTimer=null;
+let campaignDashboardRenderPending=false;
 let shieldCharacterFilter="";
 let shieldSortMode="risco";
 let currentCloudReadOnly=false;
@@ -1780,11 +1781,21 @@ function renderSkillsLegacy(){
   }
   $("#skillsList").innerHTML=rows.join("");
   $$("[data-sktrain]").forEach(e=>e.onchange=()=>{state.skillData[e.dataset.sktrain].trained=e.checked;renderSkills();save(false)});
-  $$("[data-skadj]").forEach(e=>e.oninput=()=>{state.skillData[e.dataset.skadj].adjust=Number(e.value||0);renderSkills();save(false)});
+  $$("[data-skadj]").forEach(e=>e.oninput=()=>{
+    const name=e.dataset.skadj;
+    state.skillData[name].adjust=Number(e.value||0);
+    refreshSkillEditorFeedback(e,skillEditorResult(name),"[data-skroll]");
+    save(false);
+  });
   $$("[data-skroll]").forEach(e=>e.onclick=()=>rollD20(e.dataset.bonus,e.dataset.skroll));
   $$("[data-officename]").forEach(e=>e.oninput=()=>{state.offices[+e.dataset.officename].name=e.value;save(false)});
   $$("[data-officetrain]").forEach(e=>e.onchange=()=>{state.offices[+e.dataset.officetrain].trained=e.checked;renderSkills();save(false)});
-  $$("[data-officeadj]").forEach(e=>e.oninput=()=>{state.offices[+e.dataset.officeadj].adjust=Number(e.value||0);renderSkills();save(false)});
+  $$("[data-officeadj]").forEach(e=>e.oninput=()=>{
+    const index=Number(e.dataset.officeadj);
+    state.offices[index].adjust=Number(e.value||0);
+    refreshSkillEditorFeedback(e,officeEditorResult(index),"[data-officeroll]");
+    save(false);
+  });
   $$("[data-officeroll]").forEach(e=>e.onclick=()=>{const o=state.offices[+e.dataset.officeroll];rollD20(e.dataset.bonus,`Ofício${o.name?": "+o.name:""}`)});
   $$("[data-officedel]").forEach(e=>e.onclick=()=>{if(state.offices.length>1)state.offices.splice(+e.dataset.officedel,1);else state.offices[0]={name:"",trained:false,adjust:0};renderSkills();save(false)});
   if($("#addOffice"))$("#addOffice").onclick=()=>{state.offices.push({name:"",trained:false,adjust:0});renderSkills();save(false)};
@@ -1812,6 +1823,29 @@ function partnerSkillBadge(bonus){
 function baseSkillBadge(bonus,trained=false){
   if(!bonus&&!trained) return "";
   return `<span class="skillBadge baseBonus">Base${bonus?` ${signedNumber(bonus)}`:""}${trained?" • treinada":""}</span>`;
+}
+function skillEditorResult(name){
+  const cls=primaryClass()||{pericias:[]},fx=activeConditionEffects(),defaultAttr=T20_DATA.pericias[name];
+  const data=state.skillData[name]||{trained:(cls.pericias||[]).includes(name),adjust:0,attr:defaultAttr};
+  const attr=validSkillAttr(data.attr,defaultAttr),baseTrained=baseTrainsSkill(name),effectiveTrained=data.trained||baseTrained;
+  const armorPenalty=ARMOR_PENALTY_SKILLS.has(name)?armorPenaltyValue():0;
+  const resistanceBonus=RESISTANCE_SKILLS.has(name)?num("globalResistanceBonus"):0;
+  const total=halfLevel()+attrNum(attr)+(effectiveTrained?trainingBonus():0)+Number(data.adjust||0)+num("globalTestBonus")+num("skillGlobalBonus")+resistanceBonus+partnerSkillBonus(name)+baseSkillBonus(name)+itemSkillBonus(name)+armorPenalty+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+  return {total,locked:skillIsLocked(name,effectiveTrained)};
+}
+function officeEditorResult(index){
+  const office=state.offices[index]||{},fx=activeConditionEffects(),name="Ofício",defaultAttr=T20_DATA.pericias[name];
+  const attr=validSkillAttr(office.attr,defaultAttr),baseTrained=baseTrainsSkill(name),effectiveTrained=office.trained||baseTrained;
+  const total=halfLevel()+attrNum(attr)+(effectiveTrained?trainingBonus():0)+Number(office.adjust||0)+num("globalTestBonus")+num("skillGlobalBonus")+partnerSkillBonus(name)+baseSkillBonus(name,office.name)+itemSkillBonus(name)+Number(fx.allSkills||0)+Number(fx.attrs[attr]||0)+Number(fx.skills[name]||0);
+  return {total,locked:skillIsLocked(name,effectiveTrained)};
+}
+function refreshSkillEditorFeedback(input,result,rollSelector){
+  const row=input.closest(".skill");
+  if(!row) return;
+  const total=row.querySelector(".total"),roll=row.querySelector(rollSelector);
+  if(total) total.textContent=skillTotalText(result.total,result.locked);
+  if(roll){roll.dataset.bonus=result.total;roll.disabled=result.locked}
+  refreshAttackSummaries();
 }
 function renderSkills(){
   const cls=primaryClass()||{pericias:[]}, fx=activeConditionEffects();
@@ -1864,12 +1898,22 @@ function renderSkills(){
   $("#skillsList").innerHTML=rows.join("");
   $$("[data-skattr]").forEach(e=>e.onchange=()=>{const name=e.dataset.skattr;state.skillData[name]=state.skillData[name]||{trained:(cls.pericias||[]).includes(name),adjust:0};state.skillData[name].attr=e.value;renderSkills();save(false)});
   $$("[data-sktrain]").forEach(e=>e.onchange=()=>{state.skillData[e.dataset.sktrain].trained=e.checked;renderSkills();save(false)});
-  $$("[data-skadj]").forEach(e=>e.oninput=()=>{state.skillData[e.dataset.skadj].adjust=Number(e.value||0);renderSkills();save(false)});
+  $$("[data-skadj]").forEach(e=>e.oninput=()=>{
+    const name=e.dataset.skadj;
+    state.skillData[name].adjust=Number(e.value||0);
+    refreshSkillEditorFeedback(e,skillEditorResult(name),"[data-skroll]");
+    save(false);
+  });
   $$("[data-skroll]").forEach(e=>e.onclick=()=>rollD20(e.dataset.bonus,e.dataset.skroll));
   $$("[data-officename]").forEach(e=>e.oninput=()=>{state.offices[+e.dataset.officename].name=e.value;save(false)});
   $$("[data-officeattr]").forEach(e=>e.onchange=()=>{state.offices[+e.dataset.officeattr].attr=e.value;renderSkills();save(false)});
   $$("[data-officetrain]").forEach(e=>e.onchange=()=>{state.offices[+e.dataset.officetrain].trained=e.checked;renderSkills();save(false)});
-  $$("[data-officeadj]").forEach(e=>e.oninput=()=>{state.offices[+e.dataset.officeadj].adjust=Number(e.value||0);renderSkills();save(false)});
+  $$("[data-officeadj]").forEach(e=>e.oninput=()=>{
+    const index=Number(e.dataset.officeadj);
+    state.offices[index].adjust=Number(e.value||0);
+    refreshSkillEditorFeedback(e,officeEditorResult(index),"[data-officeroll]");
+    save(false);
+  });
   $$("[data-officeroll]").forEach(e=>e.onclick=()=>{const o=state.offices[+e.dataset.officeroll];rollD20(e.dataset.bonus,`Ofício${o.name?": "+o.name:""}`)});
   $$("[data-officedel]").forEach(e=>e.onclick=()=>{if(state.offices.length>1)state.offices.splice(+e.dataset.officedel,1);else state.offices[0]={name:"",trained:false,adjust:0,attr:T20_DATA.pericias["Ofício"]};renderSkills();save(false)});
   if($("#addOffice"))$("#addOffice").onclick=()=>{state.offices.push({name:"",trained:false,adjust:0,attr:T20_DATA.pericias["Ofício"]});renderSkills();save(false)};
@@ -4175,7 +4219,7 @@ function handleCombatRuntimeChange(payload){
   if(!runtime?.character_id) return;
   storeCombatRuntime(runtime);
   applyCombatRuntimeToCurrent(runtime);
-  if(activeCampaignDashboardTab==="escudo"&&activeHubCampaignId&&document.body.classList.contains("hub-open")) renderCampaignDashboard();
+  if(activeCampaignDashboardTab==="escudo"&&activeHubCampaignId&&document.body.classList.contains("hub-open")) requestCampaignDashboardRender();
 }
 function stopCombatRuntimeRealtime(){
   if(combatRuntimeChannel&&supabaseClient) supabaseClient.removeChannel(combatRuntimeChannel);
@@ -5020,7 +5064,16 @@ function bindMasterShieldControls(){
   if(end) end.onclick=()=>runCloudAction(endCampaignEncounter);
   const add=$("#initiativeManualAddBtn");
   if(add) add.onclick=()=>runCloudAction(addManualInitiativeEntry);
-  $$("[data-initiative-total]").forEach(input=>input.onchange=()=>runCloudAction(()=>updateInitiativeTotal(input.dataset.initiativeTotal,input.value)));
+  $$("[data-initiative-total]").forEach(input=>{
+    input.oninput=()=>{input.dataset.initiativeDirty="1"};
+    input.onkeydown=event=>{if(event.key==="Enter") input.blur()};
+    input.onblur=()=>{
+      if(input.dataset.initiativeDirty!=="1") return;
+      const entryId=input.dataset.initiativeTotal,rawValue=input.value;
+      delete input.dataset.initiativeDirty;
+      runCloudAction(()=>updateInitiativeTotal(entryId,rawValue));
+    };
+  });
   $$("[data-initiative-state]").forEach(select=>select.onchange=()=>runCloudAction(()=>updateInitiativeState(select.dataset.initiativeState,select.value)));
   $$("[data-initiative-move]").forEach(button=>button.onclick=()=>runCloudAction(()=>moveInitiativeEntry(button.dataset.initiativeMove,Number(button.dataset.direction||0))));
   $$("[data-initiative-delete]").forEach(button=>button.onclick=()=>runCloudAction(()=>deleteInitiativeEntry(button.dataset.initiativeDelete)));
@@ -5054,7 +5107,7 @@ function requireMasterEncounter(){
 async function refreshCampaignShield(message=""){
   await loadCloudData();
   activeCampaignDashboardTab="escudo";
-  renderCampaignDashboard();
+  requestCampaignDashboardRender();
   if(message) notify(message);
 }
 async function startCampaignEncounter(){
@@ -5247,7 +5300,7 @@ function shieldRuntimeReady(){
 function refreshShieldRuntime(runtime){
   const row=Array.isArray(runtime)?runtime[0]:runtime;
   if(row?.character_id) storeCombatRuntime(row);
-  renderCampaignDashboard();
+  requestCampaignDashboardRender();
   return row;
 }
 async function adjustShieldResource(characterId,resource,delta){
@@ -5728,7 +5781,25 @@ function renderCharacterBase(){
   $$('[data-base-resident-choice]').forEach(control=>control.onchange=()=>runCloudAction(()=>updateBaseResidentChoices(resident,control.dataset.baseResidentChoice,control.value)));
   $$('[data-use-base-benefit]').forEach(control=>control.onclick=()=>runCloudAction(()=>useBaseBenefit(resident,control.dataset.useBaseBenefit)));
 }
+function campaignDashboardEditorActive(){
+  const content=$("#campaignDashboardContent"),active=document.activeElement;
+  return !!(activeHubSection==="campanha"&&content&&active&&content.contains(active)&&(active.matches("input, textarea, select")||active.isContentEditable));
+}
+function requestCampaignDashboardRender(){
+  if(campaignDashboardEditorActive()){
+    campaignDashboardRenderPending=true;
+    return false;
+  }
+  campaignDashboardRenderPending=false;
+  renderCampaignDashboard();
+  return true;
+}
+function flushCampaignDashboardRender(){
+  if(!campaignDashboardRenderPending||campaignDashboardEditorActive()) return;
+  requestCampaignDashboardRender();
+}
 function renderCampaignDashboard(){
+  campaignDashboardRenderPending=false;
   const section=$("#hubCampaignDashboard");
   if(!section) return;
   const campaign=cloudCampaigns.find(item=>item.id===activeHubCampaignId);
@@ -5813,7 +5884,7 @@ function renderHub(){
   renderHubHome();
   renderHubCharacters();
   renderHubCampaigns();
-  renderCampaignDashboard();
+  requestCampaignDashboardRender();
 }
 function localIdForCloudCharacter(remoteId){
   return Object.entries(readCloudCharacterMap()).find(([localId,cloudId])=>cloudId===remoteId&&localStorage.getItem(characterKey(localId)))?.[0]||"";
@@ -6484,7 +6555,7 @@ async function recordCampaignRoll(roll){
     const {data,error}=await supabaseClient.from("campaign_rolls").insert(rollRow).select("id,campaign_id,character_id,user_id,actor_name,roll_type,title,total_attack,total_damage,d20,damage_details,is_critical,is_fumble,payload,created_at").single();
     if(error) throw error;
     cloudCampaignRolls=[data,...cloudCampaignRolls].slice(0,120);
-    if(activeHubCampaignId===campaignId&&activeCampaignDashboardTab==="escudo") renderCampaignDashboard();
+    if(activeHubCampaignId===campaignId&&activeCampaignDashboardTab==="escudo") requestCampaignDashboardRender();
     await confirmInitiativeRollCapture(roll,campaignId);
     return;
   }
@@ -7696,6 +7767,7 @@ document.addEventListener("click",event=>{
   if(!event.target.closest?.(".profileMenu")) closeProfileMenu();
   if(!event.target.closest?.(".sheetActionMenu")) closeSheetActionMenu();
 });
+$("#campaignDashboardContent")?.addEventListener("focusout",()=>setTimeout(flushCampaignDashboardRender,0));
 $$("[data-hub-section]").forEach(button=>button.addEventListener("click",()=>openHub(button.dataset.hubSection)));
 $("#homeOpenSheetsBtn")?.addEventListener("click",()=>openHub("fichas"));
 $("#homeOpenCampaignsBtn")?.addEventListener("click",()=>openHub("campanhas"));
